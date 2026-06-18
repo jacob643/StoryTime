@@ -1,0 +1,106 @@
+body
+{
+    font-family: Consolas, monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f4f4f9;
+    overflow: hidden
+}
+
+.container
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    padding: 2vw;
+    border-radius: 0.5vw;
+    box-shadow: 0 0.5vw 1vw rgba(0, 0, 0, 0.1);
+    width: 80%;
+    max-width: 80vw;
+}
+
+.history-item
+{
+    padding: 1vw;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 0.5vw;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 0.3vw;
+    box-shadow: 0 0.2vw 0.4vw rgba(0,0,0,0.05);
+}
+
+#history
+{
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 0.4vw;
+    box-shadow: 0 0.5vw 1vw rgba(0,0,0,0.15);
+    width: 20vw;
+    max0width: 25vw;
+    padding: 1vw;
+    overflow-y: auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+#history
+{
+
+}
+
+#sidebar
+{
+    width: 25%;
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-right: 2px solid #ccc;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+#main-content {
+    width: 75%;
+    padding: 20px;
+}
+
+#message
+{
+    text-align: center;
+    font-size: 1.5em;
+    color: green;
+    display:none;
+    width: 100%;
+}
+
+#inputBox
+{
+    width: 100%;
+    padding: 1vw;
+    font-size: 1em;
+    border: 0.1vw solid #ccc;
+    border-radius: 0.5vw;
+    box-sizing: border-box;
+}
+
+#inputBox:focus
+{
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2vw rgba(0, 123, 255, 0.25);
+}
+
+.radio-group
+{
+    margin-top: 2vw;
+}
+
+.radio-group label
+{
+    margin-right: 1vw;
+}

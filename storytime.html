@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name-"viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Story Time!</title>
+    <style src="style.css"></style>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="history">
+    </div>
+    <div class="container">
+		<div class="radio-group">
+			<label>
+				<input type="radio" name="speedType" value="cpm" checked />
+				CPM
+			</label>
+			<label>
+				<input type="radio" name="speedType" value="wpm" />
+				WPM
+			</label>
+			<label for="characterAmountInput">
+				<span id="characterAmount"></span>
+			</label>
+			<input id="characterAmountInput" value="20" />
+			<textarea id="possibleCharactersInput" rows="3" cols="100">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"/$%?&*()_-+=àâäéèêëîïôùûüçÀÂÄÉÈÊËÎÏÔÙÛÜÇ</textarea>
+		</div>
+        <div class="container">
+            <input type="text" id="initialPrompt" placeholder="Enter initial prompt here..." />
+            <button id="restartButton">Restart</button>
+        </div>
+
+        <div class="container">
+            <div id="message"></div>
+            <div id="timeTaken"></div>
+            <div id="speed"></div>
+        </div>
+        <div id="textDisplay">Type this.</div>
+        <input type="text" id="inputBox" placeholder="Start typing here..." />
+    </div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
