@@ -15,3 +15,6 @@ class LLMProvider(ABC):
 
     @abstractmethod
     async def is_available(self) -> bool: ...
+
+    @abstractmethod
+    async def list_models(self) -> list[str]: ...

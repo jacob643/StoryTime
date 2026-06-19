@@ -41,3 +41,16 @@ class OllamaProvider(LLMProvider):
                 return response.status_code == 200
         except httpx.RequestError:
             return False
+
+    async def list_models(self) -> list[str]:
+        if settings.mock_llm:
+            return await self._mock.list_models()
+        try:
+            url = f"{settings.ollama_host}/api/tags"
+            async with httpx.AsyncClient() as client:
+                r = await client.get(url, timeout=5)
+                r.raise_for_status()
+                data = r.json()
+                return [m["name"] for m in data.get("models", [])]
+        except httpx.RequestError:
+            return []
