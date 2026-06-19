@@ -14,6 +14,7 @@ from backend.game_logic import (
     DEFAULT_MIN_STDDEV_CPM,
 )
 from backend.prompt_engine import build_prompt, parse_llm_response
+from backend.settings_manager import get_settings
 
 router = APIRouter()
 provider = OllamaProvider()
@@ -101,10 +102,12 @@ async def generate(body: GenerateRequest):
         )
 
         history_texts = [r.text for r in session.history]
+        gs = get_settings()
         assembled = build_prompt(
             initial_context=session.initial_prompt,
             history=history_texts,
             outcome_tier=outcome_tier,
+            outcome_directions=gs.outcome_directions,
         )
         raw = await provider.generate(assembled, body.model)
         next_text = parse_llm_response(raw)

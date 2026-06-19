@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Dict, Optional
+
+from backend.game_logic import (
+    DEFAULT_AVG_CPM,
+    DEFAULT_MIN_STDDEV_CPM,
+    FIXED_THRESHOLDS,
+)
+from backend.prompt_engine import OUTCOME_DIRECTIONS
+
+
+def _default_fixed_thresholds() -> list[list[float]]:
+    return [list(pair) for pair in FIXED_THRESHOLDS]
+
+
+def _default_outcome_directions() -> Dict[int, str]:
+    return dict(OUTCOME_DIRECTIONS)
+
+
+@dataclass
+class GameSettings:
+    scoring_mode: str = "split"
+    min_data: int = 3
+    min_stddev_cpm: float = DEFAULT_MIN_STDDEV_CPM
+    tier_0_max_sigma: float = -1.5
+    tier_1_max_sigma: float = -0.5
+    tier_2_max_sigma: float = 0.5
+    tier_3_max_sigma: float = 1.5
+    fixed_thresholds: list[list[float]] = field(default_factory=_default_fixed_thresholds)
+    target_split_size: int = 50
+    min_split_size: int = 30
+    default_avg_cpm: float = DEFAULT_AVG_CPM
+    outcome_directions: Dict[int, str] = field(default_factory=_default_outcome_directions)
+
+
+def _settings_path() -> Path:
+    return Path.home() / ".storytime" / "config.json"
+
+
+def load_settings() -> GameSettings:
+    path = _settings_path()
+    if not path.exists():
+        return GameSettings()
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return GameSettings(**raw)
+    except (json.JSONDecodeError, TypeError, KeyError):
+        return GameSettings()
+
+
+def save_settings(settings: GameSettings) -> None:
+    path = _settings_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(_dataclass_to_dict(settings), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def _dataclass_to_dict(obj):
+    if hasattr(obj, "__dataclass_fields__"):
+        return {f: _dataclass_to_dict(getattr(obj, f)) for f in obj.__dataclass_fields__}
+    if isinstance(obj, dict):
+        return {str(k): _dataclass_to_dict(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_dataclass_to_dict(v) for v in obj]
+    return obj
+
+
+_game_settings: Optional[GameSettings] = None
+
+
+def get_settings() -> GameSettings:
+    global _game_settings
+    if _game_settings is None:
+        _game_settings = load_settings()
+    return _game_settings
+
+
+def update_settings(**kwargs) -> GameSettings:
+    global _game_settings
+    settings = get_settings()
+    for key, value in kwargs.items():
+        if hasattr(settings, key) and value is not None:
+            setattr(settings, key, value)
+    save_settings(settings)
+    _game_settings = settings
+    return settings

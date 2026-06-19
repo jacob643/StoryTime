@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from backend.game_logic import ScoringParams, DEFAULT_AVG_CPM, MAX_ROLLING_WINDOW
+from backend.settings_manager import get_settings as _get_gs
 
 
 @dataclass
@@ -34,12 +35,23 @@ class SessionStore:
     def __init__(self) -> None:
         self._sessions: Dict[str, GameSession] = {}
 
-    def create(self, initial_prompt: str = "", initial_avg_cpm: float = DEFAULT_AVG_CPM) -> GameSession:
+    def create(self, initial_prompt: str = "", initial_avg_cpm: float | None = None) -> GameSession:
+        gs = _get_gs()
+        params = ScoringParams(
+            mode=gs.scoring_mode,
+            min_data=gs.min_data,
+            min_stddev_cpm=gs.min_stddev_cpm,
+            tier_0_max_sigma=gs.tier_0_max_sigma,
+            tier_1_max_sigma=gs.tier_1_max_sigma,
+            tier_2_max_sigma=gs.tier_2_max_sigma,
+            tier_3_max_sigma=gs.tier_3_max_sigma,
+        )
         session = GameSession(
             id=str(uuid.uuid4()),
             created_at=datetime.now(timezone.utc),
             initial_prompt=initial_prompt,
-            initial_avg_cpm=initial_avg_cpm,
+            initial_avg_cpm=initial_avg_cpm if initial_avg_cpm is not None else gs.default_avg_cpm,
+            scoring_params=params,
         )
         self._sessions[session.id] = session
         return session
