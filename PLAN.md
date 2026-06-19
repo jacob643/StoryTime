@@ -54,9 +54,9 @@ Goal: The game runs end-to-end — typing speed drives the story via the 5-tier 
 Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev tools, and robust error handling.
 
 ### Epic 3.1: Provider System
-- [ ] **3.1.1** Add custom OpenAI-compatible endpoint provider alongside Ollama
-- [ ] **3.1.2** Add `GET /api/models` endpoint that discovers models from active providers
-- [ ] **3.1.3** Build provider registry with fallback logic
+- [x] **3.1.1** Add custom OpenAI-compatible endpoint provider alongside Ollama
+- [x] **3.1.2** Add `GET /api/models` endpoint that discovers models from active providers
+- [x] **3.1.3** Build provider registry with fallback logic
 
 ### Epic 3.2: Adaptive Speed Scoring
 - [x] **3.2.1** Create `ScoringParams` dataclass + `compute_speed_stats()` + `split_text()` in `game_logic.py` — 50-char target split, 30-char minimum, rolling window of 20 split-speeds, symmetric ±1.5σ/±0.5σ tiers

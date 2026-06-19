@@ -128,3 +128,50 @@ Click the **⚙ Settings** toggle button to expand/collapse the settings panel. 
 - **Prompt directions**: text inputs for each tier's outcome direction
 
 Click **Save** to persist changes via `POST /api/settings`, or **Reset to Defaults** to restore factory values.
+
+## Provider System
+
+### Provider Selection
+
+The active provider is controlled via settings fields:
+
+| Field | Default | Description |
+|---|---|---|
+| `provider` | `"ollama"` | Active provider: `"ollama"` or `"custom"` |
+| `custom_endpoint` | `""` | Base URL for OpenAI-compatible endpoint (e.g. `https://api.openai.com/v1`) |
+| `custom_api_key` | `""` | API key for the custom endpoint |
+| `custom_model` | `""` | Model name for the custom endpoint (e.g. `gpt-4o-mini`) |
+
+Set via `POST /api/settings`:
+```bash
+curl -X POST http://127.0.0.1:8000/api/settings \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "custom", "custom_endpoint": "https://api.openai.com/v1", "custom_api_key": "sk-xxx", "custom_model": "gpt-4o"}'
+```
+
+### Model Discovery
+
+`GET /api/models` returns available models from all configured providers:
+
+```json
+{
+  "providers": [
+    {
+      "provider": "ollama",
+      "available": true,
+      "models": ["llama3.2:3b", "mistral:7b"]
+    },
+    {
+      "provider": "custom",
+      "available": true,
+      "models": ["gpt-4", "gpt-4o-mini"]
+    }
+  ]
+}
+```
+
+The custom endpoint is only checked if `custom_endpoint` is configured in settings.
+
+### Fallback Behavior
+
+When `provider` is set to `"custom"` but `custom_endpoint` is empty or the endpoint is unreachable, the registry falls back to Ollama. All game routes (`/api/generate`, `/api/restart`, `/api/simulate`) use the `ProviderRegistry` singleton to dispatch LLM calls to the active provider.
