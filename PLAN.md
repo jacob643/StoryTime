@@ -9,8 +9,8 @@
 Goal: A minimal end-to-end pipeline — FastAPI backend serves a static page, connects to Ollama, and returns LLM-generated text to the browser. No typing game logic yet, just proving the chain works.
 
 ### Epic 1.1: FastAPI Static Server
-- [ ] Task: Create `backend/` project skeleton — `main.py` (FastAPI app + static mount), `config.py` (Pydantic settings), `requirements.txt`, and entry point with Uvicorn launcher + auto-open browser
-- [ ] Task: Set up `backend/tests/` with pytest + FastAPI TestClient; add a test that the server starts and `GET /` returns the frontend page successfully
+- [x] Task: Create `backend/` project skeleton — `main.py` (FastAPI app + static mount), `config.py` (Pydantic settings), `requirements.txt`, and entry point with Uvicorn launcher + auto-open browser
+- [x] Task: Set up `backend/tests/` with pytest + FastAPI TestClient; add a test that the server starts and `GET /` returns the frontend page successfully
 
 ### Epic 1.2: Basic Ollama Connection
 - [ ] Task: Create `backend/providers/ollama.py` with a basic OllamaProvider class (generate + is_available) and `backend/routes/generate.py` exposing `POST /api/generate`
