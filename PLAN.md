@@ -31,10 +31,10 @@ Goal: The game runs end-to-end — typing speed drives the story via the 5-tier 
 
 ### Epic 2.1: Game Session & Prompt Engine
 
-- [ ] **2.1.1** Create `backend/session.py` — `GameSession` and `ParagraphRecord` dataclasses, in-memory dict store indexed by `session_id` (UUID), with create/get/append methods
-- [ ] **2.1.2** Create `backend/prompt_engine.py` — `build_prompt()` that takes the initial prompt, story history (list of paragraph texts), and an outcome tier (0–4), and assembles a prompt string using the 5-tier templates (docs expect user/assistant formatting or plain text; LLM agent should pick based on `docs/technical-design/`)
-- [ ] **2.1.3** Create `backend/game_logic.py` — `compute_outcome_tier(speed_cpm) -> int` mapping CPM thresholds to 5 tiers (very negative → very positive), with configurable threshold constants
-- [ ] **2.1.4** Add session context to `POST /api/generate` — accept optional `session_id`/`speed_cpm` fields; auto-create session if new; on subsequent calls append previous paragraph to story history before calling LLM
+- [x] **2.1.1** Create `backend/session.py` — `GameSession` and `ParagraphRecord` dataclasses, in-memory dict store indexed by `session_id` (UUID), with create/get/append methods
+- [x] **2.1.2** Create `backend/prompt_engine.py` — `build_prompt()` that takes the initial prompt, story history (list of paragraph texts), and an outcome tier (0–4), and assembles a prompt string using the 5-tier templates (docs expect user/assistant formatting or plain text; LLM agent should pick based on `docs/technical-design/`)
+- [x] **2.1.3** Create `backend/game_logic.py` — `compute_outcome_tier(speed_cpm) -> int` mapping CPM thresholds to 5 tiers (very negative → very positive), with configurable threshold constants
+- [x] **2.1.4** Add session context to `POST /api/generate` — accept optional `session_id`/`speed_cpm` fields; auto-create session if new; on subsequent calls append previous paragraph to story history before calling LLM
 
 ### Epic 2.2: Frontend Typing Game
 
