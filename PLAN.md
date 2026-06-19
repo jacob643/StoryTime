@@ -38,9 +38,9 @@ Goal: The game runs end-to-end — typing speed drives the story via the 5-tier 
 
 ### Epic 2.2: Frontend Typing Game
 
-- [ ] **2.2.1** Rewrite frontend typing engine — on paragraph completion, send `{session_id, speed_cpm}` to `POST /api/generate`, receive next paragraph, display it as the text to type; remove random string generation
-- [ ] **2.2.2** Wire initial prompt flow — on "Send" or page load, call `/api/generate` to get the first story paragraph and display it in `#textDisplay`; integrate the typing box/character highlighting/timer/CPM-WPM display with the new API-driven flow
-- [ ] **2.2.3** Add story history sidebar — after each completed paragraph, append the typed text, time, and speed to the `#history` sidebar
+- [x] **2.2.1** Rewrite frontend typing engine — on paragraph completion, send `{session_id, speed_cpm}` to `POST /api/generate`, receive next paragraph, display it as the text to type; remove random string generation
+- [x] **2.2.2** Wire initial prompt flow — on "Send" or page load, call `/api/generate` to get the first story paragraph and display it in `#textDisplay`; integrate the typing box/character highlighting/timer/CPM-WPM display with the new API-driven flow
+- [x] **2.2.3** Add story history sidebar — after each completed paragraph, append the typed text, time, and speed to the `#history` sidebar
 
 ### Epic 2.3: End-to-End Game Flow
 
