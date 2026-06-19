@@ -76,9 +76,9 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [x] **3.4.2** Add dev-only feature flag (`config.dev_mode`) to gate simulation commands and test UI elements in future releases
 
 ### Epic 3.5: Error Handling & Resilience
-- [ ] **3.5.1** Graceful degradation when Ollama is down — frontend shows "Start Ollama" instruction with link; retry button
-- [ ] **3.5.2** Add retry logic for LLM calls (1 retry on timeout, exponential backoff)
-- [ ] **3.5.3** Validate LLM response (non-empty, reasonable length); fallback to cached neutral response if LLM returns garbage
+- [x] **3.5.1** Graceful degradation when Ollama is down — frontend shows "Start Ollama" instruction with link; retry button
+- [x] **3.5.2** Add retry logic for LLM calls (1 retry on timeout, exponential backoff)
+- [x] **3.5.3** Validate LLM response (non-empty, reasonable length); fallback to cached neutral response if LLM returns garbage
 
 ---
 
