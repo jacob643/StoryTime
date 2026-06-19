@@ -44,8 +44,8 @@ Goal: The game runs end-to-end — typing speed drives the story via the 5-tier 
 
 ### Epic 2.3: End-to-End Game Flow
 
-- [ ] **2.3.1** Wire the full loop — initial prompt → first paragraph appears → user types it → speed_cpm sent → backend computes outcome tier → LLM returns next paragraph → user types again; verify with a full Playwright integration test that mocks the LLM and asserts the typing flow works
-- [ ] **2.3.2** Add restart flow — clicking "Restart" sends a new initial prompt, clears the session history on both frontend and backend, and fetches a fresh first paragraph
+- [x] **2.3.1** Wire the full loop — initial prompt → first paragraph appears → user types it → speed_cpm sent → backend computes outcome tier → LLM returns next paragraph → user types again; verify with a full Playwright integration test that mocks the LLM and asserts the typing flow works
+- [x] **2.3.2** Add restart flow — clicking "Restart" sends a new initial prompt, clears the session history on both frontend and backend, and fetches a fresh first paragraph
 
 ---
 
