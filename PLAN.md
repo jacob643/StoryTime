@@ -13,8 +13,8 @@ Goal: A minimal end-to-end pipeline — FastAPI backend serves a static page, co
 - [x] Task: Set up `backend/tests/` with pytest + FastAPI TestClient; add a test that the server starts and `GET /` returns the frontend page successfully
 
 ### Epic 1.2: Basic Ollama Connection
-- [ ] Task: Create `backend/providers/ollama.py` with a basic OllamaProvider class (generate + is_available) and `backend/routes/generate.py` exposing `POST /api/generate`
-- [ ] Task: Write mocked unit tests for OllamaProvider (using httpx mock) — test generate returns expected text, is_available returns true/false based on HTTP status
+- [x] Task: Create `backend/providers/ollama.py` with a basic OllamaProvider class (generate + is_available) and `backend/routes/generate.py` exposing `POST /api/generate`
+- [x] Task: Write mocked unit tests for OllamaProvider (using httpx mock) — test generate returns expected text, is_available returns true/false based on HTTP status
 
 ### Epic 1.3: Simple "Send Prompt → Get Response" Page
 - [ ] Task: Build minimal frontend page — an input field, submit button, and response area, with JS `fetch` to `POST /api/generate` and display the result
