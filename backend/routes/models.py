@@ -1,11 +1,10 @@
 from fastapi import APIRouter
-from backend.providers.ollama import OllamaProvider
+from backend.providers.registry import registry
 
 router = APIRouter()
-provider = OllamaProvider()
 
 
 @router.get("/api/models")
 async def list_models():
-    models = await provider.list_models()
-    return {"models": models, "provider": "ollama"}
+    providers = await registry.discover()
+    return {"providers": providers}

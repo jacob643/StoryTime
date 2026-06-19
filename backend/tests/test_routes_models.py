@@ -13,26 +13,30 @@ def client():
         yield c
 
 
-def test_list_models_returns_models(client):
-    mock_models = ["llama3.2:3b", "mistral:7b"]
+def test_list_models_returns_providers(client):
+    mock_providers = [
+        {"provider": "ollama", "available": True, "models": ["llama3.2:3b"]},
+        {"provider": "custom", "available": True, "models": ["gpt-4"]},
+    ]
     with patch(
-        "backend.routes.models.provider.list_models",
+        "backend.providers.registry.registry.discover",
         new_callable=AsyncMock,
-        return_value=mock_models,
+        return_value=mock_providers,
     ):
         r = client.get("/api/models")
     assert r.status_code == 200
     data = r.json()
-    assert data["models"] == mock_models
-    assert data["provider"] == "ollama"
+    assert len(data["providers"]) == 2
+    assert data["providers"][0]["provider"] == "ollama"
+    assert data["providers"][1]["models"] == ["gpt-4"]
 
 
-def test_list_models_returns_empty_when_no_models(client):
+def test_list_models_returns_empty_when_no_providers(client):
     with patch(
-        "backend.routes.models.provider.list_models",
+        "backend.providers.registry.registry.discover",
         new_callable=AsyncMock,
         return_value=[],
     ):
         r = client.get("/api/models")
     assert r.status_code == 200
-    assert r.json()["models"] == []
+    assert r.json()["providers"] == []
