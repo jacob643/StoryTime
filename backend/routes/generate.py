@@ -115,10 +115,10 @@ async def generate(body: GenerateRequest):
             outcome_tier=outcome_tier,
             outcome_label=get_outcome_label(outcome_tier),
         )
-    except httpx.RequestError as exc:
+    except (httpx.RequestError, httpx.HTTPStatusError) as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"LLM provider unreachable: {exc}",
+            detail=f"LLM provider error: {exc}",
         )
 
 

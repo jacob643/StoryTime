@@ -30,8 +30,8 @@ async def restart(body: RestartRequest):
             outcome_tier=2,
             outcome_label="neutral",
         )
-    except httpx.RequestError as exc:
+    except (httpx.RequestError, httpx.HTTPStatusError) as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"LLM provider unreachable: {exc}",
+            detail=f"LLM provider error: {exc}",
         )

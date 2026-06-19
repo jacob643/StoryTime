@@ -1,98 +1,140 @@
 from backend.session import GameSession, ParagraphRecord, SessionStore
 
 
-def test_create_session():
-    store = SessionStore()
-    session = store.create(initial_prompt="test prompt")
-    assert session.id is not None
-    assert session.initial_prompt == "test prompt"
-    assert session.history == []
-    assert session.current_outcome_tier == 0
+class TestCreateSession:
+    def test_create_session(self):
+        store = SessionStore()
+        session = store.create(initial_prompt="test prompt")
+        assert session.id is not None
+        assert session.initial_prompt == "test prompt"
+        assert session.history == []
+        assert session.current_outcome_tier == 0
+        assert session.rolling_splits == []
+        assert session.initial_avg_cpm == 300.0
+        assert session.scoring_params is not None
+
+    def test_create_session_default_initial_prompt(self):
+        store = SessionStore()
+        session = store.create()
+        assert session.initial_prompt == ""
+
+    def test_create_session_custom_avg(self):
+        store = SessionStore()
+        session = store.create(initial_prompt="test", initial_avg_cpm=400.0)
+        assert session.initial_avg_cpm == 400.0
 
 
-def test_create_session_default_initial_prompt():
-    store = SessionStore()
-    session = store.create()
-    assert session.initial_prompt == ""
+class TestGetSession:
+    def test_get_existing_session(self):
+        store = SessionStore()
+        created = store.create()
+        retrieved = store.get(created.id)
+        assert retrieved is created
+
+    def test_get_nonexistent_session(self):
+        store = SessionStore()
+        assert store.get("nonexistent-id") is None
 
 
-def test_get_existing_session():
-    store = SessionStore()
-    created = store.create()
-    retrieved = store.get(created.id)
-    assert retrieved is created
+class TestAppendParagraph:
+    def test_append_paragraph(self):
+        store = SessionStore()
+        session = store.create()
 
+        record = store.append_paragraph(
+            session_id=session.id,
+            text="test paragraph",
+            speed_cpm=300.0,
+            time_taken_ms=5000,
+            accuracy=0.95,
+            outcome_tier=2,
+        )
 
-def test_get_nonexistent_session():
-    store = SessionStore()
-    assert store.get("nonexistent-id") is None
+        assert record is not None
+        assert record.text == "test paragraph"
+        assert record.speed_cpm == 300.0
+        assert record.time_taken_ms == 5000
+        assert record.accuracy == 0.95
+        assert record.outcome_tier == 2
+        assert record.split_speeds == []
+        assert len(session.history) == 1
+        assert session.rolling_splits == []
 
+    def test_append_paragraph_with_split_speeds(self):
+        store = SessionStore()
+        session = store.create()
 
-def test_append_paragraph():
-    store = SessionStore()
-    session = store.create()
+        record = store.append_paragraph(
+            session_id=session.id,
+            text="test",
+            speed_cpm=310.0,
+            time_taken_ms=4000,
+            accuracy=1.0,
+            outcome_tier=3,
+            split_speeds=[300.0, 320.0],
+        )
 
-    record = store.append_paragraph(
-        session_id=session.id,
-        text="test paragraph",
-        speed_cpm=300.0,
-        time_taken_ms=5000,
-        accuracy=0.95,
-        outcome_tier=2,
-    )
+        assert record.split_speeds == [300.0, 320.0]
+        assert session.rolling_splits == [300.0, 320.0]
 
-    assert record is not None
-    assert record.text == "test paragraph"
-    assert record.speed_cpm == 300.0
-    assert record.time_taken_ms == 5000
-    assert record.accuracy == 0.95
-    assert record.outcome_tier == 2
-    assert len(session.history) == 1
-    assert session.history[0] is record
+    def test_split_speeds_extend_rolling_window(self):
+        store = SessionStore()
+        session = store.create()
 
+        store.append_paragraph(session.id, "p1", 300, 1000, 1.0, 2, split_speeds=[1, 2, 3])
+        store.append_paragraph(session.id, "p2", 310, 1000, 1.0, 3, split_speeds=[4, 5, 6])
 
-def test_append_paragraph_multiple():
-    store = SessionStore()
-    session = store.create()
+        assert session.rolling_splits == [1, 2, 3, 4, 5, 6]
 
-    r1 = store.append_paragraph(session.id, "first", 100.0, 2000, 0.9, 0)
-    r2 = store.append_paragraph(session.id, "second", 400.0, 3000, 0.95, 3)
+    def test_rolling_window_max_20(self):
+        store = SessionStore()
+        session = store.create()
 
-    assert r1 is not None
-    assert r2 is not None
-    assert len(session.history) == 2
-    assert session.history[0] is r1
-    assert session.history[1] is r2
+        for i in range(10):
+            store.append_paragraph(session.id, f"p{i}", 300, 1000, 1.0, 2, split_speeds=[i] * 3)
 
+        assert len(session.rolling_splits) == 20
+        assert session.rolling_splits[0] == 3  # first 10 entries dropped (3*10 - 20 = 10 dropped)
 
-def test_append_paragraph_nonexistent_session():
-    store = SessionStore()
-    record = store.append_paragraph(
-        session_id="bad-id",
-        text="test",
-        speed_cpm=100.0,
-        time_taken_ms=1000,
-        accuracy=1.0,
-        outcome_tier=0,
-    )
-    assert record is None
+    def test_append_paragraph_multiple(self):
+        store = SessionStore()
+        session = store.create()
 
+        r1 = store.append_paragraph(session.id, "first", 100.0, 2000, 0.9, 0)
+        r2 = store.append_paragraph(session.id, "second", 400.0, 3000, 0.95, 3)
 
-def test_sessions_are_independent():
-    store = SessionStore()
-    s1 = store.create("prompt 1")
-    s2 = store.create("prompt 2")
+        assert r1 is not None
+        assert r2 is not None
+        assert len(session.history) == 2
+        assert session.history[0] is r1
+        assert session.history[1] is r2
 
-    store.append_paragraph(s1.id, "s1 paragraph", 200.0, 4000, 0.9, 1)
+    def test_append_paragraph_nonexistent_session(self):
+        store = SessionStore()
+        record = store.append_paragraph(
+            session_id="bad-id",
+            text="test",
+            speed_cpm=100.0,
+            time_taken_ms=1000,
+            accuracy=1.0,
+            outcome_tier=0,
+        )
+        assert record is None
 
-    assert len(s1.history) == 1
-    assert len(s2.history) == 0
+    def test_sessions_are_independent(self):
+        store = SessionStore()
+        s1 = store.create("prompt 1")
+        s2 = store.create("prompt 2")
 
+        store.append_paragraph(s1.id, "s1 paragraph", 200.0, 4000, 0.9, 1)
 
-def test_paragraph_record_immutable_fields():
-    r = ParagraphRecord(text="hello", speed_cpm=150.0, time_taken_ms=3000, accuracy=0.88, outcome_tier=1)
-    assert r.text == "hello"
-    assert r.speed_cpm == 150.0
-    assert r.time_taken_ms == 3000
-    assert r.accuracy == 0.88
-    assert r.outcome_tier == 1
+        assert len(s1.history) == 1
+        assert len(s2.history) == 0
+
+    def test_paragraph_record_immutable_fields(self):
+        r = ParagraphRecord(text="hello", speed_cpm=150.0, time_taken_ms=3000, accuracy=0.88, outcome_tier=1)
+        assert r.text == "hello"
+        assert r.speed_cpm == 150.0
+        assert r.time_taken_ms == 3000
+        assert r.accuracy == 0.88
+        assert r.outcome_tier == 1

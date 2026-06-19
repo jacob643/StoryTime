@@ -44,7 +44,7 @@ def test_generate_returns_503_on_llm_timeout(client):
         response = client.post("/api/generate", json={"prompt": "Tell a story"})
 
     assert response.status_code == 503
-    assert "unreachable" in response.json()["detail"].lower()
+    assert "error" in response.json()["detail"].lower()
 
 
 def test_generate_returns_503_on_llm_connection_error(client):
@@ -56,7 +56,17 @@ def test_generate_returns_503_on_llm_connection_error(client):
         response = client.post("/api/generate", json={"prompt": "Tell a story"})
 
     assert response.status_code == 503
-    assert "unreachable" in response.json()["detail"].lower()
+    assert "error" in response.json()["detail"].lower()
+
+
+def test_generate_returns_503_on_ollama_500(client):
+    mock_resp = httpx.Response(500, request=httpx.Request("POST", "http://ollama/api/generate"))
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        response = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    assert response.status_code == 503
+    assert "error" in response.json()["detail"].lower()
 
 
 def test_generate_returns_422_without_prompt(client):
@@ -64,7 +74,7 @@ def test_generate_returns_422_without_prompt(client):
     assert response.status_code == 422
 
 
-def test_generate_subsequent_call_appends_and_returns_next_paragraph(client):
+def test_generate_subsequent_call_uses_fixed_fallback(client):
     mock_resp = _mock_ollama_response(200, {"response": "A brave warrior..."})
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
@@ -86,6 +96,28 @@ def test_generate_subsequent_call_appends_and_returns_next_paragraph(client):
     assert data["session_id"] == session_id
     assert data["outcome_tier"] == 3
     assert data["outcome_label"] == "positive"
+
+
+def test_generate_subsequent_call_with_split_speeds(client):
+    mock_resp = _mock_ollama_response(200, {"response": "First paragraph..."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        first = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    session_id = first.json()["session_id"]
+
+    mock_resp2 = _mock_ollama_response(200, {"response": "Second paragraph..."})
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp2):
+        second = client.post("/api/generate", json={
+            "prompt": "First paragraph...",
+            "session_id": session_id,
+            "split_speeds": [280.0, 290.0, 310.0, 320.0],
+        })
+
+    assert second.status_code == 200
+    data = second.json()
+    assert data["response"] == "Second paragraph..."
+    assert data["session_id"] == session_id
 
 
 def test_generate_subsequent_call_unknown_session_returns_404(client):

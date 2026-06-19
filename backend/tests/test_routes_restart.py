@@ -49,4 +49,14 @@ def test_restart_returns_503_on_llm_timeout(client):
         response = client.post("/api/restart", json={"initial_prompt": "Write a tale"})
 
     assert response.status_code == 503
-    assert "unreachable" in response.json()["detail"].lower()
+    assert "error" in response.json()["detail"].lower()
+
+
+def test_restart_returns_503_on_ollama_500(client):
+    mock_resp = httpx.Response(500, request=httpx.Request("POST", "http://ollama/api/generate"))
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        response = client.post("/api/restart", json={"initial_prompt": "Write a tale"})
+
+    assert response.status_code == 503
+    assert "error" in response.json()["detail"].lower()
