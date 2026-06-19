@@ -19,3 +19,7 @@ def test_default_ollama_timeout():
 
 def test_default_dev_mode():
     assert settings.dev_mode is False
+
+
+def test_default_mock_llm():
+    assert settings.mock_llm is False
