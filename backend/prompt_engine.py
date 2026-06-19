@@ -36,6 +36,23 @@ def build_prompt(
     return "\n\n".join(parts)
 
 
+NEUTRAL_FALLBACK = (
+    "Meanwhile, the situation remained unchanged, "
+    "and the story continued at its own pace."
+)
+
+
+def validate_llm_response(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped:
+        return False
+    if len(stripped) < 10:
+        return False
+    if stripped[-1] not in {".", "!", "?"}:
+        return False
+    return True
+
+
 def parse_llm_response(raw: str) -> str:
     raw = raw.strip()
 

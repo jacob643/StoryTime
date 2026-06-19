@@ -1,4 +1,4 @@
-from backend.prompt_engine import build_prompt, parse_llm_response, OUTCOME_DIRECTIONS
+from backend.prompt_engine import build_prompt, parse_llm_response, validate_llm_response, OUTCOME_DIRECTIONS, NEUTRAL_FALLBACK
 
 
 class TestBuildPrompt:
@@ -67,3 +67,29 @@ class TestParseLlmResponse:
     def test_strip_prefix_with_quotes(self):
         raw = 'Here is the next paragraph: "Into the void."'
         assert parse_llm_response(raw) == 'Into the void.'
+
+
+class TestValidateLlmResponse:
+    def test_valid_response(self):
+        assert validate_llm_response("The hero advanced through the dark forest.") is True
+
+    def test_empty_string(self):
+        assert validate_llm_response("") is False
+
+    def test_whitespace_only(self):
+        assert validate_llm_response("   ") is False
+
+    def test_too_short(self):
+        assert validate_llm_response("Hi.") is False
+
+    def test_missing_punctuation(self):
+        assert validate_llm_response("The hero advanced") is False
+
+    def test_exclamation_valid(self):
+        assert validate_llm_response("Run for your life!") is True
+
+    def test_question_valid(self):
+        assert validate_llm_response("What was that?") is True
+
+    def test_neutral_fallback_is_valid(self):
+        assert validate_llm_response(NEUTRAL_FALLBACK) is True

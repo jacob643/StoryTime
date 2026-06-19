@@ -4,6 +4,7 @@ import httpx
 import pytest
 from starlette.testclient import TestClient
 from backend.main import app
+from backend.prompt_engine import NEUTRAL_FALLBACK
 
 
 @pytest.fixture
@@ -117,6 +118,53 @@ def test_generate_subsequent_call_with_split_speeds(client):
     assert second.status_code == 200
     data = second.json()
     assert data["response"] == "Second paragraph..."
+    assert data["session_id"] == session_id
+
+
+def test_generate_first_call_fallback_on_empty_response(client):
+    mock_resp = _mock_ollama_response(200, {"response": ""})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        response = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["response"] == NEUTRAL_FALLBACK
+    assert data["outcome_tier"] == 2
+    assert data["outcome_label"] == "neutral"
+
+
+def test_generate_first_call_fallback_on_very_short_response(client):
+    mock_resp = _mock_ollama_response(200, {"response": "Hi."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        response = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["response"] == NEUTRAL_FALLBACK
+
+
+def test_generate_subsequent_call_fallback_to_last_paragraph(client):
+    mock_resp = _mock_ollama_response(200, {"response": "A brave warrior entered the cave."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        first = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    session_id = first.json()["session_id"]
+    prev_text = first.json()["response"]
+
+    mock_resp2 = _mock_ollama_response(200, {"response": ""})
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp2):
+        second = client.post("/api/generate", json={
+            "prompt": prev_text,
+            "session_id": session_id,
+            "speed_cpm": 80.0,
+        })
+
+    assert second.status_code == 200
+    data = second.json()
+    assert data["response"] == prev_text
     assert data["session_id"] == session_id
 
 
