@@ -41,14 +41,20 @@ def _settings_path() -> Path:
     return Path.home() / ".storytime" / "config.json"
 
 
+def _coerce_keys(d: dict) -> dict[int, str]:
+    return {int(k): v for k, v in d.items()}
+
+
 def load_settings() -> GameSettings:
     path = _settings_path()
     if not path.exists():
         return GameSettings()
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-        return GameSettings(**raw)
-    except (json.JSONDecodeError, TypeError, KeyError):
+        gs = GameSettings(**raw)
+        gs.outcome_directions = _coerce_keys(gs.outcome_directions)
+        return gs
+    except (json.JSONDecodeError, TypeError, KeyError, ValueError):
         return GameSettings()
 
 
