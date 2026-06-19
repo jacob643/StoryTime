@@ -165,44 +165,36 @@ document.querySelectorAll('input[name="speedType"]').forEach(radio => {
     });
 });
 
-//prompt and LLM side.
-
-const initialPrompt = "write the first paragraph of an adventure story about a young warrior trying to find a legendary artefact said to give it's user unlimited power. Don't write anything else than that first paragraph.";
-const promptsContinuation = [
-    "the main character should fin himself in an even worse situation, with no clear way out. Please continue one more paragraph of the story with this very negative outcome. Don't write anything else than that last paragraph.",
-    "the main character should encounter a significant setback that makes his journey more difficult. Please continue one more paragraph of the story with this negative outcome. Don't write anything else than that last paragraph.",
-    "the main character should face a minor challenge but manage to continue without major issues. Please continue one more paragraph of the story with this neutral outcome. Don't write anything else than that last paragraph.",
-    "the main character should experience a small success that aids him on his journey. Please continue one more paragraph of the story with this positive outcome. Don't write anything else than that last paragraph.",
-    "the main character should discover something that greatly improves his situation and advances him significantly on his journey. Please continue one more paragraph of the story with this very positive outcome. Don't write anything else than that last paragraph."
-];
-// now continue the story with another short paragraph in familiar english. A tangible, very positive event occurs during the paragraph, the main character should still be moving toward their initial goal.
+// prompt and LLM side.
 
 const restartButton = document.getElementById('restartButton');
 const initialPromptInput = document.getElementById('initialPrompt');
+const llmResponseDiv = document.getElementById('llmResponse');
 
 restartButton.addEventListener('click', () => {
     sendPrompt(initialPromptInput.value);
 });
 
 async function sendPrompt(prompt) {
-    const url = 'http://127.0.0.1:11434';
+    llmResponseDiv.textContent = 'Waiting for story...';
+    llmResponseDiv.className = '';
 
     try {
-        const response = await fetch(url, {
+        const response = await fetch('/api/generate', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt: prompt })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(`Server error: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Response from LLM:', data.message);
+        llmResponseDiv.textContent = data.response;
+        llmResponseDiv.className = 'success';
     } catch (error) {
-        console.error('Error:', error);
+        llmResponseDiv.textContent = `Error: ${error.message}`;
+        llmResponseDiv.className = 'error';
     }
 }

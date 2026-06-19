@@ -78,6 +78,33 @@ body
     width: 100%;
 }
 
+#llmResponse
+{
+    width: 80%;
+    max-width: 80vw;
+    padding: 1vw;
+    margin: 1vw 0;
+    border-radius: 0.5vw;
+    background: #fff;
+    border: 1px solid #ccc;
+    white-space: pre-wrap;
+    font-family: Georgia, serif;
+    line-height: 1.5;
+    min-height: 3em;
+}
+
+#llmResponse.success
+{
+    border-color: #4caf50;
+    background: #f1f8e9;
+}
+
+#llmResponse.error
+{
+    border-color: #f44336;
+    background: #ffebee;
+}
+
 #inputBox
 {
     width: 100%;

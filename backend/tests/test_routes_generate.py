@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
 import pytest
 from starlette.testclient import TestClient
@@ -20,7 +21,7 @@ def _mock_ollama_response(status_code: int, json_data: dict | None = None):
     return resp
 
 
-async def test_generate_returns_200_and_response(client):
+def test_generate_returns_200_and_response(client):
     mock_resp = _mock_ollama_response(200, {"response": "A brave warrior..."})
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
@@ -30,12 +31,12 @@ async def test_generate_returns_200_and_response(client):
     assert response.json() == {"response": "A brave warrior..."}
 
 
-async def test_generate_returns_422_without_prompt(client):
+def test_generate_returns_422_without_prompt(client):
     response = client.post("/api/generate", json={})
     assert response.status_code == 422
 
 
-async def test_health_returns_ollama_available_true(client):
+def test_health_returns_ollama_available_true(client):
     mock_resp = _mock_ollama_response(200)
 
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_resp):
@@ -45,7 +46,7 @@ async def test_health_returns_ollama_available_true(client):
     assert response.json() == {"ollama_available": True}
 
 
-async def test_health_returns_ollama_available_false(client):
+def test_health_returns_ollama_available_false(client):
     with patch(
         "httpx.AsyncClient.get",
         new_callable=AsyncMock,

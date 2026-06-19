@@ -17,8 +17,8 @@ Goal: A minimal end-to-end pipeline — FastAPI backend serves a static page, co
 - [x] Task: Write mocked unit tests for OllamaProvider (using httpx mock) — test generate returns expected text, is_available returns true/false based on HTTP status
 
 ### Epic 1.3: Simple "Send Prompt → Get Response" Page
-- [ ] Task: Build minimal frontend page — an input field, submit button, and response area, with JS `fetch` to `POST /api/generate` and display the result
-- [ ] Task: Add Playwright smoke test (`pip install pytest-playwright && playwright install chromium`) that opens the page, types a prompt, clicks submit, and verifies no console errors or network failures
+- [x] Task: Build minimal frontend page — an input field, submit button, and response area, with JS `fetch` to `POST /api/generate` and display the result
+- [x] Task: Add Playwright smoke test (`pip install pytest-playwright && playwright install chromium`) that opens the page, types a prompt, clicks submit, and verifies no console errors or network failures
 
 ---
 
