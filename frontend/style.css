@@ -258,3 +258,37 @@ body
 {
     background: #e0e0e0;
 }
+
+.error-text
+{
+    color: #c00;
+    font-weight: bold;
+}
+
+.error-hint
+{
+    font-size: 0.9em;
+    margin: 0.3vw 0;
+}
+
+.error-hint a
+{
+    color: #06c;
+}
+
+.retry-btn
+{
+    margin-top: 0.5vw;
+    padding: 0.3vw 1.5vw;
+    border: 1px solid #c00;
+    border-radius: 0.3vw;
+    background: #fff;
+    color: #c00;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.retry-btn:hover
+{
+    background: #ffe0e0;
+}
