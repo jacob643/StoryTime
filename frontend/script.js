@@ -284,7 +284,7 @@ async function sendSimulate(cpm) {
 async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
 
-    const simMatch = prompt.trim().match(/^\/simulate\s+(\d+(?:\.\d+)?)$/);
+    const simMatch = prompt.trim().match(/^\/simulate\s+(\d+(?:\.\d+)?)\s*$/i);
     if (simMatch) {
         await sendSimulate(parseFloat(simMatch[1]));
         return;
