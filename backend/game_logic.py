@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-OUTCOME_THRESHOLDS: list[tuple[float, float]] = [
-    (0, 30),
-    (30, 50),
-    (50, 75),
-    (75, 100),
-    (100, float("inf")),
-]
+import math
+from dataclasses import dataclass, field
+
+TARGET_SPLIT_SIZE = 50
+MIN_SPLIT_SIZE = 30
+MAX_ROLLING_WINDOW = 20
 
 OUTCOME_LABELS: list[str] = [
     "very negative",
@@ -16,13 +15,88 @@ OUTCOME_LABELS: list[str] = [
     "very positive",
 ]
 
+FIXED_THRESHOLDS: list[tuple[float, float]] = [
+    (0, 30),
+    (30, 50),
+    (50, 75),
+    (75, 100),
+    (100, float("inf")),
+]
 
-def compute_outcome_tier(speed_cpm: float) -> int:
+DEFAULT_AVG_CPM = 300.0
+DEFAULT_MIN_STDDEV_CPM = 10.0
+
+
+@dataclass
+class ScoringParams:
+    mode: str = "split"
+    min_data: int = 3
+    min_stddev_cpm: float = DEFAULT_MIN_STDDEV_CPM
+    tier_0_max_sigma: float = -1.5
+    tier_1_max_sigma: float = -0.5
+    tier_2_max_sigma: float = 0.5
+    tier_3_max_sigma: float = 1.5
+
+
+def split_text(text: str, target: int = TARGET_SPLIT_SIZE, minimum: int = MIN_SPLIT_SIZE) -> list[str]:
+    if not text:
+        return []
+    if len(text) <= target:
+        return [text]
+
+    splits: list[str] = []
+    pos = 0
+    while len(text) - pos >= target + minimum:
+        splits.append(text[pos:pos + target])
+        pos += target
+    remaining = len(text) - pos
+    if remaining >= minimum:
+        splits.append(text[pos:])
+    else:
+        splits[-1] += text[pos:]
+    return splits
+
+
+def compute_speed_stats(speeds: list[float], min_stddev: float = DEFAULT_MIN_STDDEV_CPM) -> tuple[float, float]:
+    if not speeds:
+        return (DEFAULT_AVG_CPM, min_stddev)
+    mean = sum(speeds) / len(speeds)
+    if len(speeds) < 2:
+        return (mean, min_stddev)
+    variance = sum((s - mean) ** 2 for s in speeds) / (len(speeds) - 1)
+    stddev = max(math.sqrt(variance), min_stddev)
+    return (mean, stddev)
+
+
+def compute_outcome_tier(
+    speed_cpm: float,
+    *,
+    avg: float | None = None,
+    stddev: float | None = None,
+    params: ScoringParams | None = None,
+) -> int:
     if speed_cpm < 0:
         return 0
-    for tier, (low, high) in enumerate(OUTCOME_THRESHOLDS):
-        if low <= speed_cpm < high:
-            return tier
+
+    p = params or ScoringParams()
+
+    if avg is None or stddev is None:
+        for tier, (low, high) in enumerate(FIXED_THRESHOLDS):
+            if low <= speed_cpm < high:
+                return tier
+        return 4
+
+    diff = speed_cpm - avg
+    z = diff / max(stddev, p.min_stddev_cpm)
+
+    if z < p.tier_0_max_sigma:
+        return 0
+    if z < p.tier_1_max_sigma:
+        return 1
+    if z <= p.tier_2_max_sigma:
+        return 2
+    if z <= p.tier_3_max_sigma:
+        return 3
     return 4
 
 
