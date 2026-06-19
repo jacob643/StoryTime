@@ -72,8 +72,8 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [ ] **3.3.3** Build settings panel in frontend with toggles/sliders for all exposed parameters; store in a collapsible sidebar section
 
 ### Epic 3.4: Dev Tools
-- [ ] **3.4.1** Add `/simulate` command in the frontend prompt box — type `/simulate 85` to generate next paragraph as if typed at 85 CPM, without affecting session history or typing game state
-- [ ] **3.4.2** Add dev-only feature flag (`config.dev_mode`) to gate simulation commands and test UI elements in future releases
+- [x] **3.4.1** Add `/simulate` command in the frontend prompt box — type `/simulate 85` to generate next paragraph as if typed at 85 CPM, without affecting session history or typing game state
+- [x] **3.4.2** Add dev-only feature flag (`config.dev_mode`) to gate simulation commands and test UI elements in future releases
 
 ### Epic 3.5: Error Handling & Resilience
 - [ ] **3.5.1** Graceful degradation when Ollama is down — frontend shows "Start Ollama" instruction with link; retry button

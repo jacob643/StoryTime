@@ -249,8 +249,46 @@ restartButton.addEventListener('click', () => {
     sendPrompt(initialPromptInput.value);
 });
 
+async function sendSimulate(cpm) {
+    llmResponseDiv.textContent = 'Simulating...';
+    llmResponseDiv.className = '';
+
+    try {
+        const body = { simulated_speed_cpm: cpm };
+        if (sessionId) {
+            body.session_id = sessionId;
+        }
+
+        const response = await fetch('/api/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || `Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        llmResponseDiv.textContent = `[SIMULATION at ${cpm} CPM → ${data.outcome_label}] ${data.response}`;
+        llmResponseDiv.className = 'simulation';
+        textDisplay.innerText = data.response;
+        textDisplay.className = 'simulation';
+    } catch (error) {
+        llmResponseDiv.textContent = `Simulation error: ${error.message}`;
+        llmResponseDiv.className = 'error';
+    }
+}
+
 async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
+
+    const simMatch = prompt.trim().match(/^\/simulate\s+(\d+(?:\.\d+)?)$/);
+    if (simMatch) {
+        await sendSimulate(parseFloat(simMatch[1]));
+        return;
+    }
 
     sessionId = null;
     llmResponseDiv.textContent = 'Starting story...';

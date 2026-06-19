@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ollama_timeout: int = 60
     default_model: str = "llama3.2"
     log_level: str = "info"
+    dev_mode: bool = False
 
     model_config = {"env_prefix": "STORYTIME_"}
 
