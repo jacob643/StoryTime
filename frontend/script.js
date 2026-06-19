@@ -10,6 +10,7 @@ let startTime = null;
 let speed = 0;
 let sessionId = null;
 let simulatedCpm = null;
+let simulatedDeviation = 0;
 
 let splitBoundaries = [];
 let splitTimestamps = [];
@@ -55,7 +56,7 @@ function computeSplitSpeeds() {
         const count = Math.max(splitBoundaries.length, 1);
         const speeds = [];
         for (let i = 0; i < count; i++) {
-            const variation = Math.random() * 200 - 100;
+            const variation = simulatedDeviation > 0 ? (Math.random() * 2 - 1) * simulatedDeviation : 0;
             speeds.push(Math.max(1, simulatedCpm + variation));
         }
         return speeds;
@@ -88,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function reset() {
     sessionId = null;
     simulatedCpm = null;
+    simulatedDeviation = 0;
     textContent = '';
     textDisplay.innerText = '';
     textDisplay.className = '';
@@ -260,10 +262,12 @@ restartButton.addEventListener('click', () => {
     sendPrompt(initialPromptInput.value);
 });
 
-async function sendSimulate(cpm) {
+async function sendSimulate(cpm, deviation) {
     simulatedCpm = cpm;
+    simulatedDeviation = deviation || 0;
     sessionId = null;
-    llmResponseDiv.textContent = `Starting simulation at ${cpm} CPM...`;
+    const range = simulatedDeviation > 0 ? ` ±${simulatedDeviation}` : '';
+    llmResponseDiv.textContent = `Starting simulation at ${cpm}${range} CPM...`;
     llmResponseDiv.className = 'simulation';
 
     try {
@@ -288,21 +292,30 @@ async function sendSimulate(cpm) {
         inputBox.focus();
         initSplits(textContent);
         llmResponseDiv.textContent =
-            `[SIMULATION ${cpm} CPM] Type the paragraph — split speeds will be faked around ${cpm} CPM.`;
+            `[SIMULATION ${cpm}${range} CPM] Type the paragraph — split speeds will be faked.`;
         llmResponseDiv.className = 'simulation';
     } catch (error) {
         llmResponseDiv.textContent = `Simulation error: ${error.message}`;
         llmResponseDiv.className = 'error';
         simulatedCpm = null;
+        simulatedDeviation = 0;
     }
 }
+
+window.simulate = function(cpm, deviation) {
+    if (cpm === undefined) {
+        console.log('Usage: simulate(cpm, [deviation])');
+        return;
+    }
+    sendSimulate(cpm, deviation || 0);
+};
 
 async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
 
-    const simMatch = prompt.trim().match(/^\/simulate\s+(\d+(?:\.\d+)?)\s*$/i);
+    const simMatch = prompt.trim().match(/^\/simulate\s+(\d+(?:\.\d+)?)(?:\s+(\d+(?:\.\d+)?))?\s*$/i);
     if (simMatch) {
-        await sendSimulate(parseFloat(simMatch[1]));
+        await sendSimulate(parseFloat(simMatch[1]), simMatch[2] ? parseFloat(simMatch[2]) : 0);
         return;
     }
 
