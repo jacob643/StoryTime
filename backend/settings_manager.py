@@ -35,6 +35,10 @@ class GameSettings:
     min_split_size: int = 30
     default_avg_cpm: float = DEFAULT_AVG_CPM
     outcome_directions: Dict[int, str] = field(default_factory=_default_outcome_directions)
+    provider: str = "ollama"
+    custom_endpoint: str = ""
+    custom_api_key: str = ""
+    custom_model: str = ""
 
 
 def _settings_path() -> Path:

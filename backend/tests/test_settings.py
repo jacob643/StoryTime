@@ -50,6 +50,10 @@ def test_game_settings_defaults():
     assert gs.min_split_size == 30
     assert gs.default_avg_cpm == 300.0
     assert len(gs.outcome_directions) == 5
+    assert gs.provider == "ollama"
+    assert gs.custom_endpoint == ""
+    assert gs.custom_api_key == ""
+    assert gs.custom_model == ""
 
 
 def test_default_fixed_thresholds_use_inf_for_last_upper():
@@ -187,3 +191,30 @@ def test_get_after_post_reflects_changes(monkeypatch, tmp_path, client):
     r = client.get("/api/settings")
     assert r.status_code == 200
     assert r.json()["scoring_mode"] == "fixed"
+
+
+def test_post_settings_provider_fields(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings", json={
+        "provider": "custom",
+        "custom_endpoint": "https://api.openai.com/v1",
+        "custom_api_key": "sk-xxx",
+        "custom_model": "gpt-4o",
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert data["provider"] == "custom"
+    assert data["custom_endpoint"] == "https://api.openai.com/v1"
+    assert data["custom_api_key"] == "sk-xxx"
+    assert data["custom_model"] == "gpt-4o"
+
+
+def test_get_settings_includes_provider_defaults(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.get("/api/settings")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["provider"] == "ollama"
+    assert data["custom_endpoint"] == ""
+    assert data["custom_api_key"] == ""
+    assert data["custom_model"] == ""

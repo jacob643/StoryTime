@@ -2,14 +2,13 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.config import settings
-from backend.providers.ollama import OllamaProvider
+from backend.providers.registry import registry
 from backend.session import session_store
 from backend.game_logic import compute_outcome_tier, compute_speed_stats, get_outcome_label
 from backend.prompt_engine import build_prompt, parse_llm_response
 from backend.settings_manager import get_settings
 
 router = APIRouter()
-provider = OllamaProvider()
 
 
 class SimulateRequest(BaseModel):
@@ -65,7 +64,7 @@ async def simulate(body: SimulateRequest):
                 outcome_directions=gs.outcome_directions,
             )
 
-        raw = await provider.generate(prompt)
+        raw = await registry.generate(prompt)
         next_text = parse_llm_response(raw)
 
         return SimulateResponse(

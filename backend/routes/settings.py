@@ -20,6 +20,10 @@ class SettingsResponse(BaseModel):
     min_split_size: int
     default_avg_cpm: float
     outcome_directions: dict[int, str]
+    provider: str
+    custom_endpoint: str
+    custom_api_key: str
+    custom_model: str
 
 
 class SettingsPatch(BaseModel):
@@ -35,6 +39,10 @@ class SettingsPatch(BaseModel):
     min_split_size: int | None = None
     default_avg_cpm: float | None = None
     outcome_directions: dict[int, str] | None = None
+    provider: str | None = None
+    custom_endpoint: str | None = None
+    custom_api_key: str | None = None
+    custom_model: str | None = None
 
 
 def _settings_to_response(gs: GameSettings) -> SettingsResponse:
@@ -51,6 +59,10 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         min_split_size=gs.min_split_size,
         default_avg_cpm=gs.default_avg_cpm,
         outcome_directions=gs.outcome_directions,
+        provider=gs.provider,
+        custom_endpoint=gs.custom_endpoint,
+        custom_api_key=gs.custom_api_key,
+        custom_model=gs.custom_model,
     )
 
 

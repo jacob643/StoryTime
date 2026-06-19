@@ -1,12 +1,11 @@
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from backend.providers.ollama import OllamaProvider
+from backend.providers.registry import registry
 from backend.session import session_store
 from backend.settings_manager import get_settings
 
 router = APIRouter()
-provider = OllamaProvider()
 
 
 class RestartRequest(BaseModel):
@@ -24,7 +23,7 @@ class RestartResponse(BaseModel):
 async def restart(body: RestartRequest):
     try:
         session = session_store.create(initial_prompt=body.initial_prompt)
-        text = await provider.generate(body.initial_prompt)
+        text = await registry.generate(body.initial_prompt)
         return RestartResponse(
             response=text,
             session_id=session.id,

@@ -3,7 +3,7 @@ import math
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from backend.providers.ollama import OllamaProvider
+from backend.providers.registry import registry
 from backend.session import session_store
 from backend.game_logic import (
     ScoringParams,
@@ -17,7 +17,6 @@ from backend.prompt_engine import build_prompt, parse_llm_response
 from backend.settings_manager import get_settings
 
 router = APIRouter()
-provider = OllamaProvider()
 
 
 class GenerateRequest(BaseModel):
@@ -66,7 +65,7 @@ async def generate(body: GenerateRequest):
     try:
         if body.session_id is None:
             session = session_store.create(initial_prompt=body.prompt)
-            text = await provider.generate(body.prompt, body.model)
+            text = await registry.generate(body.prompt, body.model)
             return GenerateResponse(
                 response=text,
                 session_id=session.id,
@@ -109,7 +108,7 @@ async def generate(body: GenerateRequest):
             outcome_tier=outcome_tier,
             outcome_directions=gs.outcome_directions,
         )
-        raw = await provider.generate(assembled, body.model)
+        raw = await registry.generate(assembled, body.model)
         next_text = parse_llm_response(raw)
 
         return GenerateResponse(
@@ -127,5 +126,5 @@ async def generate(body: GenerateRequest):
 
 @router.get("/api/health")
 async def health():
-    available = await provider.is_available()
+    available = await registry.is_available()
     return {"ollama_available": available}
