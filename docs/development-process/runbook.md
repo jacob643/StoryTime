@@ -47,12 +47,14 @@ backend\run.bat
 
 ### Available Dev Tools
 
-**`/simulate <CPM>`** — Type into the prompt box (instead of a story prompt) to simulate typing at a given speed. The backend computes the outcome tier using the current session's rolling stats (or fixed thresholds if none exist), generates a matching story paragraph, and displays it as a read-only preview. The session history and rolling stats are **not** modified.
+**`/simulate <CPM>`** — Type into the prompt box to start a real game session where the paragraph's split speeds are **faked** around the given CPM ± 20 WPM (± 100 CPM, random), never below 1 CPM. This lets you test adaptive scoring without having to type at a specific speed.
 
-- Example: `/simulate 85` — generates the next paragraph as if typed at 85 CPM
-- Example: `/simulate 300` — generates the next paragraph as if typed at 300 CPM (likely tier 4)
-- Works with or without an active session (passes `session_id` if one exists)
-- Result is shown in orange with a `[SIMULATION]` label; the typing game state is untouched
+- Example: `/simulate 85` — each split speed will be a random value between 1 and 185 CPM
+- Example: `/simulate 300` — each split speed will be a random value between 200 and 400 CPM
+- The fake split speeds are sent to `/api/generate` just like real ones, so the rolling window and adaptive tier computation work as normal
+- The session, history, and rolling stats are **real** — you can play multiple paragraphs and watch the adaptive scoring evolve
+- Typing game works normally (type to advance), but the split speeds are always faked while simulate mode is active
+- Simulate mode persists until you click Restart or refresh the page
 
 ### Mock LLM Mode
 

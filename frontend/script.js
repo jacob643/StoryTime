@@ -9,6 +9,7 @@ let timeTakenSeconds = 0;
 let startTime = null;
 let speed = 0;
 let sessionId = null;
+let simulatedCpm = null;
 
 let splitBoundaries = [];
 let splitTimestamps = [];
@@ -50,6 +51,15 @@ function updateSplitTimestamps() {
 }
 
 function computeSplitSpeeds() {
+    if (simulatedCpm !== null) {
+        const count = Math.max(splitBoundaries.length, 1);
+        const speeds = [];
+        for (let i = 0; i < count; i++) {
+            const variation = Math.random() * 200 - 100;
+            speeds.push(Math.max(1, simulatedCpm + variation));
+        }
+        return speeds;
+    }
     if (splitTimestamps.length === 0 || !startTime) return [];
     const speeds = [];
     let prevTime = startTime;
@@ -77,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function reset() {
     sessionId = null;
+    simulatedCpm = null;
     textContent = '';
     textDisplay.innerText = '';
     textDisplay.className = '';
@@ -250,34 +261,39 @@ restartButton.addEventListener('click', () => {
 });
 
 async function sendSimulate(cpm) {
-    llmResponseDiv.textContent = 'Simulating...';
-    llmResponseDiv.className = '';
+    simulatedCpm = cpm;
+    sessionId = null;
+    llmResponseDiv.textContent = `Starting simulation at ${cpm} CPM...`;
+    llmResponseDiv.className = 'simulation';
 
     try {
-        const body = { simulated_speed_cpm: cpm };
-        if (sessionId) {
-            body.session_id = sessionId;
-        }
-
-        const response = await fetch('/api/simulate', {
+        const response = await fetch('/api/restart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
+            body: JSON.stringify({ initial_prompt: `Simulated story at ${cpm} CPM.` }),
         });
 
         if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.detail || `Server error: ${response.status}`);
+            throw new Error(`Server error: ${response.status}`);
         }
 
         const data = await response.json();
-        llmResponseDiv.textContent = `[SIMULATION at ${cpm} CPM → ${data.outcome_label}] ${data.response}`;
-        llmResponseDiv.className = 'simulation';
-        textDisplay.innerText = data.response;
+        sessionId = data.session_id;
+        textContent = data.response;
+        textDisplay.innerText = textContent;
         textDisplay.className = 'simulation';
+        inputBox.value = '';
+        startTime = null;
+        inputBox.disabled = false;
+        inputBox.focus();
+        initSplits(textContent);
+        llmResponseDiv.textContent =
+            `[SIMULATION ${cpm} CPM] Type the paragraph — split speeds will be faked around ${cpm} CPM.`;
+        llmResponseDiv.className = 'simulation';
     } catch (error) {
         llmResponseDiv.textContent = `Simulation error: ${error.message}`;
         llmResponseDiv.className = 'error';
+        simulatedCpm = null;
     }
 }
 
