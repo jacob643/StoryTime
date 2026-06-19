@@ -1,6 +1,6 @@
 # Story Time — Development Plan
 
-> **Agent instructions**: When you complete a task, mark it `[x]` and update any affected documentation in `docs/`. Do not modify this file's structure or remove completed milestones — only check boxes and add new tasks. Cross-reference all work against `docs/technical-design/` to ensure consistency with the architecture decisions.
+> **Agent instructions**: When you complete a task, mark it `[x]` and update any affected documentation in `docs/`. Do not modify this file's structure or remove completed milestones — only check boxes and add new tasks. Cross-reference all work against `docs/technical-design/` to ensure consistency with the architecture decisions. **When implementing a task, always add or update the corresponding tests** (pytest for backend, Playwright for frontend). Keep existing tests passing.
 >
 > **Status key**: `[ ]` pending, `[x]` completed, `[~]` in progress
 
@@ -9,13 +9,16 @@
 Goal: A minimal end-to-end pipeline — FastAPI backend serves a static page, connects to Ollama, and returns LLM-generated text to the browser. No typing game logic yet, just proving the chain works.
 
 ### Epic 1.1: FastAPI Static Server
-- `backend/` project structure, Uvicorn entry point, serve `frontend/` as static files
+- [ ] Task: Create `backend/` project skeleton — `main.py` (FastAPI app + static mount), `config.py` (Pydantic settings), `requirements.txt`, and entry point with Uvicorn launcher + auto-open browser
+- [ ] Task: Set up `backend/tests/` with pytest + FastAPI TestClient; add a test that the server starts and `GET /` returns the frontend page successfully
 
-### Epic 1.2: Simple "Send Prompt → Get Response" Page
-- Minimal HTML page with a text input, submit button, and response display area
+### Epic 1.2: Basic Ollama Connection
+- [ ] Task: Create `backend/providers/ollama.py` with a basic OllamaProvider class (generate + is_available) and `backend/routes/generate.py` exposing `POST /api/generate`
+- [ ] Task: Write mocked unit tests for OllamaProvider (using httpx mock) — test generate returns expected text, is_available returns true/false based on HTTP status
 
-### Epic 1.3: Basic Ollama Connection
-- One backend POST endpoint that takes a prompt, calls Ollama, and returns the response
+### Epic 1.3: Simple "Send Prompt → Get Response" Page
+- [ ] Task: Build minimal frontend page — an input field, submit button, and response area, with JS `fetch` to `POST /api/generate` and display the result
+- [ ] Task: Add Playwright smoke test (`pip install pytest-playwright && playwright install chromium`) that opens the page, types a prompt, clicks submit, and verifies no console errors or network failures
 
 ---
 
