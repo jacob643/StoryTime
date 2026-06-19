@@ -20,7 +20,7 @@ class OllamaProvider(LLMProvider):
             "stream": False,
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, timeout=60)
+            response = await client.post(url, json=payload, timeout=settings.ollama_timeout)
             response.raise_for_status()
             data = response.json()
             return data["response"]

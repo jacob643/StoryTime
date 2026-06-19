@@ -10,6 +10,63 @@ let startTime = null;
 let speed = 0;
 let sessionId = null;
 
+let splitBoundaries = [];
+let splitTimestamps = [];
+
+function computeSplits(text) {
+    const target = 50;
+    const min = 30;
+    const boundaries = [];
+    let i = 0;
+    while (i < text.length) {
+        let end = Math.min(i + target, text.length);
+        const remaining = text.length - end;
+        if (remaining > 0 && remaining < min) {
+            end = text.length;
+        }
+        boundaries.push(end);
+        i = end;
+    }
+    return boundaries;
+}
+
+function resetSplitTracking() {
+    splitBoundaries = [];
+    splitTimestamps = [];
+}
+
+function initSplits(text) {
+    splitBoundaries = computeSplits(text);
+    splitTimestamps = new Array(splitBoundaries.length).fill(null);
+}
+
+function updateSplitTimestamps() {
+    const pos = inputBox.value.length;
+    for (let i = 0; i < splitBoundaries.length; i++) {
+        if (pos >= splitBoundaries[i] && splitTimestamps[i] === null) {
+            splitTimestamps[i] = new Date();
+        }
+    }
+}
+
+function computeSplitSpeeds() {
+    if (splitTimestamps.length === 0 || !startTime) return [];
+    const speeds = [];
+    let prevTime = startTime;
+    let prevPos = 0;
+    for (let i = 0; i < splitBoundaries.length; i++) {
+        const splitChars = splitBoundaries[i] - prevPos;
+        const splitTime = splitTimestamps[i];
+        if (!splitTime) continue;
+        const minutes = (splitTime - prevTime) / 60000;
+        if (minutes <= 0) continue;
+        speeds.push(splitChars / minutes);
+        prevTime = splitTime;
+        prevPos = splitBoundaries[i];
+    }
+    return speeds;
+}
+
 window.onload = () => {
     reset();
 };
@@ -35,6 +92,7 @@ function reset() {
     speed = 0;
     startTime = null;
     document.getElementById('history').innerHTML = '';
+    resetSplitTracking();
 }
 
 function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
@@ -107,18 +165,23 @@ function UpdateSpeed() {
     speedDiv.textContent = `Last typing speed: ${GetSpeedDisplay()}`;
 }
 
-async function fetchNextParagraph(completedText, speedCpm) {
+async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
     if (!sessionId) return;
+
+    const body = {
+        prompt: completedText,
+        session_id: sessionId,
+        speed_cpm: speedCpm,
+    };
+    if (splitSpeeds && splitSpeeds.length > 0) {
+        body.split_speeds = splitSpeeds;
+    }
 
     try {
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: completedText,
-                session_id: sessionId,
-                speed_cpm: speedCpm,
-            }),
+            body: JSON.stringify(body),
         });
 
         if (!response.ok) {
@@ -134,6 +197,7 @@ async function fetchNextParagraph(completedText, speedCpm) {
         inputBox.value = '';
         startTime = null;
         inputBox.focus();
+        initSplits(textContent);
     } catch (error) {
         textDisplay.innerText = `Error: ${error.message}`;
         textDisplay.className = 'error';
@@ -143,7 +207,8 @@ async function fetchNextParagraph(completedText, speedCpm) {
 function CheckFinishedSentence() {
     if (inputBox.value === textContent) {
         CalculateSpeed();
-        fetchNextParagraph(textContent, speed);
+        const splitSpeeds = computeSplitSpeeds();
+        fetchNextParagraph(textContent, speed, splitSpeeds);
     }
 }
 
@@ -163,6 +228,7 @@ function startTypingTimer() {
 
 inputBox.addEventListener('input', () => {
     startTypingTimer();
+    updateSplitTimestamps();
     CheckFinishedSentence();
     updateTextDisplay();
 });
@@ -212,6 +278,7 @@ async function sendPrompt(prompt) {
         llmResponseDiv.className = 'success';
         inputBox.disabled = false;
         inputBox.focus();
+        initSplits(textContent);
     } catch (error) {
         llmResponseDiv.textContent = `Error: ${error.message}`;
         llmResponseDiv.className = 'error';

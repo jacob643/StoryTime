@@ -11,3 +11,7 @@ def test_default_port():
 
 def test_default_ollama_host():
     assert settings.ollama_host == "http://127.0.0.1:11434"
+
+
+def test_default_ollama_timeout():
+    assert settings.ollama_timeout == 60

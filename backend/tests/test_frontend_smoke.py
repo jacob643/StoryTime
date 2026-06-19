@@ -86,9 +86,10 @@ def test_full_game_loop(server, page):
     second_paragraph = "The dragon appeared before him."
 
     call_count = 0
+    second_call_body = None
 
     def handle_route(route):
-        nonlocal call_count
+        nonlocal call_count, second_call_body
         call_count += 1
         if call_count == 1:
             body = json.dumps({
@@ -98,6 +99,7 @@ def test_full_game_loop(server, page):
                 "outcome_label": "neutral",
             })
         else:
+            second_call_body = json.loads(route.request.post_data)
             body = json.dumps({
                 "response": second_paragraph,
                 "session_id": "test-session",
@@ -120,7 +122,7 @@ def test_full_game_loop(server, page):
         timeout=5000,
     )
 
-    page.fill("#inputBox", first_paragraph)
+    page.type("#inputBox", first_paragraph, delay=5)
 
     page.wait_for_function(
         f'document.getElementById("textDisplay").textContent === "{second_paragraph}"',
@@ -130,5 +132,9 @@ def test_full_game_loop(server, page):
     history_items = page.locator("#history .history-item")
     assert history_items.count() >= 1
     assert "positive" in history_items.first.text_content()
+
+    assert second_call_body is not None
+    assert second_call_body["split_speeds"] is not None
+    assert len(second_call_body["split_speeds"]) > 0
 
     assert len(errors) == 0, f"Console errors: {errors}"
