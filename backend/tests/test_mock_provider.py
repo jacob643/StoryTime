@@ -63,3 +63,7 @@ def test_mock_responses_all_have_tier_label():
 def test_mock_provider_attributes(provider):
     assert provider.provider_id == "mock"
     assert provider.display_name == "Mock LLM"
+
+
+def test_mock_list_models_returns_empty(provider):
+    assert _run(provider.list_models()) == []

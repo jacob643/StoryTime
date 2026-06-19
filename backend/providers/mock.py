@@ -48,3 +48,6 @@ class MockProvider(LLMProvider):
 
     async def is_available(self) -> bool:
         return True
+
+    async def list_models(self) -> list[str]:
+        return []
