@@ -14,6 +14,7 @@ let simulatedDeviation = 0;
 
 let splitBoundaries = [];
 let splitTimestamps = [];
+let retryAction = null;
 
 function computeSplits(text) {
     const target = 50;
@@ -190,6 +191,8 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         body.split_speeds = splitSpeeds;
     }
 
+    retryAction = () => fetchNextParagraph(completedText, speedCpm, splitSpeeds);
+
     try {
         const response = await fetch('/api/generate', {
             method: 'POST',
@@ -211,10 +214,34 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         startTime = null;
         inputBox.focus();
         initSplits(textContent);
+        retryAction = null;
     } catch (error) {
-        textDisplay.innerText = `Error: ${error.message}`;
-        textDisplay.className = 'error';
+        showError(error.message, retryAction);
     }
+}
+
+function showError(message, retryFn) {
+    textDisplay.innerHTML = '';
+    textDisplay.className = 'error';
+    llmResponseDiv.innerHTML = `<p class="error-text">${escapeHtml(message)}</p>`;
+    if (message.includes('503') || message.includes('LLM provider error') || message.includes('Connection refused')) {
+        llmResponseDiv.innerHTML +=
+            '<p class="error-hint">Ollama may not be running. ' +
+            '<a href="https://ollama.ai" target="_blank">Install / Start Ollama</a> and try again.</p>';
+    }
+    if (retryFn) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Retry';
+        btn.className = 'retry-btn';
+        btn.addEventListener('click', () => { llmResponseDiv.className = ''; retryFn(); });
+        llmResponseDiv.appendChild(btn);
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
 }
 
 function CheckFinishedSentence() {
@@ -450,6 +477,8 @@ async function sendPrompt(prompt) {
     }
 
     sessionId = null;
+    const promptText = prompt;
+    retryAction = () => sendPrompt(promptText);
     llmResponseDiv.textContent = 'Starting story...';
     llmResponseDiv.className = '';
 
@@ -476,8 +505,8 @@ async function sendPrompt(prompt) {
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);
+        retryAction = null;
     } catch (error) {
-        llmResponseDiv.textContent = `Error: ${error.message}`;
-        llmResponseDiv.className = 'error';
+        showError(error.message, retryAction);
     }
 }
