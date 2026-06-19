@@ -59,12 +59,12 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [ ] **3.1.3** Build provider registry with fallback logic
 
 ### Epic 3.2: Adaptive Speed Scoring
-- [ ] **3.2.1** Create `ScoringParams` dataclass + `compute_speed_stats()` + `split_text()` in `game_logic.py` — 50-char target split, 30-char minimum, rolling window of 20 split-speeds, symmetric ±1.5σ/±0.5σ tiers
-- [ ] **3.2.2** Add `rolling_splits` + `initial_avg_cpm` + `scoring_params` to `GameSession`; update `ParagraphRecord` to include `split_speeds`
-- [ ] **3.2.3** First-paragraph baseline logic — `ceil(N/2)` splits seed rolling window, `floor(N/2)` split speeds averaged and scored; default avg=300 CPM, σ=10 when no prior data
-- [ ] **3.2.4** Refactor `POST /api/generate` to accept `split_speeds`, compute outcome tier from rolling stats vs fixed fallback, push splits into rolling window (max 20)
-- [ ] **3.2.5** Frontend: compute per-split speeds at 50-char boundaries, emit `split_speeds[]` alongside `speed_cpm` on paragraph completion
-- [ ] **3.2.6** Tests: unit tests for split algorithm, compute_speed_stats, compute_outcome_tier adaptive, baseline edge cases; integration test for full split-based flow; Playwright test for split submission
+- [x] **3.2.1** Create `ScoringParams` dataclass + `compute_speed_stats()` + `split_text()` in `game_logic.py` — 50-char target split, 30-char minimum, rolling window of 20 split-speeds, symmetric ±1.5σ/±0.5σ tiers
+- [x] **3.2.2** Add `rolling_splits` + `initial_avg_cpm` + `scoring_params` to `GameSession`; update `ParagraphRecord` to include `split_speeds`
+- [x] **3.2.3** First-paragraph baseline logic — `ceil(N/2)` splits seed rolling window, `floor(N/2)` split speeds averaged and scored; default avg=300 CPM, σ=10 when no prior data
+- [x] **3.2.4** Refactor `POST /api/generate` to accept `split_speeds`, compute outcome tier from rolling stats vs fixed fallback, push splits into rolling window (max 20)
+- [x] **3.2.5** Frontend: compute per-split speeds at 50-char boundaries, emit `split_speeds[]` alongside `speed_cpm` on paragraph completion
+- [x] **3.2.6** Tests: unit tests for split algorithm, compute_speed_stats, compute_outcome_tier adaptive, baseline edge cases; integration test for full split-based flow; Playwright test for split submission
 
 ### Epic 3.3: Game Settings API & Frontend Panel
 - [ ] **3.3.1** Create `GET/POST /api/settings` — persist/load settings from `~/.storytime/config.json`
