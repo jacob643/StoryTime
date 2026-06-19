@@ -105,6 +105,18 @@ body
     background: #ffebee;
 }
 
+#llmResponse.simulation
+{
+    border-color: #ff9800;
+    background: #fff3e0;
+}
+
+#textDisplay.simulation
+{
+    opacity: 0.7;
+    border: 1px dashed #ff9800;
+}
+
 #inputBox
 {
     width: 100%;

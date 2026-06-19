@@ -15,3 +15,7 @@ def test_default_ollama_host():
 
 def test_default_ollama_timeout():
     assert settings.ollama_timeout == 60
+
+
+def test_default_dev_mode():
+    assert settings.dev_mode is False
