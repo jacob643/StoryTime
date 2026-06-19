@@ -13,6 +13,7 @@ def build_prompt(
     initial_context: str,
     history: list[str],
     outcome_tier: int,
+    outcome_directions: dict[int, str] | None = None,
 ) -> str:
     parts: list[str] = []
 
@@ -25,7 +26,8 @@ def build_prompt(
             f"- {p}" for p in history
         ))
 
-    direction = OUTCOME_DIRECTIONS.get(outcome_tier, OUTCOME_DIRECTIONS[2])
+    directions = outcome_directions if outcome_directions is not None else OUTCOME_DIRECTIONS
+    direction = directions.get(outcome_tier, directions[2])
     parts.append(
         f"Continue the story with {direction}. "
         "Write only a single paragraph, nothing else."

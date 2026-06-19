@@ -6,6 +6,7 @@ from backend.providers.ollama import OllamaProvider
 from backend.session import session_store
 from backend.game_logic import compute_outcome_tier, compute_speed_stats, get_outcome_label
 from backend.prompt_engine import build_prompt, parse_llm_response
+from backend.settings_manager import get_settings
 
 router = APIRouter()
 provider = OllamaProvider()
@@ -34,6 +35,7 @@ async def simulate(body: SimulateRequest):
             if session is None:
                 raise HTTPException(status_code=404, detail="Session not found")
 
+        gs = get_settings()
         if session is not None and len(session.rolling_splits) >= session.scoring_params.min_data:
             avg, stddev = compute_speed_stats(
                 session.rolling_splits,
@@ -50,6 +52,7 @@ async def simulate(body: SimulateRequest):
                 initial_context=session.initial_prompt,
                 history=history_texts,
                 outcome_tier=outcome_tier,
+                outcome_directions=gs.outcome_directions,
             )
         else:
             outcome_tier = compute_outcome_tier(body.simulated_speed_cpm)
@@ -59,6 +62,7 @@ async def simulate(body: SimulateRequest):
                 initial_context=initial,
                 history=history_texts,
                 outcome_tier=outcome_tier,
+                outcome_directions=gs.outcome_directions,
             )
 
         raw = await provider.generate(prompt)

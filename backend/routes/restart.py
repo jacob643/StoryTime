@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.providers.ollama import OllamaProvider
 from backend.session import session_store
+from backend.settings_manager import get_settings
 
 router = APIRouter()
 provider = OllamaProvider()
