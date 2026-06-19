@@ -38,3 +38,15 @@ def test_restart_creates_new_session_and_returns_paragraph(client):
 def test_restart_returns_422_without_initial_prompt(client):
     response = client.post("/api/restart", json={})
     assert response.status_code == 422
+
+
+def test_restart_returns_503_on_llm_timeout(client):
+    with patch(
+        "httpx.AsyncClient.post",
+        new_callable=AsyncMock,
+        side_effect=httpx.ReadTimeout("Timed out"),
+    ):
+        response = client.post("/api/restart", json={"initial_prompt": "Write a tale"})
+
+    assert response.status_code == 503
+    assert "unreachable" in response.json()["detail"].lower()
