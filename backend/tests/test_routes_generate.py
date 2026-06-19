@@ -35,6 +35,30 @@ def test_generate_first_call_creates_session_and_returns_paragraph(client):
     assert data["outcome_label"] == "neutral"
 
 
+def test_generate_returns_503_on_llm_timeout(client):
+    with patch(
+        "httpx.AsyncClient.post",
+        new_callable=AsyncMock,
+        side_effect=httpx.ReadTimeout("Timed out"),
+    ):
+        response = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    assert response.status_code == 503
+    assert "unreachable" in response.json()["detail"].lower()
+
+
+def test_generate_returns_503_on_llm_connection_error(client):
+    with patch(
+        "httpx.AsyncClient.post",
+        new_callable=AsyncMock,
+        side_effect=httpx.ConnectError("Connection refused"),
+    ):
+        response = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    assert response.status_code == 503
+    assert "unreachable" in response.json()["detail"].lower()
+
+
 def test_generate_returns_422_without_prompt(client):
     response = client.post("/api/generate", json={})
     assert response.status_code == 422

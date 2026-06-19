@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.providers.ollama import OllamaProvider
@@ -25,47 +26,53 @@ class GenerateResponse(BaseModel):
 
 @router.post("/api/generate", response_model=GenerateResponse)
 async def generate(body: GenerateRequest):
-    if body.session_id is None:
-        session = session_store.create(initial_prompt=body.prompt)
-        text = await provider.generate(body.prompt, body.model)
-        return GenerateResponse(
-            response=text,
-            session_id=session.id,
-            outcome_tier=2,
-            outcome_label="neutral",
+    try:
+        if body.session_id is None:
+            session = session_store.create(initial_prompt=body.prompt)
+            text = await provider.generate(body.prompt, body.model)
+            return GenerateResponse(
+                response=text,
+                session_id=session.id,
+                outcome_tier=2,
+                outcome_label="neutral",
+            )
+
+        session = session_store.get(body.session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        speed = body.speed_cpm if body.speed_cpm is not None else 0.0
+        outcome_tier = compute_outcome_tier(speed)
+
+        session_store.append_paragraph(
+            session_id=body.session_id,
+            text=body.prompt,
+            speed_cpm=speed,
+            time_taken_ms=0,
+            accuracy=1.0,
+            outcome_tier=outcome_tier,
         )
 
-    session = session_store.get(body.session_id)
-    if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        history_texts = [r.text for r in session.history]
+        assembled = build_prompt(
+            initial_context=session.initial_prompt,
+            history=history_texts,
+            outcome_tier=outcome_tier,
+        )
+        raw = await provider.generate(assembled, body.model)
+        next_text = parse_llm_response(raw)
 
-    speed = body.speed_cpm if body.speed_cpm is not None else 0.0
-    outcome_tier = compute_outcome_tier(speed)
-
-    session_store.append_paragraph(
-        session_id=body.session_id,
-        text=body.prompt,
-        speed_cpm=speed,
-        time_taken_ms=0,
-        accuracy=1.0,
-        outcome_tier=outcome_tier,
-    )
-
-    history_texts = [r.text for r in session.history]
-    assembled = build_prompt(
-        initial_context=session.initial_prompt,
-        history=history_texts,
-        outcome_tier=outcome_tier,
-    )
-    raw = await provider.generate(assembled, body.model)
-    next_text = parse_llm_response(raw)
-
-    return GenerateResponse(
-        response=next_text,
-        session_id=body.session_id,
-        outcome_tier=outcome_tier,
-        outcome_label=get_outcome_label(outcome_tier),
-    )
+        return GenerateResponse(
+            response=next_text,
+            session_id=body.session_id,
+            outcome_tier=outcome_tier,
+            outcome_label=get_outcome_label(outcome_tier),
+        )
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"LLM provider unreachable: {exc}",
+        )
 
 
 @router.get("/api/health")

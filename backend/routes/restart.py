@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+import httpx
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.providers.ollama import OllamaProvider
 from backend.session import session_store
@@ -20,11 +21,17 @@ class RestartResponse(BaseModel):
 
 @router.post("/api/restart", response_model=RestartResponse)
 async def restart(body: RestartRequest):
-    session = session_store.create(initial_prompt=body.initial_prompt)
-    text = await provider.generate(body.initial_prompt)
-    return RestartResponse(
-        response=text,
-        session_id=session.id,
-        outcome_tier=2,
-        outcome_label="neutral",
-    )
+    try:
+        session = session_store.create(initial_prompt=body.initial_prompt)
+        text = await provider.generate(body.initial_prompt)
+        return RestartResponse(
+            response=text,
+            session_id=session.id,
+            outcome_tier=2,
+            outcome_label="neutral",
+        )
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"LLM provider unreachable: {exc}",
+        )
