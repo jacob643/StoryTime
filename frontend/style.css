@@ -143,3 +143,118 @@ body
 {
     margin-right: 1vw;
 }
+
+#settingsToggle
+{
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 0.3vw;
+    padding: 0.3vw 0.8vw;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin: 0.5vw 0;
+    align-self: flex-start;
+}
+
+#settingsToggle:hover
+{
+    background: #eee;
+}
+
+#settingsPanel
+{
+    width: 80%;
+    max-width: 80vw;
+    border: 1px solid #ccc;
+    border-radius: 0.5vw;
+    padding: 1vw;
+    margin: 0.5vw 0;
+    background: #fafafa;
+    max-height: 60vh;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+}
+
+#settingsPanel.collapsed
+{
+    max-height: 0;
+    padding: 0 1vw;
+    overflow: hidden;
+    border: none;
+    margin: 0;
+}
+
+#settingsPanel section
+{
+    margin-bottom: 1vw;
+    padding-bottom: 0.5vw;
+    border-bottom: 1px solid #ddd;
+}
+
+#settingsPanel section:last-child
+{
+    border-bottom: none;
+}
+
+#settingsPanel h3
+{
+    margin: 0 0 0.3vw 0;
+    font-size: 0.95em;
+    color: #555;
+}
+
+#settingsPanel label
+{
+    display: block;
+    margin: 0.3vw 0;
+    font-size: 0.85em;
+}
+
+#settingsPanel input,
+#settingsPanel select,
+#settingsPanel textarea
+{
+    margin-left: 0.5vw;
+    padding: 0.2vw 0.4vw;
+    border: 1px solid #bbb;
+    border-radius: 0.2vw;
+    font-size: 0.85em;
+    width: 8vw;
+}
+
+#settingsPanel textarea
+{
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+    margin-left: 0;
+    margin-top: 0.2vw;
+    font-family: inherit;
+}
+
+#fixedThresholdsContainer input
+{
+    width: 6vw;
+}
+
+.settings-actions
+{
+    display: flex;
+    gap: 0.5vw;
+    margin-top: 0.5vw;
+}
+
+.settings-actions button
+{
+    padding: 0.3vw 1vw;
+    border: 1px solid #999;
+    border-radius: 0.3vw;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.settings-actions button:hover
+{
+    background: #e0e0e0;
+}

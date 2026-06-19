@@ -31,6 +31,64 @@
             <button id="restartButton">Send</button>
         </div>
 
+        <button id="settingsToggle">⚙ Settings</button>
+
+        <div id="settingsPanel" class="collapsed">
+            <section>
+                <h3>Scoring Mode</h3>
+                <label>Mode
+                    <select id="optScoringMode">
+                        <option value="split">Adaptive (split)</option>
+                        <option value="fixed">Fixed thresholds</option>
+                    </select>
+                </label>
+            </section>
+            <section>
+                <h3>Adaptive Params</h3>
+                <label>Min data points <input type="number" id="optMinData" step="1" min="1" /></label>
+                <label>Min stddev (CPM) <input type="number" id="optMinStddev" step="0.5" min="0" /></label>
+                <label>σ tier 0 <input type="number" id="optTier0Sigma" step="0.1" /></label>
+                <label>σ tier 1 <input type="number" id="optTier1Sigma" step="0.1" /></label>
+                <label>σ tier 2 <input type="number" id="optTier2Sigma" step="0.1" /></label>
+                <label>σ tier 3 <input type="number" id="optTier3Sigma" step="0.1" /></label>
+            </section>
+            <section>
+                <h3>Fixed Thresholds (low, high CPM)</h3>
+                <div id="fixedThresholdsContainer"></div>
+            </section>
+            <section>
+                <h3>Split Sizes</h3>
+                <label>Target (chars) <input type="number" id="optTargetSplit" step="1" min="10" /></label>
+                <label>Minimum (chars) <input type="number" id="optMinSplit" step="1" min="1" /></label>
+            </section>
+            <section>
+                <h3>Default CPM</h3>
+                <label>Default avg <input type="number" id="optDefaultAvgCpm" step="5" min="1" /></label>
+            </section>
+            <section>
+                <h3>Tier Prompts</h3>
+                <label>Tier 0 (very negative)
+                    <textarea id="optDirection0" rows="2"></textarea>
+                </label>
+                <label>Tier 1 (negative)
+                    <textarea id="optDirection1" rows="2"></textarea>
+                </label>
+                <label>Tier 2 (neutral)
+                    <textarea id="optDirection2" rows="2"></textarea>
+                </label>
+                <label>Tier 3 (positive)
+                    <textarea id="optDirection3" rows="2"></textarea>
+                </label>
+                <label>Tier 4 (very positive)
+                    <textarea id="optDirection4" rows="2"></textarea>
+                </label>
+            </section>
+            <div class="settings-actions">
+                <button id="saveSettings">Save</button>
+                <button id="resetSettings">Reset to Defaults</button>
+            </div>
+        </div>
+
         <div id="llmResponse"></div>
 
         <div class="container">
