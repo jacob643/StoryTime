@@ -92,3 +92,19 @@ def test_registry_generate_delegates_to_active():
 def test_registry_is_available_delegates_to_active():
     with patch.object(registry._ollama, "is_available", new_callable=AsyncMock, return_value=True):
         assert _run(registry.is_available()) is True
+
+
+def test_registry_generate_retries_on_failure():
+    mock = AsyncMock(side_effect=[RuntimeError("fail"), "retry response"])
+    with patch.object(registry._ollama, "generate", mock):
+        result = _run(registry.generate("hello"))
+    assert result == "retry response"
+    assert mock.call_count == 2
+
+
+def test_registry_generate_raises_after_retry():
+    mock = AsyncMock(side_effect=RuntimeError("always fail"))
+    with patch.object(registry._ollama, "generate", mock):
+        with pytest.raises(RuntimeError, match="always fail"):
+            _run(registry.generate("hello"))
+    assert mock.call_count == 2

@@ -1,8 +1,13 @@
+import asyncio
+
 from backend.config import settings
 from backend.providers import LLMProvider
 from backend.providers.ollama import OllamaProvider
 from backend.providers.openai_compatible import OpenAICompatibleProvider
 from backend.settings_manager import get_settings
+
+
+RETRY_DELAY: float = 1.0
 
 
 class ProviderRegistry:
@@ -36,7 +41,12 @@ class ProviderRegistry:
         return settings.default_model
 
     async def generate(self, prompt: str, model: str | None = None) -> str:
-        return await self.active.generate(prompt, model or self.active_model)
+        resolved_model = model or self.active_model
+        try:
+            return await self.active.generate(prompt, resolved_model)
+        except Exception:
+            await asyncio.sleep(RETRY_DELAY)
+            return await self.active.generate(prompt, resolved_model)
 
     async def is_available(self) -> bool:
         return await self.active.is_available()
