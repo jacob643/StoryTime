@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import sys
@@ -55,7 +56,12 @@ def test_send_prompt_displays_response(server, page):
         route.fulfill(
             status=200,
             content_type="application/json",
-            body=f'{{"response": "{fake_text}", "session_id": "test-123", "outcome_tier": 2, "outcome_label": "neutral"}}',
+            body=json.dumps({
+                "response": fake_text,
+                "session_id": "test-123",
+                "outcome_tier": 2,
+                "outcome_label": "neutral",
+            }),
         )
 
     page.route("**/api/generate", handle_route)
@@ -72,4 +78,57 @@ def test_send_prompt_displays_response(server, page):
         timeout=5000,
     )
     assert page.locator("#textDisplay").text_content() == fake_text
+    assert len(errors) == 0, f"Console errors: {errors}"
+
+
+def test_full_game_loop(server, page):
+    first_paragraph = "A brave warrior set out on a journey..."
+    second_paragraph = "The dragon appeared before him."
+
+    call_count = 0
+
+    def handle_route(route):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            body = json.dumps({
+                "response": first_paragraph,
+                "session_id": "test-session",
+                "outcome_tier": 2,
+                "outcome_label": "neutral",
+            })
+        else:
+            body = json.dumps({
+                "response": second_paragraph,
+                "session_id": "test-session",
+                "outcome_tier": 3,
+                "outcome_label": "positive",
+            })
+        route.fulfill(status=200, content_type="application/json", body=body)
+
+    page.route("**/api/generate", handle_route)
+
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+    page.goto(URL)
+    page.fill("#initialPrompt", "Tell me a story")
+    page.click("#restartButton")
+
+    page.wait_for_function(
+        f'document.getElementById("textDisplay").textContent === "{first_paragraph}"',
+        timeout=5000,
+    )
+
+    page.fill("#inputBox", first_paragraph)
+
+    page.wait_for_function(
+        f'document.getElementById("textDisplay").textContent === "{second_paragraph}"',
+        timeout=5000,
+    )
+
+    history_items = page.locator("#history .history-item")
+    assert history_items.count() >= 1
+    assert "positive" in history_items.first.text_content()
+
     assert len(errors) == 0, f"Console errors: {errors}"
