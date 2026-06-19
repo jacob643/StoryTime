@@ -34,6 +34,7 @@ function reset() {
     timeTakenSeconds = 0;
     speed = 0;
     startTime = null;
+    document.getElementById('history').innerHTML = '';
 }
 
 function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
@@ -125,6 +126,7 @@ async function fetchNextParagraph(completedText, speedCpm) {
         }
 
         const data = await response.json();
+        addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label);
         sessionId = data.session_id;
         textContent = data.response;
         textDisplay.innerText = textContent;
@@ -141,13 +143,7 @@ async function fetchNextParagraph(completedText, speedCpm) {
 function CheckFinishedSentence() {
     if (inputBox.value === textContent) {
         CalculateSpeed();
-
-        const completedText = textContent;
-        const speedCpm = speed;
-
-        addHistory(completedText, timeTakenSeconds, speedCpm, 0, 'typing...');
-
-        fetchNextParagraph(completedText, speedCpm);
+        fetchNextParagraph(textContent, speed);
     }
 }
 
