@@ -64,7 +64,7 @@ def test_send_prompt_displays_response(server, page):
             }),
         )
 
-    page.route("**/api/generate", handle_route)
+    page.route("**/api/*", handle_route)
 
     errors = []
     page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
@@ -106,7 +106,7 @@ def test_full_game_loop(server, page):
             })
         route.fulfill(status=200, content_type="application/json", body=body)
 
-    page.route("**/api/generate", handle_route)
+    page.route("**/api/*", handle_route)
 
     errors = []
     page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)

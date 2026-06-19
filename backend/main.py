@@ -6,9 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from backend.config import settings
 from backend.routes.generate import router as generate_router
+from backend.routes.restart import router as restart_router
 
 app = FastAPI(title="Story Time")
 app.include_router(generate_router)
+app.include_router(restart_router)
 
 app.add_middleware(
     CORSMiddleware,
