@@ -83,3 +83,48 @@ backend\run.bat
 Each response starts with the outcome tier label (Very negative / Negative / Neutral / Positive / Very positive) followed by a couple of sentences. The backend detects the tier from the prompt's outcome direction and returns the matching canned response. When no tier is detected (e.g., first paragraph), tier 2 (Neutral) is used.
 
 Combine with `STORYTIME_DEV_MODE=true` to also use `/simulate` with mock responses. Type any prompt and click Send — the game will flow through without any Ollama connection.
+
+## Settings API
+
+`GET /api/settings` returns all current game settings. `POST /api/settings` accepts a partial JSON body to update one or more fields.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `scoring_mode` | `"split"` \| `"fixed"` | `"split"` | Scoring mode |
+| `min_data` | int | 3 | Minimum splits before adaptive scoring activates |
+| `min_stddev_cpm` | float | 10.0 | Floor for standard deviation (CPM) |
+| `tier_0_max_sigma` | float | -1.5 | Sigma upper bound for tier 0 |
+| `tier_1_max_sigma` | float | -0.5 | Sigma upper bound for tier 1 |
+| `tier_2_max_sigma` | float | 0.5 | Sigma upper bound for tier 2 |
+| `tier_3_max_sigma` | float | 1.5 | Sigma upper bound for tier 3 |
+| `fixed_thresholds` | `[[float, float], ...]` | — | Low/high CPM pairs for each tier (fixed mode) |
+| `target_split_size` | int | 50 | Target characters per split |
+| `min_split_size` | int | 30 | Minimum characters per split |
+| `default_avg_cpm` | float | 300.0 | Default average CPM when no prior data |
+| `outcome_directions` | `{int: str, ...}` | — | Prompt direction text for each tier (0–4) |
+
+Example:
+```bash
+# Set scoring to fixed mode with a custom average
+curl -X POST http://127.0.0.1:8000/api/settings \
+  -H "Content-Type: application/json" \
+  -d '{"scoring_mode": "fixed", "default_avg_cpm": 400}'
+
+# Read current settings
+curl http://127.0.0.1:8000/api/settings
+```
+
+Settings persist in `~/.storytime/config.json` and affect **new sessions only** (existing sessions retain their own `ScoringParams`).
+
+## Settings Panel (Frontend)
+
+Click the **⚙ Settings** toggle button to expand/collapse the settings panel. The panel contains controls for every game parameter:
+
+- **Scoring mode**: dropdown (`split` / `fixed`)
+- **Sigma bounds**: number inputs for tier 0–3 max sigma
+- **Fixed thresholds**: low/high CPM pairs for each tier (shown when `fixed` mode selected)
+- **Split parameters**: target and minimum split sizes
+- **Default CPM**: default speed when no prior data
+- **Prompt directions**: text inputs for each tier's outcome direction
+
+Click **Save** to persist changes via `POST /api/settings`, or **Reset to Defaults** to restore factory values.
