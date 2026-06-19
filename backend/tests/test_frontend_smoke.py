@@ -55,7 +55,7 @@ def test_send_prompt_displays_response(server, page):
         route.fulfill(
             status=200,
             content_type="application/json",
-            body=f'{{"response": "{fake_text}"}}',
+            body=f'{{"response": "{fake_text}", "session_id": "test-123", "outcome_tier": 2, "outcome_label": "neutral"}}',
         )
 
     page.route("**/api/generate", handle_route)
@@ -68,8 +68,8 @@ def test_send_prompt_displays_response(server, page):
     page.click("#restartButton")
 
     page.wait_for_function(
-        f'document.getElementById("llmResponse").textContent === "{fake_text}"',
+        f'document.getElementById("textDisplay").textContent === "{fake_text}"',
         timeout=5000,
     )
-    assert page.locator("#llmResponse").text_content() == fake_text
+    assert page.locator("#textDisplay").text_content() == fake_text
     assert len(errors) == 0, f"Console errors: {errors}"

@@ -19,8 +19,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function reset() {
+    sessionId = null;
+    textContent = '';
+    textDisplay.innerText = '';
+    textDisplay.className = '';
     inputBox.value = '';
-    inputBox.focus();
+    inputBox.disabled = true;
+    initialPromptInput.value = '';
+    initialPromptInput.focus();
+    llmResponseDiv.textContent = 'Enter a story prompt and click Send.';
+    llmResponseDiv.className = '';
+    timeTakenDiv.textContent = '';
+    speedDiv.textContent = '';
+    timeTakenSeconds = 0;
+    speed = 0;
+    startTime = null;
 }
 
 function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
@@ -175,7 +188,10 @@ restartButton.addEventListener('click', () => {
 });
 
 async function sendPrompt(prompt) {
-    llmResponseDiv.textContent = 'Waiting for story...';
+    if (!prompt.trim()) return;
+
+    sessionId = null;
+    llmResponseDiv.textContent = 'Starting story...';
     llmResponseDiv.className = '';
 
     try {
@@ -190,8 +206,16 @@ async function sendPrompt(prompt) {
         }
 
         const data = await response.json();
-        llmResponseDiv.textContent = data.response;
+        sessionId = data.session_id;
+        textContent = data.response;
+        textDisplay.innerText = textContent;
+        textDisplay.className = '';
+        inputBox.value = '';
+        startTime = null;
+        llmResponseDiv.textContent = 'Story started — type the paragraph above.';
         llmResponseDiv.className = 'success';
+        inputBox.disabled = false;
+        inputBox.focus();
     } catch (error) {
         llmResponseDiv.textContent = `Error: ${error.message}`;
         llmResponseDiv.className = 'error';
