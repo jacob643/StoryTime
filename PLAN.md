@@ -19,6 +19,9 @@ Goal: A minimal end-to-end pipeline — FastAPI backend serves a static page, co
 ### Epic 1.3: Simple "Send Prompt → Get Response" Page
 - [x] Task: Build minimal frontend page — an input field, submit button, and response area, with JS `fetch` to `POST /api/generate` and display the result
 - [x] Task: Add Playwright smoke test (`pip install pytest-playwright && playwright install chromium`) that opens the page, types a prompt, clicks submit, and verifies no console errors or network failures
+- [x] Task: Fix `GET /favicon.ico` 404 — add a small SVG favicon to `frontend/` and reference it in `index.html`
+
+> **Note**: Each prompt currently starts a new conversation — no story history is passed to the LLM. Session management and context threading are the first tasks in M2.
 
 ---
 
@@ -27,13 +30,22 @@ Goal: A minimal end-to-end pipeline — FastAPI backend serves a static page, co
 Goal: The game runs end-to-end — typing speed drives the story via the 5-tier prompt system.
 
 ### Epic 2.1: Game Session & Prompt Engine
-- Session management, story history, speed-to-outcome mapping, prompt templates
+
+- [ ] Task: Create `backend/session.py` — `GameSession` and `ParagraphRecord` dataclasses, in-memory dict store indexed by `session_id` (UUID), with create/get/append methods
+- [ ] Task: Create `backend/prompt_engine.py` — `build_prompt()` that takes the initial prompt, story history (list of paragraph texts), and an outcome tier (0–4), and assembles a prompt string using the 5-tier templates (docs expect user/assistant formatting or plain text; LLM agent should pick based on `docs/technical-design/`)
+- [ ] Task: Create `backend/game_logic.py` — `compute_outcome_tier(speed_cpm) -> int` mapping CPM thresholds to 5 tiers (very negative → very positive), with configurable threshold constants
+- [ ] Task: Add session context to `POST /api/generate` — accept optional `session_id`/`speed_cpm` fields; auto-create session if new; on subsequent calls append previous paragraph to story history before calling LLM
 
 ### Epic 2.2: Frontend Typing Game
-- Adapt existing typing UI (character highlighting, timer, CPM/WPM) to use backend API
+
+- [ ] Task: Rewrite frontend typing engine — on paragraph completion, send `{session_id, speed_cpm}` to `POST /api/generate`, receive next paragraph, display it as the text to type; remove random string generation
+- [ ] Task: Wire initial prompt flow — on "Send" or page load, call `/api/generate` to get the first story paragraph and display it in `#textDisplay`; integrate the typing box/character highlighting/timer/CPM-WPM display with the new API-driven flow
+- [ ] Task: Add story history sidebar — after each completed paragraph, append the typed text, time, and speed to the `#history` sidebar
 
 ### Epic 2.3: End-to-End Game Flow
-- Wire typing completion → speed calculation → outcome tier → LLM call → next paragraph display
+
+- [ ] Task: Wire the full loop — initial prompt → first paragraph appears → user types it → speed_cpm sent → backend computes outcome tier → LLM returns next paragraph → user types again; verify with a full Playwright integration test that mocks the LLM and asserts the typing flow works
+- [ ] Task: Add restart flow — clicking "Restart" sends a new initial prompt, clears the session history on both frontend and backend, and fetches a fresh first paragraph
 
 ---
 
