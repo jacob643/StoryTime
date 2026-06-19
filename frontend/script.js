@@ -3,67 +3,56 @@ const inputBox = document.getElementById('inputBox');
 const messageDiv = document.getElementById('message');
 const timeTakenDiv = document.getElementById('timeTaken');
 const speedDiv = document.getElementById('speed');
-const characterAmountInput = document.getElementById('characterAmountInput');
-const characterAmount = document.getElementById('characterAmount');
-const possibleCharactersInput = document.getElementById('possibleCharactersInput');
 
 let textContent = textDisplay.innerText;
-let timeTakenSecondes = 0;
+let timeTakenSeconds = 0;
 let startTime = null;
 let speed = 0;
-
-characterAmountInput.addEventListener('input', () => {
-    characterAmount.textContent = characterAmountInput.value;
-});
+let sessionId = null;
 
 window.onload = () => {
     reset();
 };
 
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
     reset();
 });
 
-function reset()
-{
-    const inputBox = document.getElementById('inputBox');
+function reset() {
     inputBox.value = '';
     inputBox.focus();
-	characterAmount.textContent = characterAmountInput.value;
-	ResetSentence();
 }
 
-function addHistory(textDisplay) {
+function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
     const historyContainer = document.getElementById('history');
 
     const historyItem = document.createElement('div');
     historyItem.classList.add('history-item');
 
-    const textDisplayElement = document.createElement('p');
-    textDisplayElement.textContent = `Text: ${textDisplay}`;
+    const textElement = document.createElement('p');
+    textElement.textContent = text;
 
-    const timeTakenElement = document.createElement('p');
-    timeTakenElement.textContent = `Time Taken: ${GetTimeTakenDisplay()}`;
+    const metaElement = document.createElement('p');
+    const speedType = document.querySelector('input[name="speedType"]:checked').value;
+    let displaySpeed = speedCpm;
+    if (speedType !== 'cpm') {
+        displaySpeed /= 5;
+    }
+    metaElement.textContent = `${timeTaken.toFixed(2)}s | ${displaySpeed.toFixed(1)} ${speedType.toUpperCase()} | ${outcomeLabel}`;
 
-    const speedElement = document.createElement('p');
-    speedElement.textContent = `Speed: ${GetSpeedDisplay()}`;
-
-    historyItem.appendChild(textDisplayElement);
-    historyItem.appendChild(timeTakenElement);
-    historyItem.appendChild(speedElement);
-
+    historyItem.appendChild(textElement);
+    historyItem.appendChild(metaElement);
     historyContainer.appendChild(historyItem);
-
     historyContainer.scrollTop = historyContainer.scrollHeight;
 }
 
 function updateTextDisplay() {
-    let inputText = inputBox.value;
+    const inputText = inputBox.value;
     let displayedText = '';
 
     for (let i = 0; i < textContent.length; i++) {
-        let char = textContent[i];
-        let inputChar = inputText[i] || '';
+        const char = textContent[i];
+        const inputChar = inputText[i] || '';
 
         if (inputChar === char) {
             displayedText += `<span style="background-color: green; color: black;">${char}</span>`;
@@ -82,13 +71,12 @@ function GetTimeTakenDisplay() {
 }
 
 function CalculateSpeed() {
-    let endTime = new Date();
-    timeTakenSeconds = ((endTime - startTime) / 1000);
-    let timeTakenMinutes = (timeTakenSeconds / 60);
-    let numChars = textContent.length;
-    speed = (numChars / timeTakenMinutes);
+    const endTime = new Date();
+    timeTakenSeconds = (endTime - startTime) / 1000;
+    const timeTakenMinutes = timeTakenSeconds / 60;
+    const numChars = textContent.length;
+    speed = numChars / timeTakenMinutes;
     timeTakenDiv.textContent = `Last paragraph time taken: ${GetTimeTakenDisplay()}`;
-
     UpdateSpeed();
 }
 
@@ -102,16 +90,51 @@ function GetSpeedDisplay() {
 }
 
 function UpdateSpeed() {
-    speedDiv.textContent = `Lst typing speed: ${GetSpeedDisplay()}`;
+    speedDiv.textContent = `Last typing speed: ${GetSpeedDisplay()}`;
+}
+
+async function fetchNextParagraph(completedText, speedCpm) {
+    if (!sessionId) return;
+
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: completedText,
+                session_id: sessionId,
+                speed_cpm: speedCpm,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        sessionId = data.session_id;
+        textContent = data.response;
+        textDisplay.innerText = textContent;
+        textDisplay.className = '';
+        inputBox.value = '';
+        startTime = null;
+        inputBox.focus();
+    } catch (error) {
+        textDisplay.innerText = `Error: ${error.message}`;
+        textDisplay.className = 'error';
+    }
 }
 
 function CheckFinishedSentence() {
     if (inputBox.value === textContent) {
         CalculateSpeed();
-        addHistory(textContent);
-        LoadNextSentence();
-        inputBox.value = '';
-        startTime = null;
+
+        const completedText = textContent;
+        const speedCpm = speed;
+
+        addHistory(completedText, timeTakenSeconds, speedCpm, 0, 'typing...');
+
+        fetchNextParagraph(completedText, speedCpm);
     }
 }
 
@@ -127,30 +150,6 @@ function startTypingTimer() {
     if (startTime === null) {
         startTime = new Date();
     }
-}
-
-function ResetSentence()
-{
-	textContent = "Type this.";
-}
-
-function LoadNextSentence() {
-    textContent = generateRandomString(characterAmountInput.value);
-}
-
-function generateRandomString(length)
-{
-	if (length < 1) length = 1;
-	characters = possibleCharactersInput.value;
-    let result = '';
-    const charactersLength = characters.length;
-
-    for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * charactersLength);
-        result += characters[randomIndex];
-    }
-
-    return result;
 }
 
 inputBox.addEventListener('input', () => {
@@ -183,7 +182,7 @@ async function sendPrompt(prompt) {
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ prompt }),
         });
 
         if (!response.ok) {
