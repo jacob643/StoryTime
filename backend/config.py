@@ -1,0 +1,14 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    host: str = "127.0.0.1"
+    port: int = 8000
+    ollama_host: str = "http://127.0.0.1:11434"
+    default_model: str = "llama3.2"
+    log_level: str = "info"
+
+    model_config = {"env_prefix": "STORYTIME_"}
+
+
+settings = Settings()
