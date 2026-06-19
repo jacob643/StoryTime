@@ -252,6 +252,136 @@ document.querySelectorAll('input[name="speedType"]').forEach(radio => {
     });
 });
 
+// settings panel
+
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsPanel = document.getElementById('settingsPanel');
+const fixedThresholdsContainer = document.getElementById('fixedThresholdsContainer');
+
+settingsToggle.addEventListener('click', () => {
+    settingsPanel.classList.toggle('collapsed');
+    if (!settingsPanel.classList.contains('collapsed')) {
+        loadSettings();
+    }
+});
+
+function buildFixedThresholdInputs(thresholds) {
+    fixedThresholdsContainer.innerHTML = '';
+    for (let i = 0; i < thresholds.length; i++) {
+        const row = document.createElement('div');
+        row.innerHTML =
+            `<label>Tier ${i}: low <input type="number" class="ft-low" step="1" min="0" value="${thresholds[i][0]}" /></label>` +
+            `<label>high <input type="number" class="ft-high" step="1" min="0" value="${thresholds[i][1]}" /></label>`;
+        fixedThresholdsContainer.appendChild(row);
+    }
+}
+
+async function loadSettings() {
+    try {
+        const r = await fetch('/api/settings');
+        if (!r.ok) throw new Error('Failed to load settings');
+        const s = await r.json();
+        document.getElementById('optScoringMode').value = s.scoring_mode;
+        document.getElementById('optMinData').value = s.min_data;
+        document.getElementById('optMinStddev').value = s.min_stddev_cpm;
+        document.getElementById('optTier0Sigma').value = s.tier_0_max_sigma;
+        document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
+        document.getElementById('optTier2Sigma').value = s.tier_2_max_sigma;
+        document.getElementById('optTier3Sigma').value = s.tier_3_max_sigma;
+        document.getElementById('optTargetSplit').value = s.target_split_size;
+        document.getElementById('optMinSplit').value = s.min_split_size;
+        document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
+        buildFixedThresholdInputs(s.fixed_thresholds);
+        for (let t = 0; t <= 4; t++) {
+            const el = document.getElementById('optDirection' + t);
+            if (el) el.value = s.outcome_directions[t.toString()] || '';
+        }
+    } catch (e) {
+        console.error('loadSettings:', e);
+    }
+}
+
+function collectSettings() {
+    const ftLow = fixedThresholdsContainer.querySelectorAll('.ft-low');
+    const ftHigh = fixedThresholdsContainer.querySelectorAll('.ft-high');
+    const fixedThresholds = [];
+    for (let i = 0; i < ftLow.length; i++) {
+        fixedThresholds.push([parseFloat(ftLow[i].value), parseFloat(ftHigh[i].value)]);
+    }
+    const outcomeDirections = {};
+    for (let t = 0; t <= 4; t++) {
+        const el = document.getElementById('optDirection' + t);
+        if (el) outcomeDirections[t] = el.value;
+    }
+    return {
+        scoring_mode: document.getElementById('optScoringMode').value,
+        min_data: parseInt(document.getElementById('optMinData').value),
+        min_stddev_cpm: parseFloat(document.getElementById('optMinStddev').value),
+        tier_0_max_sigma: parseFloat(document.getElementById('optTier0Sigma').value),
+        tier_1_max_sigma: parseFloat(document.getElementById('optTier1Sigma').value),
+        tier_2_max_sigma: parseFloat(document.getElementById('optTier2Sigma').value),
+        tier_3_max_sigma: parseFloat(document.getElementById('optTier3Sigma').value),
+        fixed_thresholds: fixedThresholds,
+        target_split_size: parseInt(document.getElementById('optTargetSplit').value),
+        min_split_size: parseInt(document.getElementById('optMinSplit').value),
+        default_avg_cpm: parseFloat(document.getElementById('optDefaultAvgCpm').value),
+        outcome_directions: outcomeDirections,
+    };
+}
+
+document.getElementById('saveSettings').addEventListener('click', async () => {
+    try {
+        const r = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectSettings()),
+        });
+        if (!r.ok) throw new Error('Failed to save settings');
+        llmResponseDiv.textContent = 'Settings saved.';
+        llmResponseDiv.className = 'success';
+    } catch (e) {
+        llmResponseDiv.textContent = 'Settings save error: ' + e.message;
+        llmResponseDiv.className = 'error';
+    }
+});
+
+document.getElementById('resetSettings').addEventListener('click', async () => {
+    const defaults = {
+        scoring_mode: 'split',
+        min_data: 3,
+        min_stddev_cpm: 10,
+        tier_0_max_sigma: -1.5,
+        tier_1_max_sigma: -0.5,
+        tier_2_max_sigma: 0.5,
+        tier_3_max_sigma: 1.5,
+        fixed_thresholds: [[0, 30], [30, 50], [50, 75], [75, 100], [100, 9999]],
+        target_split_size: 50,
+        min_split_size: 30,
+        default_avg_cpm: 300,
+        outcome_directions: {
+            0: 'an even worse situation with no clear way out',
+            1: 'a significant setback that makes things more difficult',
+            2: 'a minor challenge that the protagonist pushes through',
+            3: 'a small success that aids the journey',
+            4: 'a great improvement to the situation, a significant advance',
+        },
+    };
+    try {
+        const r = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(defaults),
+        });
+        if (!r.ok) throw new Error('Failed to reset settings');
+        await loadSettings();
+        llmResponseDiv.textContent = 'Settings reset to defaults.';
+        llmResponseDiv.className = 'success';
+    } catch (e) {
+        llmResponseDiv.textContent = 'Settings reset error: ' + e.message;
+        llmResponseDiv.className = 'error';
+    }
+});
+
 // prompt and LLM side.
 
 const restartButton = document.getElementById('restartButton');
