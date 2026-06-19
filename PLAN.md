@@ -67,9 +67,9 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [x] **3.2.6** Tests: unit tests for split algorithm, compute_speed_stats, compute_outcome_tier adaptive, baseline edge cases; integration test for full split-based flow; Playwright test for split submission
 
 ### Epic 3.3: Game Settings API & Frontend Panel
-- [ ] **3.3.1** Create `GET/POST /api/settings` — persist/load settings from `~/.storytime/config.json`
-- [ ] **3.3.2** Expose all game parameters via settings API: tier prompt templates (outcome directions), scoring mode (fixed vs adaptive), stddev multipliers, fixed threshold values, paragraph length
-- [ ] **3.3.3** Build settings panel in frontend with toggles/sliders for all exposed parameters; store in a collapsible sidebar section
+- [x] **3.3.1** Create `GET/POST /api/settings` — persist/load settings from `~/.storytime/config.json`
+- [x] **3.3.2** Expose all game parameters via settings API: tier prompt templates (outcome directions), scoring mode (fixed vs adaptive), stddev multipliers, fixed threshold values, paragraph length
+- [x] **3.3.3** Build settings panel in frontend with toggles/sliders for all exposed parameters; store in a collapsible sidebar section
 
 ### Epic 3.4: Dev Tools
 - [x] **3.4.1** Add `/simulate <CPM> [deviation]` command (prompt box + `window.simulate()` console function) — starts a real game session with split speeds faked at the given CPM (± deviation), for testing adaptive scoring
