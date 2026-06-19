@@ -1,9 +1,13 @@
 import httpx
 from backend.config import settings
 from backend.providers import LLMProvider
+from backend.providers.mock import MockProvider
 
 
 class OllamaProvider(LLMProvider):
+    def __init__(self) -> None:
+        self._mock = MockProvider()
+
     @property
     def provider_id(self) -> str:
         return "ollama"
@@ -13,6 +17,8 @@ class OllamaProvider(LLMProvider):
         return "Ollama"
 
     async def generate(self, prompt: str, model: str | None = None) -> str:
+        if settings.mock_llm:
+            return await self._mock.generate(prompt, model)
         url = f"{settings.ollama_host}/api/generate"
         payload = {
             "model": model or settings.default_model,
@@ -26,6 +32,8 @@ class OllamaProvider(LLMProvider):
             return data["response"]
 
     async def is_available(self) -> bool:
+        if settings.mock_llm:
+            return await self._mock.is_available()
         try:
             url = f"{settings.ollama_host}/api/tags"
             async with httpx.AsyncClient() as client:

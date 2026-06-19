@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     default_model: str = "llama3.2"
     log_level: str = "info"
     dev_mode: bool = False
+    mock_llm: bool = False
 
     model_config = {"env_prefix": "STORYTIME_"}
 

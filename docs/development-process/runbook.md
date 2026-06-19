@@ -53,3 +53,22 @@ backend\run.bat
 - Example: `/simulate 300` — generates the next paragraph as if typed at 300 CPM (likely tier 4)
 - Works with or without an active session (passes `session_id` if one exists)
 - Result is shown in orange with a `[SIMULATION]` label; the typing game state is untouched
+
+### Mock LLM Mode
+
+Set `STORYTIME_MOCK_LLM=true` to replace the real LLM with canned responses. No Ollama needed — perfect for testing the UI/flow offline.
+
+```bash
+# Bash
+export STORYTIME_MOCK_LLM=true
+export STORYTIME_DEV_MODE=true    # optional, for /simulate
+backend/run.sh
+
+# Windows Cmd
+set STORYTIME_MOCK_LLM=true
+backend\run.bat
+```
+
+Each response starts with the outcome tier label (Very negative / Negative / Neutral / Positive / Very positive) followed by a couple of sentences. The backend detects the tier from the prompt's outcome direction and returns the matching canned response. When no tier is detected (e.g., first paragraph), tier 2 (Neutral) is used.
+
+Combine with `STORYTIME_DEV_MODE=true` to also use `/simulate` with mock responses. Type any prompt and click Send — the game will flow through without any Ollama connection.

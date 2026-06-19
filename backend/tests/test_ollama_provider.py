@@ -60,3 +60,26 @@ def test_is_available_returns_false_when_ollama_down(provider):
         side_effect=httpx.RequestError("Connection refused"),
     ):
         assert _run(provider.is_available()) is False
+
+
+def test_generate_returns_mock_response_when_mock_llm_enabled(provider):
+    from backend.config import settings
+
+    saved = settings.mock_llm
+    settings.mock_llm = True
+    try:
+        result = _run(provider.generate("Continue the story with a minor challenge that the protagonist pushes through."))
+        assert "Neutral" in result
+    finally:
+        settings.mock_llm = saved
+
+
+def test_is_available_returns_true_when_mock_llm_enabled(provider):
+    from backend.config import settings
+
+    saved = settings.mock_llm
+    settings.mock_llm = True
+    try:
+        assert _run(provider.is_available()) is True
+    finally:
+        settings.mock_llm = saved
