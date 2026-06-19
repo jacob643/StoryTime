@@ -21,19 +21,57 @@ def _mock_ollama_response(status_code: int, json_data: dict | None = None):
     return resp
 
 
-def test_generate_returns_200_and_response(client):
+def test_generate_first_call_creates_session_and_returns_paragraph(client):
     mock_resp = _mock_ollama_response(200, {"response": "A brave warrior..."})
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
         response = client.post("/api/generate", json={"prompt": "Tell a story"})
 
     assert response.status_code == 200
-    assert response.json() == {"response": "A brave warrior..."}
+    data = response.json()
+    assert data["response"] == "A brave warrior..."
+    assert data["session_id"] is not None
+    assert data["outcome_tier"] == 2
+    assert data["outcome_label"] == "neutral"
 
 
 def test_generate_returns_422_without_prompt(client):
     response = client.post("/api/generate", json={})
     assert response.status_code == 422
+
+
+def test_generate_subsequent_call_appends_and_returns_next_paragraph(client):
+    mock_resp = _mock_ollama_response(200, {"response": "A brave warrior..."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        first = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    session_id = first.json()["session_id"]
+
+    mock_resp2 = _mock_ollama_response(200, {"response": "The dragon approached..."})
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp2):
+        second = client.post("/api/generate", json={
+            "prompt": "A brave warrior...",
+            "session_id": session_id,
+            "speed_cpm": 80.0,
+        })
+
+    assert second.status_code == 200
+    data = second.json()
+    assert data["response"] == "The dragon approached..."
+    assert data["session_id"] == session_id
+    assert data["outcome_tier"] == 3
+    assert data["outcome_label"] == "positive"
+
+
+def test_generate_subsequent_call_unknown_session_returns_404(client):
+    response = client.post("/api/generate", json={
+        "prompt": "some text",
+        "session_id": "nonexistent",
+        "speed_cpm": 50.0,
+    })
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Session not found"
 
 
 def test_health_returns_ollama_available_true(client):
