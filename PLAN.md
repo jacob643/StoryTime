@@ -51,19 +51,31 @@ Goal: The game runs end-to-end — typing speed drives the story via the 5-tier 
 
 ## Milestone 3: Polished User Experience
 
-Goal: Model discovery, settings persistence, error handling, and a clean UI for configuring the LLM provider.
+Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev tools, and robust error handling.
 
 ### Epic 3.1: Provider System
-- Ollama auto-discovery, custom endpoint support, provider registry
+- [ ] **3.1.1** Add custom OpenAI-compatible endpoint provider alongside Ollama
+- [ ] **3.1.2** Add `GET /api/models` endpoint that discovers models from active providers
+- [ ] **3.1.3** Build provider registry with fallback logic
 
-### Epic 3.2: Settings UI
-- Model selector, custom endpoint config, paragraph length, CPM/WPM toggle persisted
+### Epic 3.2: Adaptive Speed Scoring
+- [ ] **3.2.1** Track per-session running average and standard deviation of typing speed (update after each completed paragraph)
+- [ ] **3.2.2** Replace fixed CPM thresholds with stddev-based tier calculation (`compute_outcome_tier` takes avg+stddev; tiers defined by stddev multipliers like ±0.5σ, ±1.5σ)
+- [ ] **3.2.3** Add configurable stddev multipliers per tier, exposed via settings API; support fallback to fixed thresholds when not enough data (< 3 paragraphs)
 
-### Epic 3.3: Error Handling & Resilience
-- Graceful degradation when Ollama is down, timeouts, retries, user-facing error messages
+### Epic 3.3: Game Settings API & Frontend Panel
+- [ ] **3.3.1** Create `GET/POST /api/settings` — persist/load settings from `~/.storytime/config.json`
+- [ ] **3.3.2** Expose all game parameters via settings API: tier prompt templates (outcome directions), scoring mode (fixed vs adaptive), stddev multipliers, fixed threshold values, paragraph length
+- [ ] **3.3.3** Build settings panel in frontend with toggles/sliders for all exposed parameters; store in a collapsible sidebar section
 
-### Epic 3.4: Story History & Session UX
-- History sidebar wire-up, session persistence, restart flow
+### Epic 3.4: Dev Tools
+- [ ] **3.4.1** Add `/simulate` command in the frontend prompt box — type `/simulate 85` to generate next paragraph as if typed at 85 CPM, without affecting session history or typing game state
+- [ ] **3.4.2** Add dev-only feature flag (`config.dev_mode`) to gate simulation commands and test UI elements in future releases
+
+### Epic 3.5: Error Handling & Resilience
+- [ ] **3.5.1** Graceful degradation when Ollama is down — frontend shows "Start Ollama" instruction with link; retry button
+- [ ] **3.5.2** Add retry logic for LLM calls (1 retry on timeout, exponential backoff)
+- [ ] **3.5.3** Validate LLM response (non-empty, reasonable length); fallback to cached neutral response if LLM returns garbage
 
 ---
 
