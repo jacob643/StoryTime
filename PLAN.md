@@ -1,6 +1,6 @@
 # Story Time — Development Plan
 
-> **Agent instructions**: When you complete a task, mark it `[x]` and update any affected documentation in `docs/`. Do not modify this file's structure or remove completed milestones — only check boxes and add new tasks. Cross-reference all work against `docs/technical-design/` to ensure consistency with the architecture decisions. **When implementing a task, always add or update the corresponding tests** (pytest for backend, Playwright for frontend). Keep existing tests passing.
+> **Agent instructions**: When you complete a task, mark it `[x]` and update any affected documentation in `docs/`. Do not modify this file's structure or remove completed milestones — only check boxes and add new tasks. Cross-reference all work against `docs/technical-design/` and `docs/development-process/` to ensure consistency with the architecture decisions and runbook. **When implementing a task, always add or update the corresponding tests** (pytest for backend, Playwright for frontend). Keep existing tests passing.
 >
 > **Status key**: `[ ]` pending, `[x]` completed, `[~]` in progress
 
