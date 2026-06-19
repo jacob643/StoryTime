@@ -191,10 +191,10 @@ async function sendPrompt(prompt) {
     llmResponseDiv.className = '';
 
     try {
-        const response = await fetch('/api/generate', {
+        const response = await fetch('/api/restart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify({ initial_prompt: prompt }),
         });
 
         if (!response.ok) {
