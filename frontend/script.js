@@ -408,6 +408,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
         if (!r.ok) throw new Error('Failed to save settings');
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
+        settingsPanel.classList.add('collapsed');
     } catch (e) {
         messageDiv.textContent = 'Settings save error: ' + e.message;
         messageDiv.className = 'error';
@@ -442,6 +443,7 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
             body: JSON.stringify(defaults),
         });
         if (!r.ok) throw new Error('Failed to reset settings');
+        settingsPanel.classList.add('collapsed');
         await loadSettings();
         messageDiv.textContent = 'Settings reset to defaults.';
         messageDiv.className = 'success';
