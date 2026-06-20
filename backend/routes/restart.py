@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from backend.providers.registry import registry
 from backend.session import session_store
 from backend.settings_manager import get_settings
-from backend.prompt_engine import parse_llm_response, validate_llm_response, NEUTRAL_FALLBACK
+from backend.prompt_engine import build_first_paragraph_prompt, parse_llm_response, validate_llm_response, NEUTRAL_FALLBACK
 
 router = APIRouter()
 
@@ -24,7 +24,8 @@ class RestartResponse(BaseModel):
 async def restart(body: RestartRequest):
     try:
         session = session_store.create(initial_prompt=body.initial_prompt)
-        text = parse_llm_response(await registry.generate(body.initial_prompt))
+        prompt = build_first_paragraph_prompt(body.initial_prompt)
+        text = parse_llm_response(await registry.generate(prompt))
         if not validate_llm_response(text):
             text = NEUTRAL_FALLBACK
         return RestartResponse(

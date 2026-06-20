@@ -13,7 +13,7 @@ from backend.game_logic import (
     DEFAULT_AVG_CPM,
     DEFAULT_MIN_STDDEV_CPM,
 )
-from backend.prompt_engine import build_prompt, parse_llm_response, validate_llm_response, NEUTRAL_FALLBACK
+from backend.prompt_engine import build_prompt, build_first_paragraph_prompt, parse_llm_response, validate_llm_response, NEUTRAL_FALLBACK
 from backend.settings_manager import get_settings
 
 router = APIRouter()
@@ -65,7 +65,8 @@ async def generate(body: GenerateRequest):
     try:
         if body.session_id is None:
             session = session_store.create(initial_prompt=body.prompt)
-            text = parse_llm_response(await registry.generate(body.prompt, body.model))
+            wrapped = build_first_paragraph_prompt(body.prompt)
+            text = parse_llm_response(await registry.generate(wrapped, body.model))
             if not validate_llm_response(text):
                 text = NEUTRAL_FALLBACK
             return GenerateResponse(

@@ -42,6 +42,13 @@ NEUTRAL_FALLBACK = (
 )
 
 
+def build_first_paragraph_prompt(user_input: str) -> str:
+    return (
+        f"Write the first paragraph of a story about: {user_input}\n\n"
+        "The paragraph should be about 5 sentences long. Write only the paragraph, nothing else."
+    )
+
+
 def validate_llm_response(text: str) -> bool:
     stripped = text.strip()
     if not stripped:
