@@ -5,7 +5,7 @@ from backend.config import settings
 from backend.providers.registry import registry
 from backend.session import session_store
 from backend.game_logic import compute_outcome_tier, compute_speed_stats, compute_tier_boundaries, get_outcome_label
-from backend.prompt_engine import build_prompt, parse_llm_response
+from backend.prompt_engine import build_prompt, parse_llm_response, sanitize_text
 from backend.settings_manager import get_settings
 from backend.logger import logger
 
@@ -78,7 +78,7 @@ async def simulate(body: SimulateRequest):
 
         logger.debug("Simulate prompt:\n%s", prompt)
         raw = await registry.generate(prompt)
-        next_text = parse_llm_response(raw)
+        next_text = sanitize_text(parse_llm_response(raw))
         logger.debug("Simulate raw=%r parsed=%r", raw, next_text)
 
         if session is not None:
