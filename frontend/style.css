@@ -115,7 +115,7 @@ body
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     background: var(--bg-container);
     padding: 2vw;
     border-radius: 0.5vw;
@@ -205,6 +205,20 @@ body
     font-family: Georgia, serif;
     line-height: 1.5;
     min-height: 3em;
+    flex-shrink: 0;
+}
+
+#textDisplayContainer
+{
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+}
+
+#textDisplay
+{
+    height: 100%;
 }
 
 #message.success
@@ -263,6 +277,7 @@ body
     box-sizing: border-box;
     background: var(--bg-input);
     color: var(--text-primary);
+    flex-shrink: 0;
 }
 
 #initialPrompt:focus,
@@ -296,6 +311,7 @@ body
     gap: 0.8vw;
     align-self: flex-start;
     margin: 0.5vw 0;
+    flex-shrink: 0;
 }
 
 #settingsToggle
@@ -340,6 +356,7 @@ body
     max-height: 60vh;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
     transition: max-height 0.3s ease;
 }
 
