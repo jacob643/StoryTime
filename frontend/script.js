@@ -441,6 +441,13 @@ restartButton.addEventListener('click', () => {
     sendPrompt(initialPromptInput.value);
 });
 
+initialPromptInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        sendPrompt(initialPromptInput.value);
+    }
+});
+
 async function sendSimulate(cpm, deviation) {
     simulatedCpm = cpm;
     simulatedDeviation = deviation || 0;
