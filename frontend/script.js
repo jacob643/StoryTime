@@ -119,13 +119,13 @@ function reset() {
     timeTakenSeconds = 0;
     speed = 0;
     startTime = null;
-    document.getElementById('history').querySelectorAll('.history-item').forEach(el => el.remove());
+    document.getElementById('historyEntries').querySelectorAll('.history-item').forEach(el => el.remove());
     document.getElementById('lastParagraph').textContent = '';
     resetSplitTracking();
 }
 
 function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds) {
-    const historyContainer = document.getElementById('history');
+    const historyContainer = document.getElementById('historyEntries');
 
     const historyItem = document.createElement('div');
     historyItem.classList.add('history-item');
