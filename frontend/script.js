@@ -101,6 +101,7 @@ function initDarkMode() {
 document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     reset();
+    labelTierSegments();
 });
 
 function reset() {
@@ -163,6 +164,27 @@ function updateTierChart(tier) {
     document.querySelectorAll('.tier-segment').forEach(el => el.classList.remove('active'));
     const seg = document.querySelector(`.tier-segment[data-tier="${tier}"]`);
     if (seg) seg.classList.add('active');
+}
+
+const DEFAULT_FIXED_THRESHOLDS = [[0, 30], [30, 50], [50, 75], [75, 100], [100, 9999]];
+const TIER_LABELS = ['very negative', 'negative', 'neutral', 'positive', 'very positive'];
+const SIGMA_RANGES = ['< −1.5σ', '−1.5σ to −0.5σ', '−0.5σ to +0.5σ', '+0.5σ to +1.5σ', '> +1.5σ'];
+
+function labelTierSegments(thresholds, scoringMode) {
+    const mode = scoringMode || 'split';
+    const t = thresholds || DEFAULT_FIXED_THRESHOLDS;
+    document.querySelectorAll('.tier-segment').forEach(el => {
+        const tier = parseInt(el.dataset.tier);
+        const label = TIER_LABELS[tier] || '';
+        if (mode === 'fixed') {
+            const lo = t[tier][0];
+            const hi = t[tier][1];
+            const range = hi >= 9999 ? `>${lo}` : `${lo}–${hi}`;
+            el.textContent = `${label} (${range} CPM)`;
+        } else {
+            el.textContent = `${label} (${SIGMA_RANGES[tier]})`;
+        }
+    });
 }
 
 function updateTextDisplay() {
@@ -335,6 +357,7 @@ async function loadSettings() {
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
         buildFixedThresholdInputs(s.fixed_thresholds);
+        labelTierSegments(s.fixed_thresholds, s.scoring_mode);
         for (let t = 0; t <= 4; t++) {
             const el = document.getElementById('optDirection' + t);
             if (el) el.value = s.outcome_directions[t.toString()] || '';
