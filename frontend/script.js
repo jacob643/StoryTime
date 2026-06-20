@@ -105,7 +105,8 @@ function reset() {
     timeTakenSeconds = 0;
     speed = 0;
     startTime = null;
-    document.getElementById('history').innerHTML = '';
+    document.getElementById('history').innerHTML = '<h3>History</h3>';
+    document.getElementById('lastParagraph').textContent = '';
     resetSplitTracking();
 }
 
@@ -115,10 +116,13 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
     const historyItem = document.createElement('div');
     historyItem.classList.add('history-item');
 
-    const textElement = document.createElement('p');
-    textElement.textContent = text;
+    const textElement = document.createElement('div');
+    textElement.classList.add('history-text');
+    const cropped = text.length > 20 ? text.slice(0, 20) + '[...]' : text;
+    textElement.textContent = cropped;
 
-    const metaElement = document.createElement('p');
+    const metaElement = document.createElement('div');
+    metaElement.classList.add('history-meta');
     const speedType = document.querySelector('input[name="speedType"]:checked').value;
     let displaySpeed = speedCpm;
     if (speedType !== 'cpm') {
@@ -130,6 +134,10 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
     historyItem.appendChild(metaElement);
     historyContainer.appendChild(historyItem);
     historyContainer.scrollTop = historyContainer.scrollHeight;
+}
+
+function updateStoryContext(text) {
+    document.getElementById('lastParagraph').textContent = text;
 }
 
 function updateTextDisplay() {
@@ -206,6 +214,7 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
 
         const data = await response.json();
         addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label);
+        updateStoryContext(completedText);
         sessionId = data.session_id;
         textContent = data.response;
         textDisplay.innerText = textContent;
