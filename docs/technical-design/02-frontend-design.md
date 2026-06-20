@@ -83,7 +83,6 @@ const state = {
   settings: {
     speedUnit: "cpm",         // "cpm" | "wpm"
     targetLength: 20,
-    possibleCharacters: "...",
     modelName: "",
     customEndpoint: "",
     apiKey: ""
