@@ -231,7 +231,18 @@ body
     border: 1px dashed #ff9800;
 }
 
-#initialPrompt,
+#initialPrompt
+{
+    width: 42vw;
+    padding: 0.6vw 1vw;
+    font-size: 0.85em;
+    border: 0.1vw solid var(--border-color);
+    border-radius: 0.5vw;
+    box-sizing: border-box;
+    background: var(--bg-input);
+    color: var(--text-primary);
+}
+
 #inputBox
 {
     width: 100%;
