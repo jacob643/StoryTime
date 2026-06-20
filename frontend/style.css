@@ -355,3 +355,36 @@ body
 {
     background: #ffe0e0;
 }
+
+#tierChart
+{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 0.5vw;
+}
+
+.tier-segment
+{
+    padding: 2px 6px;
+    font-size: 0.75em;
+    border-radius: 3px;
+    background: #eee;
+    color: #999;
+    border: 1px solid #ddd;
+    text-align: center;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.tier-segment.active
+{
+    color: #fff;
+    border-color: transparent;
+    font-weight: bold;
+}
+
+.tier-segment[data-tier="0"].active { background: #d32f2f; }
+.tier-segment[data-tier="1"].active { background: #f57c00; }
+.tier-segment[data-tier="2"].active { background: #757575; }
+.tier-segment[data-tier="3"].active { background: #388e3c; }
+.tier-segment[data-tier="4"].active { background: #1976d2; }
