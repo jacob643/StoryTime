@@ -33,7 +33,7 @@ def build_prompt(
     direction = directions.get(outcome_tier, directions[2])
     parts.append(
         f"Continue the story with {direction}. "
-        "Write only a single paragraph, about {max_chars} characters long, nothing else."
+        f"Write only a single paragraph, about {max_chars} characters long, nothing else."
     )
 
     assembled = "\n\n".join(parts)
