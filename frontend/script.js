@@ -561,7 +561,7 @@ async function sendPrompt(prompt) {
         inputBox.value = '';
         startTime = null;
         paragraphJustCompleted = true;
-        messageDiv.textContent = 'Story started, type the first paragraph when ready.';
+        messageDiv.textContent = 'Story ready — start typing the first paragraph.';
         messageDiv.className = 'neutral';
         inputBox.disabled = false;
         inputBox.focus();
