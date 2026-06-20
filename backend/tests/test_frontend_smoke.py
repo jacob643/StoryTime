@@ -45,7 +45,7 @@ def test_page_loads_without_errors(server, page):
     assert page.title() == "Story Time!"
     assert page.locator("#initialPrompt").is_visible()
     assert page.locator("#restartButton").is_visible()
-    assert page.locator("#llmResponse").is_visible()
+    assert page.locator("#message").is_visible()
     assert len(errors) == 0, f"Console errors: {errors}"
 
 

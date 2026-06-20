@@ -15,6 +15,7 @@ class SettingsResponse(BaseModel):
     tier_2_max_sigma: float
     tier_3_max_sigma: float
     fixed_thresholds: list[list[float]]
+    character_amount: int
     target_split_size: int
     min_split_size: int
     default_avg_cpm: float
@@ -33,6 +34,7 @@ class SettingsPatch(BaseModel):
     tier_2_max_sigma: float | None = None
     tier_3_max_sigma: float | None = None
     fixed_thresholds: list[list[float]] | None = None
+    character_amount: int | None = None
     target_split_size: int | None = None
     min_split_size: int | None = None
     default_avg_cpm: float | None = None
@@ -52,6 +54,7 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         tier_2_max_sigma=gs.tier_2_max_sigma,
         tier_3_max_sigma=gs.tier_3_max_sigma,
         fixed_thresholds=gs.fixed_thresholds,
+        character_amount=gs.character_amount,
         target_split_size=gs.target_split_size,
         min_split_size=gs.min_split_size,
         default_avg_cpm=gs.default_avg_cpm,

@@ -50,7 +50,7 @@ async def simulate(body: SimulateRequest):
                 params=session.scoring_params,
             )
             history_texts = [r.text for r in session.history]
-            max_chars = gs.target_split_size * 4
+            max_chars = gs.character_amount
             prompt = build_prompt(
                 initial_context=session.initial_prompt,
                 history=history_texts,
@@ -64,7 +64,7 @@ async def simulate(body: SimulateRequest):
             outcome_tier = compute_outcome_tier(body.simulated_speed_cpm)
             initial = session.initial_prompt if session else ""
             history_texts = [r.text for r in session.history] if session else []
-            max_chars = gs.target_split_size * 4
+            max_chars = gs.character_amount
             prompt = build_prompt(
                 initial_context=initial,
                 history=history_texts,
