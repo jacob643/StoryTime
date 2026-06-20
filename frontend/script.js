@@ -494,12 +494,6 @@ window.simulate = function(cpm, deviation) {
 async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
 
-    const simMatch = prompt.trim().match(/^\/simulate\s+(\d+(?:\.\d+)?)(?:\s+(\d+(?:\.\d+)?))?\s*$/i);
-    if (simMatch) {
-        await sendSimulate(parseFloat(simMatch[1]), simMatch[2] ? parseFloat(simMatch[2]) : 0);
-        return;
-    }
-
     sessionId = null;
     const promptText = prompt;
     retryAction = () => sendPrompt(promptText);
