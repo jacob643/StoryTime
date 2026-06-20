@@ -44,6 +44,9 @@ def _compute_first_paragraph_tier(split_speeds: list[float], params: ScoringPara
     baseline_count = math.ceil(n / 2)
     baseline = split_speeds[:baseline_count]
     evaluated = split_speeds[baseline_count:]
+    if not evaluated:
+        paragraph_avg = split_speeds[0]
+        return compute_outcome_tier(paragraph_avg, params=params)
     avg, stddev = compute_speed_stats(baseline, params.min_stddev_cpm)
     evaluated_avg = sum(evaluated) / len(evaluated)
     effective_stddev = stddev / math.sqrt(len(evaluated))
