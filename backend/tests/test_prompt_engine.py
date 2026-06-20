@@ -1,4 +1,12 @@
-from backend.prompt_engine import build_prompt, build_first_paragraph_prompt, parse_llm_response, validate_llm_response, OUTCOME_DIRECTIONS, NEUTRAL_FALLBACK
+from backend.prompt_engine import (
+    build_prompt,
+    build_first_paragraph_prompt,
+    parse_llm_response,
+    sanitize_text,
+    validate_llm_response,
+    OUTCOME_DIRECTIONS,
+    NEUTRAL_FALLBACK,
+)
 
 
 class TestBuildPrompt:
@@ -106,3 +114,52 @@ class TestValidateLlmResponse:
 
     def test_neutral_fallback_is_valid(self):
         assert validate_llm_response(NEUTRAL_FALLBACK) is True
+
+
+class TestSanitizeText:
+    def test_accented_chars_kept(self):
+        assert sanitize_text("São Paulo") == "São Paulo"
+        assert sanitize_text("résumé") == "résumé"
+        assert sanitize_text("jalapeño") == "jalapeño"
+        assert sanitize_text("français") == "français"
+
+    def test_untypeable_ligatures_replaced(self):
+        assert sanitize_text("cœur") == "coeur"
+        assert sanitize_text("\u0153uvre") == "oeuvre"
+
+    def test_smart_quotes_to_straight(self):
+        assert sanitize_text('\u201cHello\u201d') == '"Hello"'
+        assert sanitize_text("\u2018world\u2019") == "'world'"
+
+    def test_em_dash_to_hyphen(self):
+        assert sanitize_text("wait\u2014what") == "wait-what"
+        assert sanitize_text("oh\u2013really") == "oh-really"
+
+    def test_control_chars_stripped(self):
+        assert sanitize_text("hello\x00world\x01") == "helloworld"
+        assert sanitize_text("line1\nline2") == "line1\nline2"
+
+    def test_valid_ascii_unchanged(self):
+        text = "The hero advanced through the dark forest."
+        assert sanitize_text(text) == text
+
+    def test_idempotent(self):
+        input_text = "São Paulo, résumé, \u201chello\u201d"
+        once = sanitize_text(input_text)
+        twice = sanitize_text(once)
+        assert once == twice
+
+    def test_empty_string(self):
+        assert sanitize_text("") == ""
+
+    def test_round_trip_with_parse(self):
+        raw = 'Here is the next paragraph: "São Paulo est belle."'
+        parsed = parse_llm_response(raw)
+        sanitized = sanitize_text(parsed)
+        assert sanitized == "São Paulo est belle."
+
+    def test_german_eszett_kept(self):
+        assert sanitize_text("groß") == "groß"
+
+    def test_danish_ae_kept(self):
+        assert sanitize_text("Ærø") == "Ærø"

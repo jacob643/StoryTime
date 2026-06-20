@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -8,7 +9,8 @@ from backend.prompt_engine import NEUTRAL_FALLBACK
 
 
 @pytest.fixture
-def client():
+def client(monkeypatch, tmp_path):
+    monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
     app.dependency_overrides.clear()
     with TestClient(app) as c:
         yield c

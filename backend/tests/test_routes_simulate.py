@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -17,7 +18,8 @@ def enable_dev_mode():
 
 
 @pytest.fixture
-def client():
+def client(monkeypatch, tmp_path):
+    monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
     app.dependency_overrides.clear()
     session_store._sessions.clear()
     with TestClient(app) as c:
