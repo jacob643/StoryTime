@@ -74,8 +74,12 @@ class TestBuildFirstParagraphPrompt:
         result = build_first_paragraph_prompt("a cat who solves mysteries")
         assert "a cat who solves mysteries" in result
         assert result.startswith("Write the first paragraph of a story about:")
-        assert "5 sentences" in result
+        assert "200 characters" in result
         assert "nothing else" in result
+
+    def test_custom_max_chars(self):
+        result = build_first_paragraph_prompt("test", max_chars=150)
+        assert "150 characters" in result
 
 
 class TestValidateLlmResponse:
