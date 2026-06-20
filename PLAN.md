@@ -51,6 +51,7 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [x] **3.6.10** Split-level outcome scoring — changed to σ/√N rescaling (Proposal C): paragraph-average CPM is scored against rolling stats using `effective_stddev = rolling_stddev / sqrt(N)`. Longer paragraphs have tighter effective stddev, making the same deviation more significant — mathematically principled via standard error of the mean.
 - [x] **3.6.11** Written story files use slug filename — `writtenStories/<slug>_<session_id[:8]>.txt` where slug is the initial prompt lowercased, non-alphanumeric stripped, whitespace replaced with underscores, truncated to 50 chars. Empty paragraphs are skipped entirely (no file created for blank text).
 - [ ] **3.6.12** Clean up test-generated written stories — running the test suite leaves behind `writtenStories/*.txt` files (untitled slugs, generic one-paragraph stories). Find a way to prevent or clean these up so the directory stays clean during development.
+- [ ] **3.6.13** Sanitize non-typeable characters from LLM output — the backend should pass over generated text and replace or strip characters that aren't easily typeable on a standard US keyboard (e.g. "œ" in "cœur", accented letters, em-dashes, curly quotes). Consider a whitelist of ASCII + common punctuation, with smart replacement (é → e, "œ" → "oe", — → -, etc.). The input box could also be constrained to reject non-whitelisted characters, but the LLM fix is primary.
 
 ---
 
