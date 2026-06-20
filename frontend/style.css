@@ -322,8 +322,16 @@ body
     background: var(--bg-settings);
     color: var(--text-primary);
     max-height: 60vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     transition: max-height 0.3s ease;
+}
+
+#settingsSections
+{
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 #settingsPanel.collapsed
