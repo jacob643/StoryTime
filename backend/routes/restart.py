@@ -26,7 +26,9 @@ async def restart(body: RestartRequest):
     logger.info("POST /api/restart initial_prompt=%s", body.initial_prompt)
     try:
         session = session_store.create(initial_prompt=body.initial_prompt)
-        prompt = build_first_paragraph_prompt(body.initial_prompt)
+        gs = get_settings()
+        max_chars = gs.target_split_size * 4
+        prompt = build_first_paragraph_prompt(body.initial_prompt, max_chars=max_chars)
         logger.debug("Restart prompt:\n%s", prompt)
         raw = await registry.generate(prompt)
         text = parse_llm_response(raw)

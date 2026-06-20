@@ -16,6 +16,7 @@ def build_prompt(
     history: list[str],
     outcome_tier: int,
     outcome_directions: dict[int, str] | None = None,
+    max_chars: int = 200,
 ) -> str:
     parts: list[str] = []
 
@@ -32,12 +33,12 @@ def build_prompt(
     direction = directions.get(outcome_tier, directions[2])
     parts.append(
         f"Continue the story with {direction}. "
-        "Write only a single paragraph, nothing else."
+        "Write only a single paragraph, about {max_chars} characters long, nothing else."
     )
 
     assembled = "\n\n".join(parts)
-    logger.debug("build_prompt: outcome_tier=%d history_len=%d prompt_len=%d",
-                 outcome_tier, len(history), len(assembled))
+    logger.debug("build_prompt: outcome_tier=%d history_len=%d prompt_len=%d max_chars=%d",
+                 outcome_tier, len(history), len(assembled), max_chars)
     return assembled
 
 
@@ -47,11 +48,11 @@ NEUTRAL_FALLBACK = (
 )
 
 
-def build_first_paragraph_prompt(user_input: str) -> str:
-    logger.debug("build_first_paragraph_prompt: user_input=%s", user_input)
+def build_first_paragraph_prompt(user_input: str, max_chars: int = 200) -> str:
+    logger.debug("build_first_paragraph_prompt: user_input=%s max_chars=%d", user_input, max_chars)
     return (
         f"Write the first paragraph of a story about: {user_input}\n\n"
-        "The paragraph should be about 5 sentences long. Write only the paragraph, nothing else."
+        f"The paragraph should be about {max_chars} characters long. Write only the paragraph, nothing else."
     )
 
 
