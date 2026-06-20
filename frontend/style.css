@@ -8,9 +8,12 @@
     --bg-llm-success: #f1f8e9;
     --bg-llm-error: #ffebee;
     --bg-llm-sim: #fff3e0;
+    --bg-llm-neutral: #f5f5f5;
     --bg-input: #fff;
     --bg-btn: #fff;
     --bg-btn-hover: #e0e0e0;
+    --bg-btn-topbar: #e8e8e8;
+    --bg-btn-topbar-hover: #d0d0d0;
     --bg-retry-hover: #ffe0e0;
     --bg-tier-inactive: #eee;
     --bg-settings: #fafafa;
@@ -20,6 +23,7 @@
     --border-llm-success: #4caf50;
     --border-llm-error: #f44336;
     --border-llm-sim: #ff9800;
+    --border-llm-neutral: #757575;
     --text-primary: #000;
     --text-secondary: #555;
     --text-muted: #999;
@@ -40,9 +44,12 @@
     --bg-llm-success: #1b5e20;
     --bg-llm-error: #b71c1c;
     --bg-llm-sim: #e65100;
+    --bg-llm-neutral: #333;
     --bg-input: #1a1a2e;
     --bg-btn: #16213e;
     --bg-btn-hover: #0f3460;
+    --bg-btn-topbar: #2a2a4e;
+    --bg-btn-topbar-hover: #3a3a5e;
     --bg-retry-hover: #4a1a1a;
     --bg-tier-inactive: #2a2a4e;
     --bg-settings: #16213e;
@@ -52,6 +59,7 @@
     --border-llm-success: #66bb6a;
     --border-llm-error: #ef5350;
     --border-llm-sim: #ffa726;
+    --border-llm-neutral: #888;
     --text-primary: #e0e0e0;
     --text-secondary: #aaa;
     --text-muted: #777;
@@ -227,6 +235,12 @@ body
     background: var(--bg-llm-success);
 }
 
+#message.neutral
+{
+    border-color: var(--border-llm-neutral);
+    background: var(--bg-llm-neutral);
+}
+
 #message.error
 {
     border-color: var(--border-llm-error);
@@ -314,9 +328,9 @@ body
     flex-shrink: 0;
 }
 
-#settingsToggle
+#topBar button
 {
-    background: none;
+    background: var(--bg-btn-topbar);
     border: 1px solid var(--border-color);
     border-radius: 0.3vw;
     padding: 0.3vw 0.8vw;
@@ -325,22 +339,9 @@ body
     color: var(--text-primary);
 }
 
-#settingsToggle:hover
+#topBar button:hover
 {
-    background: var(--bg-btn-hover);
-}
-
-#setupLink
-{
-    font-size: 0.9em;
-    color: var(--text-link);
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-#setupLink:hover
-{
-    color: var(--text-link-hover);
+    background: var(--bg-btn-topbar-hover);
 }
 
 #settingsPanel
