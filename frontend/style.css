@@ -1,3 +1,67 @@
+:root
+{
+    --bg-body: #f4f4f9;
+    --bg-panel: #fafafa;
+    --bg-container: #fff;
+    --bg-history-item: rgba(0,0,0,0.05);
+    --bg-llm-response: #fff;
+    --bg-llm-success: #f1f8e9;
+    --bg-llm-error: #ffebee;
+    --bg-llm-sim: #fff3e0;
+    --bg-input: #fff;
+    --bg-btn: #fff;
+    --bg-btn-hover: #e0e0e0;
+    --bg-retry-hover: #ffe0e0;
+    --bg-tier-inactive: #eee;
+    --bg-settings: #fafafa;
+    --border-color: #ccc;
+    --border-input: #bbb;
+    --border-btn: #999;
+    --border-llm-success: #4caf50;
+    --border-llm-error: #f44336;
+    --border-llm-sim: #ff9800;
+    --text-primary: #000;
+    --text-secondary: #555;
+    --text-muted: #999;
+    --text-link: #069;
+    --text-link-hover: #047;
+    --text-error: #c00;
+    --text-success: green;
+    --shadow: rgba(0,0,0,0.1);
+}
+
+.dark-mode
+{
+    --bg-body: #1a1a2e;
+    --bg-panel: #16213e;
+    --bg-container: #0f3460;
+    --bg-history-item: rgba(255,255,255,0.08);
+    --bg-llm-response: #0f3460;
+    --bg-llm-success: #1b5e20;
+    --bg-llm-error: #b71c1c;
+    --bg-llm-sim: #e65100;
+    --bg-input: #1a1a2e;
+    --bg-btn: #16213e;
+    --bg-btn-hover: #0f3460;
+    --bg-retry-hover: #4a1a1a;
+    --bg-tier-inactive: #2a2a4e;
+    --bg-settings: #16213e;
+    --border-color: #334;
+    --border-input: #445;
+    --border-btn: #445;
+    --border-llm-success: #66bb6a;
+    --border-llm-error: #ef5350;
+    --border-llm-sim: #ffa726;
+    --text-primary: #e0e0e0;
+    --text-secondary: #aaa;
+    --text-muted: #777;
+    --text-link: #64b5f6;
+    --text-link-hover: #90caf9;
+    --text-error: #ef5350;
+    --text-success: #81c784;
+    --shadow: rgba(0,0,0,0.4);
+}
+
 *
 {
     box-sizing: border-box;
@@ -7,7 +71,8 @@ body
 {
     font-family: Consolas, monospace;
     margin: 0;
-    background-color: #f4f4f9;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
     overflow: hidden;
     height: 100vh;
 }
@@ -23,8 +88,8 @@ body
 #storyContext
 {
     width: 20vw;
-    background: #fafafa;
-    border: 1px solid #ccc;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
     border-radius: 0.5vw;
     padding: 1vw;
     overflow-y: auto;
@@ -34,7 +99,7 @@ body
 {
     margin: 0 0 0.5vw 0;
     font-size: 0.9em;
-    color: #555;
+    color: var(--text-secondary);
 }
 
 #storyContext p
@@ -51,10 +116,10 @@ body
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: white;
+    background: var(--bg-container);
     padding: 2vw;
     border-radius: 0.5vw;
-    box-shadow: 0 0.5vw 1vw rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.5vw 1vw var(--shadow);
     flex: 1;
     max-width: 60vw;
     min-width: 0;
@@ -63,7 +128,7 @@ body
 .history-item
 {
     padding: 0.4vw 0.6vw;
-    background-color: rgba(0,0,0,0.05);
+    background-color: var(--bg-history-item);
     border-radius: 0.3vw;
     font-size: 0.8em;
     line-height: 1.4;
@@ -79,15 +144,15 @@ body
 
 .history-item .history-meta
 {
-    color: #555;
+    color: var(--text-secondary);
     font-size: 0.9em;
 }
 
 #history
 {
     width: 20vw;
-    background: #fafafa;
-    border: 1px solid #ccc;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
     border-radius: 0.5vw;
     padding: 1vw;
     overflow-y: auto;
@@ -100,7 +165,7 @@ body
 {
     margin: 0 0 0.3vw 0;
     font-size: 0.9em;
-    color: #555;
+    color: var(--text-secondary);
 }
 
 #sidebar
@@ -122,7 +187,7 @@ body
 {
     text-align: center;
     font-size: 1.5em;
-    color: green;
+    color: var(--text-success);
     display:none;
     width: 100%;
 }
@@ -134,8 +199,8 @@ body
     padding: 1vw;
     margin: 1vw 0;
     border-radius: 0.5vw;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: var(--bg-llm-response);
+    border: 1px solid var(--border-color);
     white-space: pre-wrap;
     font-family: Georgia, serif;
     line-height: 1.5;
@@ -144,20 +209,20 @@ body
 
 #llmResponse.success
 {
-    border-color: #4caf50;
-    background: #f1f8e9;
+    border-color: var(--border-llm-success);
+    background: var(--bg-llm-success);
 }
 
 #llmResponse.error
 {
-    border-color: #f44336;
-    background: #ffebee;
+    border-color: var(--border-llm-error);
+    background: var(--bg-llm-error);
 }
 
 #llmResponse.simulation
 {
-    border-color: #ff9800;
-    background: #fff3e0;
+    border-color: var(--border-llm-sim);
+    background: var(--bg-llm-sim);
 }
 
 #textDisplay.simulation
@@ -171,9 +236,11 @@ body
     width: 100%;
     padding: 1vw;
     font-size: 1em;
-    border: 0.1vw solid #ccc;
+    border: 0.1vw solid var(--border-color);
     border-radius: 0.5vw;
     box-sizing: border-box;
+    background: var(--bg-input);
+    color: var(--text-primary);
 }
 
 #inputBox:focus
@@ -183,56 +250,49 @@ body
     box-shadow: 0 0 0 0.2vw rgba(0, 123, 255, 0.25);
 }
 
-.radio-group
-{
-    margin-top: 2vw;
-}
-
-.radio-group label
-{
-    margin-right: 1vw;
-}
 
 #settingsToggle
 {
     background: none;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
     border-radius: 0.3vw;
     padding: 0.3vw 0.8vw;
     cursor: pointer;
     font-size: 0.9em;
     margin: 0.5vw 0;
     align-self: flex-start;
+    color: var(--text-primary);
 }
 
 #settingsToggle:hover
 {
-    background: #eee;
+    background: var(--bg-btn-hover);
 }
 
 #setupLink
 {
     font-size: 0.9em;
     margin-left: 0.8vw;
-    color: #069;
+    color: var(--text-link);
     text-decoration: underline;
     cursor: pointer;
 }
 
 #setupLink:hover
 {
-    color: #047;
+    color: var(--text-link-hover);
 }
 
 #settingsPanel
 {
     width: 80%;
     max-width: 80vw;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
     border-radius: 0.5vw;
     padding: 1vw;
     margin: 0.5vw 0;
-    background: #fafafa;
+    background: var(--bg-settings);
+    color: var(--text-primary);
     max-height: 60vh;
     overflow-y: auto;
     transition: max-height 0.3s ease;
@@ -251,7 +311,7 @@ body
 {
     margin-bottom: 1vw;
     padding-bottom: 0.5vw;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border-color);
 }
 
 #settingsPanel section:last-child
@@ -263,7 +323,7 @@ body
 {
     margin: 0 0 0.3vw 0;
     font-size: 0.95em;
-    color: #555;
+    color: var(--text-secondary);
 }
 
 #settingsPanel label
@@ -279,10 +339,12 @@ body
 {
     margin-left: 0.5vw;
     padding: 0.2vw 0.4vw;
-    border: 1px solid #bbb;
+    border: 1px solid var(--border-input);
     border-radius: 0.2vw;
     font-size: 0.85em;
     width: 8vw;
+    background: var(--bg-input);
+    color: var(--text-primary);
 }
 
 #settingsPanel textarea
@@ -310,21 +372,22 @@ body
 .settings-actions button
 {
     padding: 0.3vw 1vw;
-    border: 1px solid #999;
+    border: 1px solid var(--border-btn);
     border-radius: 0.3vw;
-    background: #fff;
+    background: var(--bg-btn);
+    color: var(--text-primary);
     cursor: pointer;
     font-size: 0.9em;
 }
 
 .settings-actions button:hover
 {
-    background: #e0e0e0;
+    background: var(--bg-btn-hover);
 }
 
 .error-text
 {
-    color: #c00;
+    color: var(--text-error);
     font-weight: bold;
 }
 
@@ -336,24 +399,24 @@ body
 
 .error-hint a
 {
-    color: #06c;
+    color: var(--text-link);
 }
 
 .retry-btn
 {
     margin-top: 0.5vw;
     padding: 0.3vw 1.5vw;
-    border: 1px solid #c00;
+    border: 1px solid var(--text-error);
     border-radius: 0.3vw;
-    background: #fff;
-    color: #c00;
+    background: var(--bg-btn);
+    color: var(--text-error);
     cursor: pointer;
     font-size: 0.9em;
 }
 
 .retry-btn:hover
 {
-    background: #ffe0e0;
+    background: var(--bg-retry-hover);
 }
 
 #tierChart
@@ -369,9 +432,9 @@ body
     padding: 2px 6px;
     font-size: 0.75em;
     border-radius: 3px;
-    background: #eee;
-    color: #999;
-    border: 1px solid #ddd;
+    background: var(--bg-tier-inactive);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
     text-align: center;
     transition: background 0.3s, color 0.3s, border-color 0.3s;
 }
