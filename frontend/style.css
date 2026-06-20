@@ -155,10 +155,19 @@ body
     border: 1px solid var(--border-color);
     border-radius: 0.5vw;
     padding: 1vw;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#historyEntries
+{
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0.5vw;
+    flex: 1;
+    min-height: 0;
 }
 
 #history h3
