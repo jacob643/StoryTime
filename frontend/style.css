@@ -231,6 +231,7 @@ body
     border: 1px dashed #ff9800;
 }
 
+#initialPrompt,
 #inputBox
 {
     width: 100%;
@@ -243,6 +244,7 @@ body
     color: var(--text-primary);
 }
 
+#initialPrompt:focus,
 #inputBox:focus
 {
     outline: none;
