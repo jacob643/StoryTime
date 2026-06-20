@@ -29,10 +29,10 @@ async def restart(body: RestartRequest):
     try:
         session = session_store.create(initial_prompt=body.initial_prompt)
         gs = get_settings()
-        max_chars = gs.character_amount
+        max_words = gs.paragraph_word_count
         params = session.scoring_params
         bounds = compute_tier_boundaries(params=params)
-        prompt = build_first_paragraph_prompt(body.initial_prompt, max_chars=max_chars)
+        prompt = build_first_paragraph_prompt(body.initial_prompt, max_words=max_words)
         logger.debug("Restart prompt:\n%s", prompt)
         raw = await registry.generate(prompt)
         text = parse_llm_response(raw)

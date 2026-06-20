@@ -52,13 +52,12 @@ async def simulate(body: SimulateRequest):
             )
             bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=session.scoring_params)
             history_texts = [r.text for r in session.history]
-            max_chars = gs.character_amount
             prompt = build_prompt(
                 initial_context=session.initial_prompt,
                 history=history_texts,
                 outcome_tier=outcome_tier,
                 outcome_directions=gs.outcome_directions,
-                max_chars=max_chars,
+                max_words=gs.paragraph_word_count,
             )
             logger.debug("Simulate adaptive: rolling=%s avg=%.1f stddev=%.1f -> tier=%d",
                          session.rolling_splits, avg, stddev, outcome_tier)
@@ -66,7 +65,6 @@ async def simulate(body: SimulateRequest):
             outcome_tier = compute_outcome_tier(body.simulated_speed_cpm)
             initial = session.initial_prompt if session else ""
             history_texts = [r.text for r in session.history] if session else []
-            max_chars = gs.character_amount
             params = session.scoring_params if session else None
             bounds = compute_tier_boundaries(params=params)
             prompt = build_prompt(
@@ -74,7 +72,7 @@ async def simulate(body: SimulateRequest):
                 history=history_texts,
                 outcome_tier=outcome_tier,
                 outcome_directions=gs.outcome_directions,
-                max_chars=max_chars,
+                max_words=gs.paragraph_word_count,
             )
             logger.debug("Simulate fixed: speed=%.1f -> tier=%d", body.simulated_speed_cpm, outcome_tier)
 

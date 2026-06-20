@@ -22,7 +22,7 @@ FIXED_THRESHOLDS: list[tuple[float, float]] = [
     (30, 50),
     (50, 75),
     (75, 100),
-    (100, float("inf")),
+    (100, 9999),
 ]
 
 DEFAULT_AVG_CPM = 300.0

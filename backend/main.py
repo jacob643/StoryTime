@@ -1,10 +1,13 @@
 import sys
 import uvicorn
 import webbrowser
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from backend.config import settings
+from backend.logger import logger
 from backend.routes.generate import router as generate_router
 from backend.routes.restart import router as restart_router
 from backend.routes.simulate import router as simulate_router
@@ -12,6 +15,20 @@ from backend.routes.settings import router as settings_router
 from backend.routes.models import router as models_router
 
 app = FastAPI(title="Story Time")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
+    for err in exc.errors():
+        logger.error(
+            "Validation error: loc=%s msg=%s input=%s",
+            ".".join(str(p) for p in err.get("loc", [])),
+            err.get("msg"),
+            err.get("input"),
+        )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 app.include_router(generate_router)
 app.include_router(restart_router)
 app.include_router(simulate_router)

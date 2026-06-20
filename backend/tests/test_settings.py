@@ -45,7 +45,7 @@ def test_game_settings_defaults():
     assert gs.tier_1_max_sigma == -0.5
     assert gs.tier_2_max_sigma == 0.5
     assert gs.tier_3_max_sigma == 1.5
-    assert gs.character_amount == 200
+    assert gs.paragraph_word_count == 80
     assert gs.target_split_size == 50
     assert gs.min_split_size == 30
     assert gs.default_avg_cpm == 300.0
@@ -56,9 +56,9 @@ def test_game_settings_defaults():
     assert gs.custom_model == ""
 
 
-def test_default_fixed_thresholds_use_inf_for_last_upper():
+def test_default_fixed_thresholds_last_upper_is_9999():
     gs = GameSettings()
-    assert gs.fixed_thresholds[4][1] == float("inf")
+    assert gs.fixed_thresholds[4][1] == 9999.0
 
 
 def test_save_and_load_roundtrip(monkeypatch, tmp_path):
