@@ -116,7 +116,7 @@ function reset() {
     inputBox.disabled = true;
     initialPromptInput.value = '';
     initialPromptInput.focus();
-    messageDiv.textContent = '... and send';
+    messageDiv.textContent = 'Enter a story prompt and send';
     messageDiv.className = 'neutral';
     timeTakenSeconds = 0;
     speed = 0;
