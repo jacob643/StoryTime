@@ -61,7 +61,7 @@ def test_send_prompt_displays_response(server, page):
                 "session_id": "test-123",
                 "outcome_tier": 2,
                 "outcome_label": "neutral",
-                "tier_boundaries": [100, 75, 50, 30],
+                "tier_boundaries": [30, 50, 75, 100],
             }),
         )
 
@@ -98,7 +98,7 @@ def test_full_game_loop(server, page):
                 "session_id": "test-session",
                 "outcome_tier": 2,
                 "outcome_label": "neutral",
-                "tier_boundaries": [100, 75, 50, 30],
+                "tier_boundaries": [30, 50, 75, 100],
             })
         else:
             second_call_body = json.loads(route.request.post_data)
@@ -107,7 +107,7 @@ def test_full_game_loop(server, page):
                 "session_id": "test-session",
                 "outcome_tier": 3,
                 "outcome_label": "positive",
-                "tier_boundaries": [100, 75, 50, 30],
+                "tier_boundaries": [30, 50, 75, 100],
             })
         route.fulfill(status=200, content_type="application/json", body=body)
 
