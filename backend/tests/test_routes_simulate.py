@@ -86,26 +86,31 @@ def test_simulate_returns_404_for_nonexistent_session(client):
     assert response.json()["detail"] == "Session not found"
 
 
-def test_simulate_does_not_modify_session(client):
-    mock_resp1 = _mock_ollama_response(200, {"response": "First paragraph..."})
+def test_simulate_appends_to_session_history(client):
+    mock_resp1 = _mock_ollama_response(200, {"response": "First paragraph of a story about something interesting and long enough to pass validation."})
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp1):
         first = client.post("/api/generate", json={"prompt": "Tell a story"})
     session_id = first.json()["session_id"]
 
     session_before = session_store.get(session_id)
     hist_len_before = len(session_before.history)
-    splits_before = list(session_before.rolling_splits)
 
-    mock_resp2 = _mock_ollama_response(200, {"response": "Simulated..."})
+    mock_resp2 = _mock_ollama_response(200, {"response": "Simulated next paragraph that is long enough to be valid."})
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp2):
-        client.post("/api/simulate", json={
+        resp = client.post("/api/simulate", json={
             "session_id": session_id,
             "simulated_speed_cpm": 100.0,
         })
 
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["session_id"] == session_id
+
     session_after = session_store.get(session_id)
-    assert len(session_after.history) == hist_len_before
-    assert session_after.rolling_splits == splits_before
+    assert len(session_after.history) == hist_len_before + 1
+    record = session_after.history[-1]
+    assert record.speed_cpm == 100.0
+    assert record.outcome_tier == data["outcome_tier"]
 
 
 def test_simulate_returns_503_on_llm_error(client):
