@@ -254,6 +254,21 @@ body
     box-shadow: 0 0 0 0.2vw rgba(0, 123, 255, 0.25);
 }
 
+#restartButton
+{
+    background: var(--bg-btn);
+    color: var(--text-primary);
+    border: 0.1vw solid var(--border-color);
+    border-radius: 0.5vw;
+    padding: 0.6vw 1.2vw;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+#restartButton:hover
+{
+    background: var(--bg-btn-hover);
+}
 
 #settingsToggle
 {
