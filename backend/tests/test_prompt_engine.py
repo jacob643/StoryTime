@@ -1,4 +1,4 @@
-from backend.prompt_engine import build_prompt, parse_llm_response, validate_llm_response, OUTCOME_DIRECTIONS, NEUTRAL_FALLBACK
+from backend.prompt_engine import build_prompt, build_first_paragraph_prompt, parse_llm_response, validate_llm_response, OUTCOME_DIRECTIONS, NEUTRAL_FALLBACK
 
 
 class TestBuildPrompt:
@@ -67,6 +67,15 @@ class TestParseLlmResponse:
     def test_strip_prefix_with_quotes(self):
         raw = 'Here is the next paragraph: "Into the void."'
         assert parse_llm_response(raw) == 'Into the void.'
+
+
+class TestBuildFirstParagraphPrompt:
+    def test_wraps_user_input(self):
+        result = build_first_paragraph_prompt("a cat who solves mysteries")
+        assert "a cat who solves mysteries" in result
+        assert result.startswith("Write the first paragraph of a story about:")
+        assert "5 sentences" in result
+        assert "nothing else" in result
 
 
 class TestValidateLlmResponse:
