@@ -1,5 +1,6 @@
 import httpx
 from backend.providers import LLMProvider
+from backend.logger import logger
 
 
 class OpenAICompatibleProvider(LLMProvider):
@@ -26,6 +27,9 @@ class OpenAICompatibleProvider(LLMProvider):
             "max_tokens": 500,
             "temperature": 0.8,
         }
+        resolved_model = payload["model"]
+        logger.debug("OpenAICompatibleProvider: POST %s/chat/completions model=%s prompt_len=%d",
+                     self.base_url, resolved_model, len(prompt))
         async with httpx.AsyncClient() as client:
             r = await client.post(
                 f"{self.base_url}/chat/completions",
@@ -35,7 +39,10 @@ class OpenAICompatibleProvider(LLMProvider):
             )
             r.raise_for_status()
             data = r.json()
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            logger.debug("OpenAICompatibleProvider: response status=%d response_len=%d",
+                         r.status_code, len(content))
+            return content
 
     async def is_available(self) -> bool:
         try:

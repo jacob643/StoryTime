@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.logger import logger
+
 OUTCOME_DIRECTIONS: dict[int, str] = {
     0: "an even worse situation with no clear way out",
     1: "a significant setback that makes things more difficult",
@@ -33,7 +35,10 @@ def build_prompt(
         "Write only a single paragraph, nothing else."
     )
 
-    return "\n\n".join(parts)
+    assembled = "\n\n".join(parts)
+    logger.debug("build_prompt: outcome_tier=%d history_len=%d prompt_len=%d",
+                 outcome_tier, len(history), len(assembled))
+    return assembled
 
 
 NEUTRAL_FALLBACK = (
@@ -43,6 +48,7 @@ NEUTRAL_FALLBACK = (
 
 
 def build_first_paragraph_prompt(user_input: str) -> str:
+    logger.debug("build_first_paragraph_prompt: user_input=%s", user_input)
     return (
         f"Write the first paragraph of a story about: {user_input}\n\n"
         "The paragraph should be about 5 sentences long. Write only the paragraph, nothing else."

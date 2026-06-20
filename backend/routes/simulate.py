@@ -7,6 +7,7 @@ from backend.session import session_store
 from backend.game_logic import compute_outcome_tier, compute_speed_stats, get_outcome_label
 from backend.prompt_engine import build_prompt, parse_llm_response
 from backend.settings_manager import get_settings
+from backend.logger import logger
 
 router = APIRouter()
 
@@ -25,6 +26,7 @@ class SimulateResponse(BaseModel):
 
 @router.post("/api/simulate", response_model=SimulateResponse)
 async def simulate(body: SimulateRequest):
+    logger.info("POST /api/simulate session_id=%s simulated_speed=%.1f", body.session_id, body.simulated_speed_cpm)
     if not settings.dev_mode:
         raise HTTPException(status_code=403, detail="Dev mode is disabled")
 
@@ -54,6 +56,8 @@ async def simulate(body: SimulateRequest):
                 outcome_tier=outcome_tier,
                 outcome_directions=gs.outcome_directions,
             )
+            logger.debug("Simulate adaptive: rolling=%s avg=%.1f stddev=%.1f -> tier=%d",
+                         session.rolling_splits, avg, stddev, outcome_tier)
         else:
             outcome_tier = compute_outcome_tier(body.simulated_speed_cpm)
             initial = session.initial_prompt if session else ""
@@ -64,9 +68,12 @@ async def simulate(body: SimulateRequest):
                 outcome_tier=outcome_tier,
                 outcome_directions=gs.outcome_directions,
             )
+            logger.debug("Simulate fixed: speed=%.1f -> tier=%d", body.simulated_speed_cpm, outcome_tier)
 
+        logger.debug("Simulate prompt:\n%s", prompt)
         raw = await registry.generate(prompt)
         next_text = parse_llm_response(raw)
+        logger.debug("Simulate raw=%r parsed=%r", raw, next_text)
 
         if session is not None:
             session_store.append_paragraph(
@@ -77,6 +84,7 @@ async def simulate(body: SimulateRequest):
                 accuracy=1.0,
                 outcome_tier=outcome_tier,
             )
+            logger.debug("Simulate appended history entry speed=%.1f tier=%d", body.simulated_speed_cpm, outcome_tier)
 
         return SimulateResponse(
             response=next_text,
@@ -85,6 +93,7 @@ async def simulate(body: SimulateRequest):
             outcome_label=get_outcome_label(outcome_tier),
         )
     except (httpx.RequestError, httpx.HTTPStatusError) as exc:
+        logger.error("Simulate LLM failed: %s", exc)
         raise HTTPException(
             status_code=503,
             detail=f"LLM provider error: {exc}",

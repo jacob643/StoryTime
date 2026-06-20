@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from backend.logger import logger
+
 TARGET_SPLIT_SIZE = 50
 MIN_SPLIT_SIZE = 30
 MAX_ROLLING_WINDOW = 20
@@ -54,6 +56,8 @@ def split_text(text: str, target: int = TARGET_SPLIT_SIZE, minimum: int = MIN_SP
         splits.append(text[pos:])
     else:
         splits[-1] += text[pos:]
+    logger.debug("split_text: text_len=%d target=%d -> %d splits of lengths %s",
+                 len(text), target, len(splits), [len(s) for s in splits])
     return splits
 
 

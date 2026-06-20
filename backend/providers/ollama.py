@@ -2,6 +2,7 @@ import httpx
 from backend.config import settings
 from backend.providers import LLMProvider
 from backend.providers.mock import MockProvider
+from backend.logger import logger
 
 
 class OllamaProvider(LLMProvider):
@@ -18,6 +19,7 @@ class OllamaProvider(LLMProvider):
 
     async def generate(self, prompt: str, model: str | None = None) -> str:
         if settings.mock_llm:
+            logger.debug("OllamaProvider: mock_llm=true, delegating to MockProvider")
             return await self._mock.generate(prompt, model)
         url = f"{settings.ollama_host}/api/generate"
         payload = {
@@ -25,10 +27,12 @@ class OllamaProvider(LLMProvider):
             "prompt": prompt,
             "stream": False,
         }
+        logger.debug("OllamaProvider: POST %s model=%s prompt_len=%d", url, payload["model"], len(prompt))
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, timeout=settings.ollama_timeout)
             response.raise_for_status()
             data = response.json()
+            logger.debug("OllamaProvider: response status=%d response_len=%d", response.status_code, len(data.get("response", "")))
             return data["response"]
 
     async def is_available(self) -> bool:
