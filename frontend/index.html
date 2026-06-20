@@ -23,10 +23,6 @@
 				<input type="radio" name="speedType" value="wpm" />
 				WPM
 			</label>
-			<label for="characterAmountInput">
-				<span id="characterAmount"></span>
-			</label>
-			<input id="characterAmountInput" value="20" />
 		</div>
         <div class="container">
             <input type="text" id="initialPrompt" placeholder='e.g. a skateboard with a soul trying to find its home' />
@@ -57,6 +53,10 @@
             <section>
                 <h3>Fixed Thresholds (low, high CPM)</h3>
                 <div id="fixedThresholdsContainer"></div>
+            </section>
+            <section>
+                <h3>Character Count</h3>
+                <label>Characters per paragraph <input type="number" id="characterAmountInput" step="10" min="20" /></label>
             </section>
             <section>
                 <h3>Split Sizes</h3>
