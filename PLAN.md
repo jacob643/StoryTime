@@ -50,6 +50,7 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [ ] **3.6.9** Simulate shouldn't restart the story — if `sessionId` is already set in the frontend, `sendSimulate()` no longer resets it; it just sets `simulatedCpm`/`simulatedDeviation` and shows a message. Only creates a new session on first call.
 - [x] **3.6.10** Split-level outcome scoring — `_compute_first_paragraph_tier` and `_compute_subsequent_tier` now score each split individually against rolling stats and return `min()` of all split tiers. This favors consistency: one slow split drags the whole paragraph down.
 - [x] **3.6.11** Written story files use slug filename — `writtenStories/<slug>_<session_id[:8]>.txt` where slug is the initial prompt lowercased, non-alphanumeric stripped, whitespace replaced with underscores, truncated to 50 chars. Empty paragraphs are skipped entirely (no file created for blank text).
+- [ ] **3.6.12** Clean up test-generated written stories — running the test suite leaves behind `writtenStories/*.txt` files (untitled slugs, generic one-paragraph stories). Find a way to prevent or clean these up so the directory stays clean during development.
 
 ---
 
