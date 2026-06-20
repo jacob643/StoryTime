@@ -13,6 +13,7 @@ let simulatedDeviation = 0;
 let splitBoundaries = [];
 let splitTimestamps = [];
 let retryAction = null;
+let paragraphJustCompleted = false;
 
 function computeSplits(text) {
     const target = 50;
@@ -107,6 +108,7 @@ function reset() {
     sessionId = null;
     simulatedCpm = null;
     simulatedDeviation = 0;
+    paragraphJustCompleted = false;
     textContent = '';
     textDisplay.innerText = '';
     textDisplay.className = '';
@@ -114,8 +116,8 @@ function reset() {
     inputBox.disabled = true;
     initialPromptInput.value = '';
     initialPromptInput.focus();
-    messageDiv.textContent = 'Enter a story prompt and click Send.';
-    messageDiv.className = '';
+    messageDiv.textContent = '... and send';
+    messageDiv.className = 'neutral';
     timeTakenSeconds = 0;
     speed = 0;
     startTime = null;
@@ -248,6 +250,9 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         textDisplay.className = '';
         inputBox.value = '';
         startTime = null;
+        paragraphJustCompleted = true;
+        messageDiv.textContent = 'paragraph over! take a breather';
+        messageDiv.className = 'neutral';
         inputBox.focus();
         initSplits(textContent);
         retryAction = null;
@@ -296,6 +301,11 @@ function startTypingTimer() {
 }
 
 inputBox.addEventListener('input', () => {
+    if (paragraphJustCompleted && inputBox.value.length > 0) {
+        paragraphJustCompleted = false;
+        messageDiv.textContent = 'Typing away...';
+        messageDiv.className = 'success';
+    }
     startTypingTimer();
     updateSplitTimestamps();
     CheckFinishedSentence();
@@ -313,6 +323,10 @@ settingsToggle.addEventListener('click', () => {
     if (!settingsPanel.classList.contains('collapsed')) {
         loadSettings();
     }
+});
+
+document.getElementById('setupLink').addEventListener('click', () => {
+    window.open('/getting_started.html', '_blank');
 });
 
 function safeVal(v, fallback) {
@@ -526,7 +540,7 @@ async function sendPrompt(prompt) {
     const promptText = prompt;
     retryAction = () => sendPrompt(promptText);
     messageDiv.textContent = 'Starting story...';
-    messageDiv.className = '';
+    messageDiv.className = 'neutral';
 
     try {
         const response = await fetch('/api/restart', {
@@ -546,8 +560,9 @@ async function sendPrompt(prompt) {
         textDisplay.className = '';
         inputBox.value = '';
         startTime = null;
-        messageDiv.textContent = 'Story started — type the paragraph above.';
-        messageDiv.className = 'success';
+        paragraphJustCompleted = true;
+        messageDiv.textContent = 'Story started, type the first paragraph when ready.';
+        messageDiv.className = 'neutral';
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);
