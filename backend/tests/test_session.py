@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from backend.session import GameSession, ParagraphRecord, SessionStore
 
 
@@ -138,3 +140,39 @@ class TestAppendParagraph:
         assert r.time_taken_ms == 3000
         assert r.accuracy == 0.88
         assert r.outcome_tier == 1
+
+    def test_append_persists_to_file(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        store = SessionStore()
+        session = store.create(initial_prompt="test story")
+        file_path = tmp_path / "writtenStories" / f"{session.id}.txt"
+
+        store.append_paragraph(
+            session_id=session.id,
+            text="Once upon a time.",
+            speed_cpm=250.0,
+            time_taken_ms=5000,
+            accuracy=0.95,
+            outcome_tier=2,
+            split_speeds=[200.0, 300.0],
+        )
+        assert file_path.exists()
+        content = file_path.read_text(encoding="utf-8")
+        assert "Once upon a time." in content
+        assert "250.0" in content
+        assert "Tier: 2" in content
+        assert "200.0, 300.0" in content
+
+    def test_append_persists_multiple_paragraphs(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        store = SessionStore()
+        session = store.create(initial_prompt="test story")
+        file_path = tmp_path / "writtenStories" / f"{session.id}.txt"
+
+        store.append_paragraph(session.id, "first para", 200.0, 3000, 0.9, 1)
+        store.append_paragraph(session.id, "second para", 400.0, 2000, 1.0, 3)
+        content = file_path.read_text(encoding="utf-8")
+        assert "first para" in content
+        assert "second para" in content
+        assert "Paragraph 1" in content
+        assert "Paragraph 2" in content

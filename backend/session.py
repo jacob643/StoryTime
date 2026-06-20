@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, Optional
 
 from backend.game_logic import ScoringParams, DEFAULT_AVG_CPM, MAX_ROLLING_WINDOW
@@ -60,6 +61,21 @@ class SessionStore:
     def get(self, session_id: str) -> Optional[GameSession]:
         return self._sessions.get(session_id)
 
+    def _persist_paragraph(self, session: GameSession, record: ParagraphRecord) -> None:
+        out_dir = Path.cwd() / "writtenStories"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        file_path = out_dir / f"{session.id}.txt"
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        with open(file_path, "a", encoding="utf-8") as f:
+            f.write(f"\n--- Paragraph {len(session.history)} ---\n")
+            f.write(f"Date: {now}\n")
+            f.write(f"Speed: {record.speed_cpm:.1f} CPM | "
+                    f"Tier: {record.outcome_tier} ("
+                    f"{'very negative' if record.outcome_tier == 0 else 'negative' if record.outcome_tier == 1 else 'neutral' if record.outcome_tier == 2 else 'positive' if record.outcome_tier == 3 else 'very positive'})\n")
+            if record.split_speeds:
+                f.write(f"Splits: [{', '.join(f'{s:.1f}' for s in record.split_speeds)}]\n")
+            f.write(f"\n{record.text}\n")
+
     def append_paragraph(
         self,
         session_id: str,
@@ -86,6 +102,7 @@ class SessionStore:
             session.rolling_splits.extend(split_speeds)
             while len(session.rolling_splits) > MAX_ROLLING_WINDOW:
                 session.rolling_splits.pop(0)
+        self._persist_paragraph(session, record)
         logger.debug("SessionStore.append_paragraph session=%s entry=%d cpm=%.1f tier=%d rolling_len=%d",
                      session_id, len(session.history), speed_cpm, outcome_tier, len(session.rolling_splits))
         return record
