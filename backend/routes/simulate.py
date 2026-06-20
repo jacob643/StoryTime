@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from backend.config import settings
 from backend.providers.registry import registry
 from backend.session import session_store
-from backend.game_logic import compute_outcome_tier, compute_speed_stats, get_outcome_label
+from backend.game_logic import compute_outcome_tier, compute_speed_stats, compute_tier_boundaries, get_outcome_label
 from backend.prompt_engine import build_prompt, parse_llm_response
 from backend.settings_manager import get_settings
 from backend.logger import logger
@@ -22,6 +22,7 @@ class SimulateResponse(BaseModel):
     session_id: str | None = None
     outcome_tier: int
     outcome_label: str
+    tier_boundaries: list[float]
 
 
 @router.post("/api/simulate", response_model=SimulateResponse)
@@ -49,6 +50,7 @@ async def simulate(body: SimulateRequest):
                 stddev=stddev,
                 params=session.scoring_params,
             )
+            bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=session.scoring_params)
             history_texts = [r.text for r in session.history]
             max_chars = gs.character_amount
             prompt = build_prompt(
@@ -65,6 +67,8 @@ async def simulate(body: SimulateRequest):
             initial = session.initial_prompt if session else ""
             history_texts = [r.text for r in session.history] if session else []
             max_chars = gs.character_amount
+            params = session.scoring_params if session else None
+            bounds = compute_tier_boundaries(params=params)
             prompt = build_prompt(
                 initial_context=initial,
                 history=history_texts,
@@ -95,6 +99,7 @@ async def simulate(body: SimulateRequest):
             session_id=session.id if session else None,
             outcome_tier=outcome_tier,
             outcome_label=get_outcome_label(outcome_tier),
+            tier_boundaries=bounds,
         )
     except (httpx.RequestError, httpx.HTTPStatusError) as exc:
         logger.error("Simulate LLM failed: %s", exc)

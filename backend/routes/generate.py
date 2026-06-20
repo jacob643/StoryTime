@@ -9,6 +9,7 @@ from backend.game_logic import (
     ScoringParams,
     compute_outcome_tier,
     compute_speed_stats,
+    compute_tier_boundaries,
     get_outcome_label,
     DEFAULT_AVG_CPM,
     DEFAULT_MIN_STDDEV_CPM,
@@ -33,6 +34,7 @@ class GenerateResponse(BaseModel):
     session_id: str
     outcome_tier: int
     outcome_label: str
+    tier_boundaries: list[float]
 
 
 def _compute_first_paragraph_tier(split_speeds: list[float], params: ScoringParams) -> int:
@@ -78,11 +80,14 @@ async def generate(body: GenerateRequest):
             if not validate_llm_response(text):
                 text = NEUTRAL_FALLBACK
                 logger.warning("First paragraph invalid, using fallback")
+            params = ScoringParams()
+            bounds = compute_tier_boundaries(params=params)
             return GenerateResponse(
                 response=text,
                 session_id=session.id,
                 outcome_tier=2,
                 outcome_label="neutral",
+                tier_boundaries=bounds,
             )
 
         session = session_store.get(body.session_id)
@@ -93,14 +98,28 @@ async def generate(body: GenerateRequest):
         params = session.scoring_params
         rolling = session.rolling_splits
 
+        bounds: list[float] = []
         if not split_speeds and body.speed_cpm is not None:
             outcome_tier = compute_outcome_tier(body.speed_cpm)
+            bounds = compute_tier_boundaries(params=params)
             logger.debug("Outcome: fixed speed=%.1f CPM -> tier=%d", body.speed_cpm, outcome_tier)
         elif not rolling:
             outcome_tier = _compute_first_paragraph_tier(split_speeds, params)
+            n = len(split_speeds)
+            if n == 0:
+                bounds = compute_tier_boundaries(params=params)
+            elif n == 1:
+                bounds = compute_tier_boundaries(avg=DEFAULT_AVG_CPM, stddev=DEFAULT_MIN_STDDEV_CPM, params=params)
+            else:
+                baseline_count = math.ceil(n / 2)
+                baseline = split_speeds[:baseline_count]
+                avg, stddev = compute_speed_stats(baseline, params.min_stddev_cpm)
+                bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=params)
             logger.debug("Outcome: first paragraph splits=%s rolling=[] -> tier=%d", split_speeds, outcome_tier)
         else:
             outcome_tier = _compute_subsequent_tier(split_speeds, rolling, params)
+            avg, stddev = compute_speed_stats(rolling, params.min_stddev_cpm)
+            bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=params)
             logger.debug("Outcome: subsequent splits=%s rolling=%s -> tier=%d", split_speeds, rolling, outcome_tier)
 
         paragraph_cpm = sum(split_speeds) / len(split_speeds) if split_speeds else (body.speed_cpm or 0.0)
@@ -144,6 +163,7 @@ async def generate(body: GenerateRequest):
             session_id=body.session_id,
             outcome_tier=outcome_tier,
             outcome_label=get_outcome_label(outcome_tier),
+            tier_boundaries=bounds,
         )
     except (httpx.RequestError, httpx.HTTPStatusError) as exc:
         logger.error("LLM request failed: %s", exc)

@@ -470,3 +470,12 @@ body
 .tier-segment[data-tier="2"].active { background: #757575; }
 .tier-segment[data-tier="3"].active { background: #388e3c; }
 .tier-segment[data-tier="4"].active { background: #1976d2; }
+
+.tier-boundary
+{
+    font-size: 0.7em;
+    text-align: center;
+    color: var(--text-muted);
+    padding: 1px 0;
+    line-height: 1;
+}
