@@ -185,15 +185,6 @@ body
 
 #message
 {
-    text-align: center;
-    font-size: 1.5em;
-    color: var(--text-success);
-    display:none;
-    width: 100%;
-}
-
-#llmResponse
-{
     width: 80%;
     max-width: 80vw;
     padding: 1vw;
@@ -207,19 +198,19 @@ body
     min-height: 3em;
 }
 
-#llmResponse.success
+#message.success
 {
     border-color: var(--border-llm-success);
     background: var(--bg-llm-success);
 }
 
-#llmResponse.error
+#message.error
 {
     border-color: var(--border-llm-error);
     background: var(--bg-llm-error);
 }
 
-#llmResponse.simulation
+#message.simulation
 {
     border-color: var(--border-llm-sim);
     background: var(--bg-llm-sim);

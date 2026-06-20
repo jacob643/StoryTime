@@ -1,8 +1,6 @@
 const textDisplay = document.getElementById('textDisplay');
 const inputBox = document.getElementById('inputBox');
 const messageDiv = document.getElementById('message');
-const timeTakenDiv = document.getElementById('timeTaken');
-const speedDiv = document.getElementById('speed');
 
 let textContent = textDisplay.innerText;
 let timeTakenSeconds = 0;
@@ -116,10 +114,8 @@ function reset() {
     inputBox.disabled = true;
     initialPromptInput.value = '';
     initialPromptInput.focus();
-    llmResponseDiv.textContent = 'Enter a story prompt and click Send.';
-    llmResponseDiv.className = '';
-    timeTakenDiv.textContent = '';
-    speedDiv.textContent = '';
+    messageDiv.textContent = 'Enter a story prompt and click Send.';
+    messageDiv.className = '';
     timeTakenSeconds = 0;
     speed = 0;
     startTime = null;
@@ -146,7 +142,7 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitS
     if (speedType !== 'cpm') {
         displaySpeed /= 5;
     }
-    let meta = `${timeTaken.toFixed(2)}s | ${displaySpeed.toFixed(1)} ${speedType.toUpperCase()} | ${outcomeLabel}`;
+    let meta = `${outcomeLabel} | ${displaySpeed.toFixed(1)} ${speedType.toUpperCase()} | ${timeTaken.toFixed(2)}s`;
     if (splitSpeeds && splitSpeeds.length > 0) {
         const formatted = splitSpeeds.map(s => s.toFixed(1)).join(', ');
         meta += ` [${formatted}]`;
@@ -199,8 +195,6 @@ function CalculateSpeed() {
     const timeTakenMinutes = timeTakenSeconds / 60;
     const numChars = textContent.length;
     speed = numChars / timeTakenMinutes;
-    timeTakenDiv.textContent = `Last paragraph time taken: ${GetTimeTakenDisplay()}`;
-    UpdateSpeed();
 }
 
 function GetSpeedDisplay() {
@@ -210,10 +204,6 @@ function GetSpeedDisplay() {
         displaySpeed /= 5;
     }
     return `${displaySpeed.toFixed(1)} ${speedType.toUpperCase()}`;
-}
-
-function UpdateSpeed() {
-    speedDiv.textContent = `Last typing speed: ${GetSpeedDisplay()}`;
 }
 
 async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
@@ -262,9 +252,9 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
 function showError(message, retryFn) {
     textDisplay.innerHTML = '';
     textDisplay.className = 'error';
-    llmResponseDiv.innerHTML = `<p class="error-text">${escapeHtml(message)}</p>`;
+    messageDiv.innerHTML = `<p class="error-text">${escapeHtml(message)}</p>`;
     if (message.includes('503') || message.includes('LLM provider error') || message.includes('Connection refused')) {
-        llmResponseDiv.innerHTML +=
+        messageDiv.innerHTML +=
             '<p class="error-hint">Cannot reach the AI model. ' +
             '<a href="/getting_started.html" target="_blank">Getting Started guide</a> has setup and troubleshooting instructions.</p>';
     }
@@ -272,8 +262,8 @@ function showError(message, retryFn) {
         const btn = document.createElement('button');
         btn.textContent = 'Retry';
         btn.className = 'retry-btn';
-        btn.addEventListener('click', () => { llmResponseDiv.className = ''; retryFn(); });
-        llmResponseDiv.appendChild(btn);
+        btn.addEventListener('click', () => { messageDiv.className = ''; retryFn(); });
+        messageDiv.appendChild(btn);
     }
 }
 
@@ -291,14 +281,6 @@ function CheckFinishedSentence() {
     }
 }
 
-function ShowCongrats() {
-    messageDiv.textContent = 'Congratulations!';
-    messageDiv.style.display = 'block';
-    setTimeout(() => {
-        messageDiv.style.display = 'none';
-    }, 5000);
-}
-
 function startTypingTimer() {
     if (startTime === null) {
         startTime = new Date();
@@ -310,12 +292,6 @@ inputBox.addEventListener('input', () => {
     updateSplitTimestamps();
     CheckFinishedSentence();
     updateTextDisplay();
-});
-
-document.querySelectorAll('input[name="speedType"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-        UpdateSpeed();
-    });
 });
 
 // settings panel
@@ -353,6 +329,7 @@ async function loadSettings() {
         document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
         document.getElementById('optTier2Sigma').value = s.tier_2_max_sigma;
         document.getElementById('optTier3Sigma').value = s.tier_3_max_sigma;
+        document.getElementById('characterAmountInput').value = s.character_amount;
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
@@ -380,6 +357,7 @@ function collectSettings() {
     }
     return {
         scoring_mode: document.getElementById('optScoringMode').value,
+        character_amount: parseInt(document.getElementById('characterAmountInput').value),
         min_stddev_cpm: parseFloat(document.getElementById('optMinStddev').value),
         tier_0_max_sigma: parseFloat(document.getElementById('optTier0Sigma').value),
         tier_1_max_sigma: parseFloat(document.getElementById('optTier1Sigma').value),
@@ -401,17 +379,18 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
             body: JSON.stringify(collectSettings()),
         });
         if (!r.ok) throw new Error('Failed to save settings');
-        llmResponseDiv.textContent = 'Settings saved.';
-        llmResponseDiv.className = 'success';
+        messageDiv.textContent = 'Settings saved.';
+        messageDiv.className = 'success';
     } catch (e) {
-        llmResponseDiv.textContent = 'Settings save error: ' + e.message;
-        llmResponseDiv.className = 'error';
+        messageDiv.textContent = 'Settings save error: ' + e.message;
+        messageDiv.className = 'error';
     }
 });
 
 document.getElementById('resetSettings').addEventListener('click', async () => {
     const defaults = {
         scoring_mode: 'split',
+        character_amount: 200,
         min_stddev_cpm: 10,
         tier_0_max_sigma: -1.5,
         tier_1_max_sigma: -0.5,
@@ -437,11 +416,11 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
         });
         if (!r.ok) throw new Error('Failed to reset settings');
         await loadSettings();
-        llmResponseDiv.textContent = 'Settings reset to defaults.';
-        llmResponseDiv.className = 'success';
+        messageDiv.textContent = 'Settings reset to defaults.';
+        messageDiv.className = 'success';
     } catch (e) {
-        llmResponseDiv.textContent = 'Settings reset error: ' + e.message;
-        llmResponseDiv.className = 'error';
+        messageDiv.textContent = 'Settings reset error: ' + e.message;
+        messageDiv.className = 'error';
     }
 });
 
@@ -449,7 +428,6 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
 
 const restartButton = document.getElementById('restartButton');
 const initialPromptInput = document.getElementById('initialPrompt');
-const llmResponseDiv = document.getElementById('llmResponse');
 
 restartButton.addEventListener('click', () => {
     sendPrompt(initialPromptInput.value);
@@ -460,8 +438,8 @@ async function sendSimulate(cpm, deviation) {
     simulatedDeviation = deviation || 0;
     sessionId = null;
     const range = simulatedDeviation > 0 ? ` ±${simulatedDeviation}` : '';
-    llmResponseDiv.textContent = `Starting simulation at ${cpm}${range} CPM...`;
-    llmResponseDiv.className = 'simulation';
+    messageDiv.textContent = `Starting simulation at ${cpm}${range} CPM...`;
+    messageDiv.className = 'simulation';
 
     try {
         const response = await fetch('/api/restart', {
@@ -485,12 +463,12 @@ async function sendSimulate(cpm, deviation) {
         inputBox.focus();
         initSplits(textContent);
         updateTierChart(data.outcome_tier);
-        llmResponseDiv.textContent =
+        messageDiv.textContent =
             `[SIMULATION ${cpm}${range} CPM] Type the paragraph — split speeds will be faked.`;
-        llmResponseDiv.className = 'simulation';
+        messageDiv.className = 'simulation';
     } catch (error) {
-        llmResponseDiv.textContent = `Simulation error: ${error.message}`;
-        llmResponseDiv.className = 'error';
+        messageDiv.textContent = `Simulation error: ${error.message}`;
+        messageDiv.className = 'error';
         simulatedCpm = null;
         simulatedDeviation = 0;
     }
@@ -516,8 +494,8 @@ async function sendPrompt(prompt) {
     sessionId = null;
     const promptText = prompt;
     retryAction = () => sendPrompt(promptText);
-    llmResponseDiv.textContent = 'Starting story...';
-    llmResponseDiv.className = '';
+    messageDiv.textContent = 'Starting story...';
+    messageDiv.className = '';
 
     try {
         const response = await fetch('/api/restart', {
@@ -537,8 +515,8 @@ async function sendPrompt(prompt) {
         textDisplay.className = '';
         inputBox.value = '';
         startTime = null;
-        llmResponseDiv.textContent = 'Story started — type the paragraph above.';
-        llmResponseDiv.className = 'success';
+        messageDiv.textContent = 'Story started — type the paragraph above.';
+        messageDiv.className = 'success';
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);

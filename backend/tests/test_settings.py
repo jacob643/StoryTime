@@ -45,6 +45,7 @@ def test_game_settings_defaults():
     assert gs.tier_1_max_sigma == -0.5
     assert gs.tier_2_max_sigma == 0.5
     assert gs.tier_3_max_sigma == 1.5
+    assert gs.character_amount == 200
     assert gs.target_split_size == 50
     assert gs.min_split_size == 30
     assert gs.default_avg_cpm == 300.0
