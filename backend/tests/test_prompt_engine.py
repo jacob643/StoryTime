@@ -10,7 +10,7 @@ class TestBuildPrompt:
         )
         assert "A lone detective in a rainy city." in result
         assert OUTCOME_DIRECTIONS[2] in result
-        assert "Write only a single paragraph" in result
+        assert "exactly 80 words long" in result
         assert "So far" not in result
 
     def test_with_history(self):
@@ -74,12 +74,12 @@ class TestBuildFirstParagraphPrompt:
         result = build_first_paragraph_prompt("a cat who solves mysteries")
         assert "a cat who solves mysteries" in result
         assert result.startswith("Write the first paragraph of a story about:")
-        assert "200 characters" in result
+        assert "80 words" in result
         assert "nothing else" in result
 
-    def test_custom_max_chars(self):
-        result = build_first_paragraph_prompt("test", max_chars=150)
-        assert "150 characters" in result
+    def test_custom_max_words(self):
+        result = build_first_paragraph_prompt("test", max_words=150)
+        assert "150 words" in result
 
 
 class TestValidateLlmResponse:

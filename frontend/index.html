@@ -29,6 +29,15 @@
                 <label><input type="checkbox" id="optDarkMode" /> Dark mode</label>
             </section>
             <section>
+                <h3>Speed Display</h3>
+                <label><input type="radio" name="speedType" value="cpm" checked /> CPM (chars/min)</label>
+                <label><input type="radio" name="speedType" value="wpm" /> WPM (words/min)</label>
+            </section>
+            <section>
+                <h3>Word Count</h3>
+                <label>Words per paragraph <input type="number" id="wordCountInput" step="5" min="10" /></label>
+            </section>
+            <section>
                 <h3>Scoring Mode</h3>
                 <label>Mode
                     <select id="optScoringMode">
@@ -48,15 +57,6 @@
             <section>
                 <h3>Fixed Thresholds (low, high CPM)</h3>
                 <div id="fixedThresholdsContainer"></div>
-            </section>
-            <section>
-                <h3>Speed Display</h3>
-                <label><input type="radio" name="speedType" value="cpm" checked /> CPM (chars/min)</label>
-                <label><input type="radio" name="speedType" value="wpm" /> WPM (words/min)</label>
-            </section>
-            <section>
-                <h3>Character Count</h3>
-                <label>Characters per paragraph <input type="number" id="characterAmountInput" step="10" min="20" /></label>
             </section>
             <section>
                 <h3>Split Sizes</h3>

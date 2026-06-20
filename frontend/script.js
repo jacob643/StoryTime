@@ -315,13 +315,19 @@ settingsToggle.addEventListener('click', () => {
     }
 });
 
+function safeVal(v, fallback) {
+    return (v === null || v === undefined || v === '' || v !== v) ? fallback : v;
+}
+
 function buildFixedThresholdInputs(thresholds) {
     fixedThresholdsContainer.innerHTML = '';
     for (let i = 0; i < thresholds.length; i++) {
+        const low = safeVal(thresholds[i][0], 0);
+        const high = safeVal(thresholds[i][1], 9999);
         const row = document.createElement('div');
         row.innerHTML =
-            `<label>Tier ${i}: low <input type="number" class="ft-low" step="1" min="0" value="${thresholds[i][0]}" /></label>` +
-            `<label>high <input type="number" class="ft-high" step="1" min="0" value="${thresholds[i][1]}" /></label>`;
+            `<label>Tier ${i}: low <input type="number" class="ft-low" step="1" min="0" value="${low}" /></label>` +
+            `<label>high <input type="number" class="ft-high" step="1" min="0" value="${high}" /></label>`;
         fixedThresholdsContainer.appendChild(row);
     }
 }
@@ -337,7 +343,7 @@ async function loadSettings() {
         document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
         document.getElementById('optTier2Sigma').value = s.tier_2_max_sigma;
         document.getElementById('optTier3Sigma').value = s.tier_3_max_sigma;
-        document.getElementById('characterAmountInput').value = s.character_amount;
+        document.getElementById('wordCountInput').value = s.paragraph_word_count;
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
@@ -351,12 +357,25 @@ async function loadSettings() {
     }
 }
 
+function safeParseFloat(v, fallback) {
+    const n = parseFloat(v);
+    return isNaN(n) ? fallback : n;
+}
+
+function safeParseInt(v, fallback) {
+    const n = parseInt(v, 10);
+    return isNaN(n) ? fallback : n;
+}
+
 function collectSettings() {
     const ftLow = fixedThresholdsContainer.querySelectorAll('.ft-low');
     const ftHigh = fixedThresholdsContainer.querySelectorAll('.ft-high');
     const fixedThresholds = [];
     for (let i = 0; i < ftLow.length; i++) {
-        fixedThresholds.push([parseFloat(ftLow[i].value), parseFloat(ftHigh[i].value)]);
+        fixedThresholds.push([
+            safeParseFloat(ftLow[i].value, 0),
+            safeParseFloat(ftHigh[i].value, 9999),
+        ]);
     }
     const outcomeDirections = {};
     for (let t = 0; t <= 4; t++) {
@@ -365,16 +384,16 @@ function collectSettings() {
     }
     return {
         scoring_mode: document.getElementById('optScoringMode').value,
-        character_amount: parseInt(document.getElementById('characterAmountInput').value),
-        min_stddev_cpm: parseFloat(document.getElementById('optMinStddev').value),
-        tier_0_max_sigma: parseFloat(document.getElementById('optTier0Sigma').value),
-        tier_1_max_sigma: parseFloat(document.getElementById('optTier1Sigma').value),
-        tier_2_max_sigma: parseFloat(document.getElementById('optTier2Sigma').value),
-        tier_3_max_sigma: parseFloat(document.getElementById('optTier3Sigma').value),
+        paragraph_word_count: safeParseInt(document.getElementById('wordCountInput').value, 80),
+        min_stddev_cpm: safeParseFloat(document.getElementById('optMinStddev').value, 10),
+        tier_0_max_sigma: safeParseFloat(document.getElementById('optTier0Sigma').value, -1.5),
+        tier_1_max_sigma: safeParseFloat(document.getElementById('optTier1Sigma').value, -0.5),
+        tier_2_max_sigma: safeParseFloat(document.getElementById('optTier2Sigma').value, 0.5),
+        tier_3_max_sigma: safeParseFloat(document.getElementById('optTier3Sigma').value, 1.5),
         fixed_thresholds: fixedThresholds,
-        target_split_size: parseInt(document.getElementById('optTargetSplit').value),
-        min_split_size: parseInt(document.getElementById('optMinSplit').value),
-        default_avg_cpm: parseFloat(document.getElementById('optDefaultAvgCpm').value),
+        target_split_size: safeParseInt(document.getElementById('optTargetSplit').value, 50),
+        min_split_size: safeParseInt(document.getElementById('optMinSplit').value, 30),
+        default_avg_cpm: safeParseFloat(document.getElementById('optDefaultAvgCpm').value, 300),
         outcome_directions: outcomeDirections,
     };
 }

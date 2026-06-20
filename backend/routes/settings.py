@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 from backend.settings_manager import GameSettings, get_settings, update_settings
+from backend.logger import logger
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ class SettingsResponse(BaseModel):
     tier_2_max_sigma: float
     tier_3_max_sigma: float
     fixed_thresholds: list[list[float]]
-    character_amount: int
+    paragraph_word_count: int
     target_split_size: int
     min_split_size: int
     default_avg_cpm: float
@@ -34,7 +35,7 @@ class SettingsPatch(BaseModel):
     tier_2_max_sigma: float | None = None
     tier_3_max_sigma: float | None = None
     fixed_thresholds: list[list[float]] | None = None
-    character_amount: int | None = None
+    paragraph_word_count: int | None = None
     target_split_size: int | None = None
     min_split_size: int | None = None
     default_avg_cpm: float | None = None
@@ -45,6 +46,16 @@ class SettingsPatch(BaseModel):
     custom_model: str | None = None
 
 
+def _clamp_thresholds(
+    thresholds: list[list[float]],
+    max_val: float = 9999,
+) -> list[list[float]]:
+    return [
+        [max(0.0, min(v if v != float("-inf") else 0.0, max_val)) for v in pair]
+        for pair in thresholds
+    ]
+
+
 def _settings_to_response(gs: GameSettings) -> SettingsResponse:
     return SettingsResponse(
         scoring_mode=gs.scoring_mode,
@@ -53,8 +64,8 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         tier_1_max_sigma=gs.tier_1_max_sigma,
         tier_2_max_sigma=gs.tier_2_max_sigma,
         tier_3_max_sigma=gs.tier_3_max_sigma,
-        fixed_thresholds=gs.fixed_thresholds,
-        character_amount=gs.character_amount,
+        fixed_thresholds=_clamp_thresholds(gs.fixed_thresholds),
+        paragraph_word_count=gs.paragraph_word_count,
         target_split_size=gs.target_split_size,
         min_split_size=gs.min_split_size,
         default_avg_cpm=gs.default_avg_cpm,
@@ -73,5 +84,7 @@ async def get_settings_endpoint():
 
 @router.post("/api/settings", response_model=SettingsResponse)
 async def update_settings_endpoint(body: SettingsPatch):
-    updated = update_settings(**body.model_dump(exclude_none=True))
+    dumped = body.model_dump(exclude_none=True)
+    logger.info("POST /api/settings body=%s", dumped)
+    updated = update_settings(**dumped)
     return _settings_to_response(updated)

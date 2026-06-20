@@ -30,7 +30,7 @@ class GameSettings:
     tier_2_max_sigma: float = 0.5
     tier_3_max_sigma: float = 1.5
     fixed_thresholds: list[list[float]] = field(default_factory=_default_fixed_thresholds)
-    character_amount: int = 200
+    paragraph_word_count: int = 80
     target_split_size: int = 50
     min_split_size: int = 30
     default_avg_cpm: float = DEFAULT_AVG_CPM
