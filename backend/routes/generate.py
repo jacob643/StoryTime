@@ -15,6 +15,7 @@ from backend.game_logic import (
 )
 from backend.prompt_engine import build_prompt, build_first_paragraph_prompt, parse_llm_response, validate_llm_response, NEUTRAL_FALLBACK
 from backend.settings_manager import get_settings
+from backend.logger import logger
 
 router = APIRouter()
 
@@ -62,13 +63,19 @@ def _compute_subsequent_tier(split_speeds: list[float], rolling: list[float], pa
 
 @router.post("/api/generate", response_model=GenerateResponse)
 async def generate(body: GenerateRequest):
+    logger.info("POST /api/generate session_id=%s prompt_len=%d split_speeds=%s",
+                 body.session_id, len(body.prompt), body.split_speeds)
     try:
         if body.session_id is None:
             session = session_store.create(initial_prompt=body.prompt)
             wrapped = build_first_paragraph_prompt(body.prompt)
-            text = parse_llm_response(await registry.generate(wrapped, body.model))
+            logger.debug("First paragraph prompt:\n%s", wrapped)
+            raw_llm = await registry.generate(wrapped, body.model)
+            text = parse_llm_response(raw_llm)
+            logger.debug("First paragraph raw=%r parsed=%r valid=%s", raw_llm, text, validate_llm_response(text))
             if not validate_llm_response(text):
                 text = NEUTRAL_FALLBACK
+                logger.warning("First paragraph invalid, using fallback")
             return GenerateResponse(
                 response=text,
                 session_id=session.id,
@@ -86,12 +93,17 @@ async def generate(body: GenerateRequest):
 
         if not split_speeds and body.speed_cpm is not None:
             outcome_tier = compute_outcome_tier(body.speed_cpm)
+            logger.debug("Outcome: fixed speed=%.1f CPM -> tier=%d", body.speed_cpm, outcome_tier)
         elif not rolling:
             outcome_tier = _compute_first_paragraph_tier(split_speeds, params)
+            logger.debug("Outcome: first paragraph splits=%s rolling=[] -> tier=%d", split_speeds, outcome_tier)
         else:
             outcome_tier = _compute_subsequent_tier(split_speeds, rolling, params)
+            logger.debug("Outcome: subsequent splits=%s rolling=%s -> tier=%d", split_speeds, rolling, outcome_tier)
 
         paragraph_cpm = sum(split_speeds) / len(split_speeds) if split_speeds else (body.speed_cpm or 0.0)
+        logger.debug("Append paragraph text_len=%d cpm=%.1f tier=%d splits=%s",
+                     len(body.prompt), paragraph_cpm, outcome_tier, split_speeds)
 
         session_store.append_paragraph(
             session_id=body.session_id,
@@ -111,13 +123,17 @@ async def generate(body: GenerateRequest):
             outcome_tier=outcome_tier,
             outcome_directions=gs.outcome_directions,
         )
+        logger.debug("LLM prompt:\n%s", assembled)
         raw = await registry.generate(assembled, body.model)
         next_text = parse_llm_response(raw)
+        logger.debug("LLM response raw=%r parsed=%r valid=%s", raw, next_text, validate_llm_response(next_text))
         if not validate_llm_response(next_text):
             if session.history:
                 next_text = session.history[-1].text
+                logger.warning("Invalid LLM response, falling back to last paragraph")
             else:
                 next_text = NEUTRAL_FALLBACK
+                logger.warning("Invalid LLM response, falling back to neutral fallback")
 
         return GenerateResponse(
             response=next_text,
@@ -126,6 +142,7 @@ async def generate(body: GenerateRequest):
             outcome_label=get_outcome_label(outcome_tier),
         )
     except (httpx.RequestError, httpx.HTTPStatusError) as exc:
+        logger.error("LLM request failed: %s", exc)
         raise HTTPException(
             status_code=503,
             detail=f"LLM provider error: {exc}",

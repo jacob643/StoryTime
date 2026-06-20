@@ -7,6 +7,7 @@ from typing import Dict, Optional
 
 from backend.game_logic import ScoringParams, DEFAULT_AVG_CPM, MAX_ROLLING_WINDOW
 from backend.settings_manager import get_settings as _get_gs
+from backend.logger import logger
 
 
 @dataclass
@@ -54,6 +55,7 @@ class SessionStore:
             scoring_params=params,
         )
         self._sessions[session.id] = session
+        logger.info("SessionStore.create id=%s initial_prompt=%s", session.id, initial_prompt)
         return session
 
     def get(self, session_id: str) -> Optional[GameSession]:
@@ -85,6 +87,8 @@ class SessionStore:
             session.rolling_splits.extend(split_speeds)
             while len(session.rolling_splits) > MAX_ROLLING_WINDOW:
                 session.rolling_splits.pop(0)
+        logger.debug("SessionStore.append_paragraph session=%s entry=%d cpm=%.1f tier=%d rolling_len=%d",
+                     session_id, len(session.history), speed_cpm, outcome_tier, len(session.rolling_splits))
         return record
 
 

@@ -5,6 +5,7 @@ from backend.providers import LLMProvider
 from backend.providers.ollama import OllamaProvider
 from backend.providers.openai_compatible import OpenAICompatibleProvider
 from backend.settings_manager import get_settings
+from backend.logger import logger
 
 
 RETRY_DELAY: float = 1.0
@@ -42,11 +43,18 @@ class ProviderRegistry:
 
     async def generate(self, prompt: str, model: str | None = None) -> str:
         resolved_model = model or self.active_model
+        logger.debug("Registry.generate provider=%s model=%s prompt_len=%d",
+                     type(self.active).__name__, resolved_model, len(prompt))
         try:
-            return await self.active.generate(prompt, resolved_model)
+            result = await self.active.generate(prompt, resolved_model)
+            logger.debug("Registry.generate success response_len=%d", len(result))
+            return result
         except Exception:
+            logger.warning("Registry.generate first attempt failed, retrying after %.1fs", RETRY_DELAY)
             await asyncio.sleep(RETRY_DELAY)
-            return await self.active.generate(prompt, resolved_model)
+            result = await self.active.generate(prompt, resolved_model)
+            logger.debug("Registry.generate retry success response_len=%d", len(result))
+            return result
 
     async def is_available(self) -> bool:
         return await self.active.is_available()
