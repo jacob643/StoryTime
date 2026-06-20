@@ -231,9 +231,19 @@ body
     border: 1px dashed #ff9800;
 }
 
+#initialPromptContainer
+{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5vw;
+    width: 100%;
+    flex: 0 0 auto;
+}
+
 #initialPrompt
 {
-    width: 42vw;
+    flex: 1;
     padding: 0.6vw 1vw;
     font-size: 0.85em;
     border: 0.1vw solid var(--border-color);
