@@ -119,7 +119,7 @@ function reset() {
     timeTakenSeconds = 0;
     speed = 0;
     startTime = null;
-    document.getElementById('history').innerHTML = '<h3>History</h3>';
+    document.getElementById('history').querySelectorAll('.history-item').forEach(el => el.remove());
     document.getElementById('lastParagraph').textContent = '';
     resetSplitTracking();
 }
@@ -277,7 +277,8 @@ function CheckFinishedSentence() {
     if (inputBox.value === textContent) {
         CalculateSpeed();
         const splitSpeeds = computeSplitSpeeds();
-        fetchNextParagraph(textContent, speed, splitSpeeds);
+        const displaySpeed = simulatedCpm !== null ? simulatedCpm : speed;
+        fetchNextParagraph(textContent, displaySpeed, splitSpeeds);
     }
 }
 
