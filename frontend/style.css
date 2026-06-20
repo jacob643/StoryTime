@@ -161,6 +161,20 @@ body
     background: #eee;
 }
 
+#setupLink
+{
+    font-size: 0.9em;
+    margin-left: 0.8vw;
+    color: #069;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#setupLink:hover
+{
+    color: #047;
+}
+
 #settingsPanel
 {
     width: 80%;
