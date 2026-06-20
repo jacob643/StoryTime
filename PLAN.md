@@ -92,6 +92,9 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [x] **3.6.6** Remove `min_data` / "Min data points" from settings, frontend, backend, and docs — it has no effect in the main game flow
 - [x] **3.6.7** Change the initial prompt wrapper to use character count instead of "5 sentences": both `build_first_paragraph_prompt` and `build_prompt` accept `max_chars` parameter (default 200), computed as `target_split_size * 4` from settings in route handlers
 - [x] **3.6.8** Write every completed paragraph to `writtenStories/<session_id>.txt` — appended on each `session_store.append_paragraph()` with paragraph number, timestamp, speed, tier, split speeds, and full text
+- [ ] **3.6.9** Simulate shouldn't restart the story — instead of discarding the current session and creating a new one with a generic prompt, `/simulate` should continue the current story context, only faking the typing stats for the next paragraph outcome
+- [ ] **3.6.10** Fix asymmetry of stddev for splits — currently each paragraph computes a single avg/stddev from its splits and scores that paragraph CPM against rolling stats. Instead, each split should contribute its own speed to the rolling window, and paragraph outcome could be determined by the lowest split (favoring consistency) or by median/split-level scoring. Needs further design discussion.
+- [ ] **3.6.11** Written story filenames should start with the initial prompt — change `writtenStories/<session_id>.txt` to `writtenStories/<initial_prompt_slug>.txt` (sanitized slug derived from the user's initial prompt input) for easier identification
 
 ---
 
