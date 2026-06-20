@@ -18,6 +18,7 @@ class SimulateRequest(BaseModel):
 
 class SimulateResponse(BaseModel):
     response: str
+    session_id: str | None = None
     outcome_tier: int
     outcome_label: str
 
@@ -67,8 +68,19 @@ async def simulate(body: SimulateRequest):
         raw = await registry.generate(prompt)
         next_text = parse_llm_response(raw)
 
+        if session is not None:
+            session_store.append_paragraph(
+                session_id=session.id,
+                text=history_texts[-1] if history_texts else "",
+                speed_cpm=body.simulated_speed_cpm,
+                time_taken_ms=0,
+                accuracy=1.0,
+                outcome_tier=outcome_tier,
+            )
+
         return SimulateResponse(
             response=next_text,
+            session_id=session.id if session else None,
             outcome_tier=outcome_tier,
             outcome_label=get_outcome_label(outcome_tier),
         )
