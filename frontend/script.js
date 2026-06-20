@@ -79,11 +79,29 @@ function computeSplitSpeeds() {
     return speeds;
 }
 
-window.onload = () => {
-    reset();
-};
+function applyDarkMode(enabled) {
+    if (enabled) {
+        document.body.classList.add('dark-mode');
+    } else {
+        document.body.classList.remove('dark-mode');
+    }
+    const cb = document.getElementById('optDarkMode');
+    if (cb) cb.checked = enabled;
+    localStorage.setItem('storytime-dark-mode', enabled ? '1' : '0');
+}
+
+function initDarkMode() {
+    const stored = localStorage.getItem('storytime-dark-mode');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const enabled = stored !== null ? stored === '1' : prefersDark;
+    applyDarkMode(enabled);
+    document.getElementById('optDarkMode')?.addEventListener('change', (e) => {
+        applyDarkMode(e.target.checked);
+    });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+    initDarkMode();
     reset();
 });
 
