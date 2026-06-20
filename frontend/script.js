@@ -446,46 +446,41 @@ async function sendSimulate(cpm, deviation) {
     simulatedDeviation = deviation || 0;
     const range = simulatedDeviation > 0 ? ` ±${simulatedDeviation}` : '';
 
-    if (sessionId) {
-        messageDiv.textContent = `[SIMULATION ${cpm}${range} CPM] Next paragraph will use faked split speeds.`;
+    if (!textContent) {
+        initialPromptInput.value = 'a skateboard with a soul trying to find its home';
+        messageDiv.textContent = `Starting simulation at ${cpm}${range} CPM...`;
         messageDiv.className = 'simulation';
+        fetch('/api/restart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initial_prompt: initialPromptInput.value }),
+        })
+            .then(r => { if (!r.ok) throw new Error(`Server error: ${r.status}`); return r.json(); })
+            .then(data => {
+                sessionId = data.session_id;
+                textContent = data.response;
+                textDisplay.innerText = textContent;
+                textDisplay.className = 'simulation';
+                inputBox.disabled = false;
+                initSplits(textContent);
+                updateTierChart(data.outcome_tier, data.tier_boundaries);
+                sendSimulate(cpm, deviation);
+            })
+            .catch(error => {
+                messageDiv.textContent = `Simulation error: ${error.message}`;
+                messageDiv.className = 'error';
+                simulatedCpm = null;
+                simulatedDeviation = 0;
+            });
         return;
     }
 
-    messageDiv.textContent = `Starting simulation at ${cpm}${range} CPM...`;
+    messageDiv.textContent = `[SIMULATION ${cpm}${range} CPM]`;
     messageDiv.className = 'simulation';
-
-    try {
-        const response = await fetch('/api/restart', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initial_prompt: `Simulated story at ${cpm} CPM.` }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        sessionId = data.session_id;
-        textContent = data.response;
-        textDisplay.innerText = textContent;
-        textDisplay.className = 'simulation';
-        inputBox.value = '';
-        startTime = null;
-        inputBox.disabled = false;
-        inputBox.focus();
-        initSplits(textContent);
-        updateTierChart(data.outcome_tier, data.tier_boundaries);
-        messageDiv.textContent =
-            `[SIMULATION ${cpm}${range} CPM] Type the paragraph — split speeds will be faked.`;
-        messageDiv.className = 'simulation';
-    } catch (error) {
-        messageDiv.textContent = `Simulation error: ${error.message}`;
-        messageDiv.className = 'error';
-        simulatedCpm = null;
-        simulatedDeviation = 0;
-    }
+    startTime = new Date();
+    inputBox.value = textContent;
+    const splitSpeeds = computeSplitSpeeds();
+    fetchNextParagraph(textContent, simulatedCpm, splitSpeeds);
 }
 
 window.simulate = function(cpm, deviation) {
