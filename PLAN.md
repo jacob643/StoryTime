@@ -80,6 +80,13 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [x] **3.5.2** Add retry logic for LLM calls (1 retry on timeout, exponential backoff)
 - [x] **3.5.3** Validate LLM response (non-empty, reasonable length); fallback to cached neutral response if LLM returns garbage
 
+### Epic 3.6: UI & UX Polishing
+- [ ] **3.6.1** Simulate appends to session history — `/api/simulate` stores the simulated paragraph + split speeds + outcome tier in the session so it appears in the history panel alongside real paragraphs
+- [ ] **3.6.2** Reorganize layout: left panel shows only the last completed paragraph (story context), new right panel shows compact history entries (first ~20 chars truncated with `[...]`, typing speed, split speeds) for stats-at-a-glance
+- [ ] **3.6.3** History entries display split speeds — optionally as a vector `[334.2, 342.7, 200]` CPM/WPM in the right panel, or only in backend debug logs depending on complexity; decide during implementation
+- [ ] **3.6.4** Extensive backend request/response logging — log every API request (method, path, params), every LLM request/response payload, every paragraph split boundary + split speed, every outcome tier computation (inputs, intermediate values, result); gated behind `-v`/debug level so it doesn't spam in production
+- [ ] **3.6.5** Live tier goal display — show the current WPM boundaries for each tier (0–4) on the main page, updated per paragraph: after the first paragraph's baseline splits are evaluated, and after every subsequent paragraph; user can see "I need X WPM for tier 3" while typing
+
 ---
 
 ## Milestone 4: Ship Ready
