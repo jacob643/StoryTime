@@ -145,6 +145,12 @@ function updateStoryContext(text) {
     document.getElementById('lastParagraph').textContent = text;
 }
 
+function updateTierChart(tier) {
+    document.querySelectorAll('.tier-segment').forEach(el => el.classList.remove('active'));
+    const seg = document.querySelector(`.tier-segment[data-tier="${tier}"]`);
+    if (seg) seg.classList.add('active');
+}
+
 function updateTextDisplay() {
     const inputText = inputBox.value;
     let displayedText = '';
@@ -220,6 +226,7 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         const data = await response.json();
         addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label, splitSpeeds);
         updateStoryContext(completedText);
+        updateTierChart(data.outcome_tier);
         sessionId = data.session_id;
         textContent = data.response;
         textDisplay.innerText = textContent;
@@ -462,6 +469,7 @@ async function sendSimulate(cpm, deviation) {
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);
+        updateTierChart(data.outcome_tier);
         llmResponseDiv.textContent =
             `[SIMULATION ${cpm}${range} CPM] Type the paragraph — split speeds will be faked.`;
         llmResponseDiv.className = 'simulation';
@@ -519,6 +527,7 @@ async function sendPrompt(prompt) {
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);
+        updateTierChart(data.outcome_tier);
         retryAction = null;
     } catch (error) {
         showError(error.message, retryAction);
