@@ -279,6 +279,15 @@ body
     background: var(--bg-btn-hover);
 }
 
+#topBar
+{
+    display: flex;
+    align-items: center;
+    gap: 0.8vw;
+    align-self: flex-start;
+    margin: 0.5vw 0;
+}
+
 #settingsToggle
 {
     background: none;
@@ -287,8 +296,6 @@ body
     padding: 0.3vw 0.8vw;
     cursor: pointer;
     font-size: 0.9em;
-    margin: 0.5vw 0;
-    align-self: flex-start;
     color: var(--text-primary);
 }
 
@@ -300,7 +307,6 @@ body
 #setupLink
 {
     font-size: 0.9em;
-    margin-left: 0.8vw;
     color: var(--text-link);
     text-decoration: underline;
     cursor: pointer;
