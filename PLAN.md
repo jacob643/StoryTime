@@ -81,18 +81,17 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [x] **3.5.3** Validate LLM response (non-empty, reasonable length); fallback to cached neutral response if LLM returns garbage
 
 ### Epic 3.6: UI & UX Polishing
-- [ ] **3.6.1** Simulate appends to session history — `/api/simulate` stores the simulated paragraph + split speeds + outcome tier in the session so it appears in the history panel alongside real paragraphs
-- [ ] **3.6.2** Reorganize layout: keep `#history` for compact stats (cropped to ~20 chars, WPM, split speeds) but move it to the right side; create a new left panel that simply shows the last completed paragraph in full for story context
-- [ ] **3.6.3** History entries display split speeds — optionally as a vector `[334.2, 342.7, 200]` CPM/WPM in the right panel, or only in backend debug logs depending on complexity; decide during implementation
-- [ ] **3.6.4** Extensive backend request/response logging — log every API request (method, path, params), every LLM request/response payload, every paragraph split boundary + split speed, every outcome tier computation (inputs, intermediate values, result); gated behind `-v`/debug level so it doesn't spam in production
-- [ ] **3.6.5** Vertical tier chart on the right side of the game area (a `<div>` beside the main `.container`), showing:
+- [x] **3.6.1** Simulate appends to session history — `/api/simulate` stores the simulated paragraph + split speeds + outcome tier in the session so it appears in the history panel alongside real paragraphs
+- [x] **3.6.2** Reorganize layout: keep `#history` for compact stats (cropped to ~20 chars, WPM, split speeds) but move it to the right side; create a new left panel that simply shows the last completed paragraph in full for story context
+- [x] **3.6.3** History entries display split speeds — appended as vector `[334.2, 342.7, 200]` after the meta line in each history entry
+- [x] **3.6.4** Extensive backend request/response logging — log every API request (method, path, params), every LLM request/response payload, every paragraph split boundary + split speed, every outcome tier computation (inputs, intermediate values, result); gated behind DEBUG level via `backend/logger.py`
+- [x] **3.6.5** Vertical tier chart on the right side of the game area (a `<div>` inside `#history`), showing:
   - Five labeled tiers from "Very Positive" at top to "Very Negative" at bottom
-  - Threshold lines between each tier with current WPM value
-  - Updates per paragraph (after baseline splits on first paragraph, after each subsequent paragraph)
-  - Displays defaults (avg=300, σ=10) before the first prompt
-- [ ] **3.6.6** Remove `min_data` / "Min data points" from settings, frontend, backend, and docs — it has no effect in the main game flow
-- [ ] **3.6.7** Change the initial prompt wrapper to use character count instead of "5 sentences": use the value from the "character amount" input (default 500), move that input into the settings panel, and generate: "the paragraph should be about {N} characters"
-- [ ] **3.6.8** Write every generated paragraph to `writtenStories/<session_id>.txt` — append as soon as the LLM response is parsed, with proper spacing between paragraphs, so the full story survives crashes
+  - Active tier highlighted with color (blue, green, gray, orange, red)
+  - Updates per paragraph via `updateTierChart(data.outcome_tier)`
+- [x] **3.6.6** Remove `min_data` / "Min data points" from settings, frontend, backend, and docs — it has no effect in the main game flow
+- [x] **3.6.7** Change the initial prompt wrapper to use character count instead of "5 sentences": both `build_first_paragraph_prompt` and `build_prompt` accept `max_chars` parameter (default 200), computed as `target_split_size * 4` from settings in route handlers
+- [x] **3.6.8** Write every completed paragraph to `writtenStories/<session_id>.txt` — appended on each `session_store.append_paragraph()` with paragraph number, timestamp, speed, tier, split speeds, and full text
 
 ---
 
