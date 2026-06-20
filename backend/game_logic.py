@@ -103,6 +103,24 @@ def compute_outcome_tier(
     return 4
 
 
+def compute_tier_boundaries(
+    avg: float | None = None,
+    stddev: float | None = None,
+    params: ScoringParams | None = None,
+) -> list[float]:
+    if params is not None and params.mode == "fixed":
+        return [round(th[0]) for th in reversed(FIXED_THRESHOLDS[1:])]
+    if avg is None or stddev is None:
+        return [round(th[0]) for th in reversed(FIXED_THRESHOLDS[1:])]
+    p = params or ScoringParams()
+    return [
+        max(0, round(avg + p.tier_3_max_sigma * stddev)),
+        max(0, round(avg + p.tier_2_max_sigma * stddev)),
+        max(0, round(avg + p.tier_1_max_sigma * stddev)),
+        max(0, round(avg + p.tier_0_max_sigma * stddev)),
+    ]
+
+
 def get_outcome_label(tier: int) -> str:
     if 0 <= tier < len(OUTCOME_LABELS):
         return OUTCOME_LABELS[tier]
