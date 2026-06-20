@@ -7,7 +7,7 @@ from backend.logger import logger
 
 TARGET_SPLIT_SIZE = 50
 MIN_SPLIT_SIZE = 30
-MAX_ROLLING_WINDOW = 20
+MAX_ROLLING_WINDOW = 50
 
 OUTCOME_LABELS: list[str] = [
     "very negative",
