@@ -110,7 +110,7 @@ function reset() {
     resetSplitTracking();
 }
 
-function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
+function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds) {
     const historyContainer = document.getElementById('history');
 
     const historyItem = document.createElement('div');
@@ -128,7 +128,12 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel) {
     if (speedType !== 'cpm') {
         displaySpeed /= 5;
     }
-    metaElement.textContent = `${timeTaken.toFixed(2)}s | ${displaySpeed.toFixed(1)} ${speedType.toUpperCase()} | ${outcomeLabel}`;
+    let meta = `${timeTaken.toFixed(2)}s | ${displaySpeed.toFixed(1)} ${speedType.toUpperCase()} | ${outcomeLabel}`;
+    if (splitSpeeds && splitSpeeds.length > 0) {
+        const formatted = splitSpeeds.map(s => s.toFixed(1)).join(', ');
+        meta += ` [${formatted}]`;
+    }
+    metaElement.textContent = meta;
 
     historyItem.appendChild(textElement);
     historyItem.appendChild(metaElement);
@@ -213,7 +218,7 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         }
 
         const data = await response.json();
-        addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label);
+        addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label, splitSpeeds);
         updateStoryContext(completedText);
         sessionId = data.session_id;
         textContent = data.response;
