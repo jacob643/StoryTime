@@ -444,8 +444,14 @@ restartButton.addEventListener('click', () => {
 async function sendSimulate(cpm, deviation) {
     simulatedCpm = cpm;
     simulatedDeviation = deviation || 0;
-    sessionId = null;
     const range = simulatedDeviation > 0 ? ` ±${simulatedDeviation}` : '';
+
+    if (sessionId) {
+        messageDiv.textContent = `[SIMULATION ${cpm}${range} CPM] Next paragraph will use faked split speeds.`;
+        messageDiv.className = 'simulation';
+        return;
+    }
+
     messageDiv.textContent = `Starting simulation at ${cpm}${range} CPM...`;
     messageDiv.className = 'simulation';
 
