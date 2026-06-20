@@ -88,15 +88,15 @@ class TestAppendParagraph:
 
         assert session.rolling_splits == [1, 2, 3, 4, 5, 6]
 
-    def test_rolling_window_max_20(self):
+    def test_rolling_window_max_50(self):
         store = SessionStore()
         session = store.create()
 
-        for i in range(10):
+        for i in range(17):
             store.append_paragraph(session.id, f"p{i}", 300, 1000, 1.0, 2, split_speeds=[i] * 3)
 
-        assert len(session.rolling_splits) == 20
-        assert session.rolling_splits[0] == 3  # first 10 entries dropped (3*10 - 20 = 10 dropped)
+        assert len(session.rolling_splits) == 50
+        assert session.rolling_splits[0] == 0  # 1st paragraph (3×0s) had 1 entry dropped
 
     def test_append_paragraph_multiple(self):
         store = SessionStore()
