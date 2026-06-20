@@ -226,8 +226,8 @@ function showError(message, retryFn) {
     llmResponseDiv.innerHTML = `<p class="error-text">${escapeHtml(message)}</p>`;
     if (message.includes('503') || message.includes('LLM provider error') || message.includes('Connection refused')) {
         llmResponseDiv.innerHTML +=
-            '<p class="error-hint">Ollama may not be running. ' +
-            '<a href="https://ollama.ai" target="_blank">Install / Start Ollama</a> and try again.</p>';
+            '<p class="error-hint">Cannot reach the AI model. ' +
+            '<a href="/getting_started.html" target="_blank">Getting Started guide</a> has setup and troubleshooting instructions.</p>';
     }
     if (retryFn) {
         const btn = document.createElement('button');
