@@ -32,7 +32,6 @@ DEFAULT_MIN_STDDEV_CPM = 10.0
 @dataclass
 class ScoringParams:
     mode: str = "split"
-    min_data: int = 3
     min_stddev_cpm: float = DEFAULT_MIN_STDDEV_CPM
     tier_0_max_sigma: float = -1.5
     tier_1_max_sigma: float = -0.5

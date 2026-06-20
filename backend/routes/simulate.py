@@ -38,7 +38,7 @@ async def simulate(body: SimulateRequest):
                 raise HTTPException(status_code=404, detail="Session not found")
 
         gs = get_settings()
-        if session is not None and len(session.rolling_splits) >= session.scoring_params.min_data:
+        if session is not None and len(session.rolling_splits) > 0:
             avg, stddev = compute_speed_stats(
                 session.rolling_splits,
                 session.scoring_params.min_stddev_cpm,

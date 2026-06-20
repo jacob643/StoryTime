@@ -40,7 +40,6 @@ def _patch_path(monkeypatch, tmp_path: Path):
 def test_game_settings_defaults():
     gs = GameSettings()
     assert gs.scoring_mode == "split"
-    assert gs.min_data == 3
     assert gs.min_stddev_cpm == 10.0
     assert gs.tier_0_max_sigma == -1.5
     assert gs.tier_1_max_sigma == -0.5
@@ -105,9 +104,9 @@ def test_update_settings_persists(monkeypatch, tmp_path):
 
 def test_update_settings_ignores_none(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
-    updated = update_settings(scoring_mode="fixed", min_data=None)
+    updated = update_settings(scoring_mode="fixed", tier_0_max_sigma=None)
     assert updated.scoring_mode == "fixed"
-    assert updated.min_data == 3  # unchanged from default
+    assert updated.tier_0_max_sigma == -1.5  # unchanged from default
 
 
 def test_update_settings_partial(monkeypatch, tmp_path):
@@ -154,7 +153,6 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     r = client.post("/api/settings", json={
         "scoring_mode": "fixed",
         "default_avg_cpm": 500.0,
-        "min_data": 5,
         "outcome_directions": {0: "bad", 1: "worse", 2: "ok", 3: "good", 4: "great"},
         "fixed_thresholds": [[0, 20], [20, 40], [40, 60], [60, 80], [80, 9999]],
         "target_split_size": 40,
@@ -169,7 +167,6 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     data = r.json()
     assert data["scoring_mode"] == "fixed"
     assert data["default_avg_cpm"] == 500.0
-    assert data["min_data"] == 5
     assert data["outcome_directions"]["2"] == "ok"
     assert data["outcome_directions"]["0"] == "bad"
     assert data["fixed_thresholds"][0] == [0, 20]

@@ -24,7 +24,6 @@ def _default_outcome_directions() -> Dict[int, str]:
 @dataclass
 class GameSettings:
     scoring_mode: str = "split"
-    min_data: int = 3
     min_stddev_cpm: float = DEFAULT_MIN_STDDEV_CPM
     tier_0_max_sigma: float = -1.5
     tier_1_max_sigma: float = -0.5

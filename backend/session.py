@@ -40,7 +40,6 @@ class SessionStore:
         gs = _get_gs()
         params = ScoringParams(
             mode=gs.scoring_mode,
-            min_data=gs.min_data,
             min_stddev_cpm=gs.min_stddev_cpm,
             tier_0_max_sigma=gs.tier_0_max_sigma,
             tier_1_max_sigma=gs.tier_1_max_sigma,
