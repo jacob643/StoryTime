@@ -1,13 +1,48 @@
+*
+{
+    box-sizing: border-box;
+}
+
 body
 {
     font-family: Consolas, monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
     background-color: #f4f4f9;
-    overflow: hidden
+    overflow: hidden;
+    height: 100vh;
+}
+
+#gameLayout
+{
+    display: flex;
+    height: 100vh;
+    gap: 1vw;
+    padding: 1vw;
+}
+
+#storyContext
+{
+    width: 20vw;
+    background: #fafafa;
+    border: 1px solid #ccc;
+    border-radius: 0.5vw;
+    padding: 1vw;
+    overflow-y: auto;
+}
+
+#storyContext h3
+{
+    margin: 0 0 0.5vw 0;
+    font-size: 0.9em;
+    color: #555;
+}
+
+#storyContext p
+{
+    font-size: 0.9em;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .container
@@ -20,38 +55,52 @@ body
     padding: 2vw;
     border-radius: 0.5vw;
     box-shadow: 0 0.5vw 1vw rgba(0, 0, 0, 0.1);
-    width: 80%;
-    max-width: 80vw;
+    flex: 1;
+    max-width: 60vw;
+    min-width: 0;
 }
 
 .history-item
 {
-    padding: 1vw;
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 0.5vw;
+    padding: 0.4vw 0.6vw;
     background-color: rgba(0,0,0,0.05);
     border-radius: 0.3vw;
-    box-shadow: 0 0.2vw 0.4vw rgba(0,0,0,0.05);
+    font-size: 0.8em;
+    line-height: 1.4;
+}
+
+.history-item .history-text
+{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 0.2em;
+}
+
+.history-item .history-meta
+{
+    color: #555;
+    font-size: 0.9em;
 }
 
 #history
 {
-    background-color: rgba(0,0,0,0.1);
-    border-radius: 0.4vw;
-    box-shadow: 0 0.5vw 1vw rgba(0,0,0,0.15);
     width: 20vw;
-    max0width: 25vw;
+    background: #fafafa;
+    border: 1px solid #ccc;
+    border-radius: 0.5vw;
     padding: 1vw;
     overflow-y: auto;
-    height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    gap: 0.5vw;
 }
 
-#history
+#history h3
 {
-
+    margin: 0 0 0.3vw 0;
+    font-size: 0.9em;
+    color: #555;
 }
 
 #sidebar
