@@ -330,7 +330,6 @@ async function loadSettings() {
         if (!r.ok) throw new Error('Failed to load settings');
         const s = await r.json();
         document.getElementById('optScoringMode').value = s.scoring_mode;
-        document.getElementById('optMinData').value = s.min_data;
         document.getElementById('optMinStddev').value = s.min_stddev_cpm;
         document.getElementById('optTier0Sigma').value = s.tier_0_max_sigma;
         document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
@@ -363,7 +362,6 @@ function collectSettings() {
     }
     return {
         scoring_mode: document.getElementById('optScoringMode').value,
-        min_data: parseInt(document.getElementById('optMinData').value),
         min_stddev_cpm: parseFloat(document.getElementById('optMinStddev').value),
         tier_0_max_sigma: parseFloat(document.getElementById('optTier0Sigma').value),
         tier_1_max_sigma: parseFloat(document.getElementById('optTier1Sigma').value),
@@ -396,7 +394,6 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
 document.getElementById('resetSettings').addEventListener('click', async () => {
     const defaults = {
         scoring_mode: 'split',
-        min_data: 3,
         min_stddev_cpm: 10,
         tier_0_max_sigma: -1.5,
         tier_1_max_sigma: -0.5,

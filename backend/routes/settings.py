@@ -9,7 +9,6 @@ router = APIRouter()
 
 class SettingsResponse(BaseModel):
     scoring_mode: str
-    min_data: int
     min_stddev_cpm: float
     tier_0_max_sigma: float
     tier_1_max_sigma: float
@@ -28,7 +27,6 @@ class SettingsResponse(BaseModel):
 
 class SettingsPatch(BaseModel):
     scoring_mode: str | None = None
-    min_data: int | None = None
     min_stddev_cpm: float | None = None
     tier_0_max_sigma: float | None = None
     tier_1_max_sigma: float | None = None
@@ -48,7 +46,6 @@ class SettingsPatch(BaseModel):
 def _settings_to_response(gs: GameSettings) -> SettingsResponse:
     return SettingsResponse(
         scoring_mode=gs.scoring_mode,
-        min_data=gs.min_data,
         min_stddev_cpm=gs.min_stddev_cpm,
         tier_0_max_sigma=gs.tier_0_max_sigma,
         tier_1_max_sigma=gs.tier_1_max_sigma,
