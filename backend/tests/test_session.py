@@ -145,7 +145,7 @@ class TestAppendParagraph:
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
         store = SessionStore()
         session = store.create(initial_prompt="test story")
-        file_path = tmp_path / "writtenStories" / f"{session.id}.txt"
+        file_path = tmp_path / "writtenStories" / f"test_story_{session.id[:8]}.txt"
 
         store.append_paragraph(
             session_id=session.id,
@@ -167,7 +167,7 @@ class TestAppendParagraph:
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
         store = SessionStore()
         session = store.create(initial_prompt="test story")
-        file_path = tmp_path / "writtenStories" / f"{session.id}.txt"
+        file_path = tmp_path / "writtenStories" / f"test_story_{session.id[:8]}.txt"
 
         store.append_paragraph(session.id, "first para", 200.0, 3000, 0.9, 1)
         store.append_paragraph(session.id, "second para", 400.0, 2000, 1.0, 3)
@@ -176,3 +176,18 @@ class TestAppendParagraph:
         assert "second para" in content
         assert "Paragraph 1" in content
         assert "Paragraph 2" in content
+
+    def test_append_skips_persist_on_empty_text(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        store = SessionStore()
+        session = store.create(initial_prompt="test story")
+        store.append_paragraph(
+            session_id=session.id,
+            text="",
+            speed_cpm=300.0,
+            time_taken_ms=0,
+            accuracy=1.0,
+            outcome_tier=2,
+        )
+        out_dir = tmp_path / "writtenStories"
+        assert not out_dir.exists()

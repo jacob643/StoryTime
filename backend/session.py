@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -61,10 +62,19 @@ class SessionStore:
     def get(self, session_id: str) -> Optional[GameSession]:
         return self._sessions.get(session_id)
 
+    @staticmethod
+    def _slugify(text: str) -> str:
+        slug = re.sub(r'[^a-zA-Z0-9\s-]', '', text.lower())
+        slug = re.sub(r'[\s-]+', '_', slug)
+        return slug.strip('_')[:50]
+
     def _persist_paragraph(self, session: GameSession, record: ParagraphRecord) -> None:
+        if not record.text.strip():
+            return
         out_dir = Path.cwd() / "writtenStories"
         out_dir.mkdir(parents=True, exist_ok=True)
-        file_path = out_dir / f"{session.id}.txt"
+        slug = self._slugify(session.initial_prompt) or "untitled"
+        file_path = out_dir / f"{slug}_{session.id[:8]}.txt"
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         with open(file_path, "a", encoding="utf-8") as f:
             f.write(f"\n--- Paragraph {len(session.history)} ---\n")
