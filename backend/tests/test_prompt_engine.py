@@ -9,6 +9,10 @@ from backend.prompt_engine import (
 )
 
 
+def _has_tier_phrasing(result: str, tier: int) -> bool:
+    return any(p in result for p in OUTCOME_DIRECTIONS[tier])
+
+
 class TestBuildPrompt:
     def test_no_history_tier_2(self):
         result = build_prompt(
@@ -17,7 +21,7 @@ class TestBuildPrompt:
             outcome_tier=2,
         )
         assert "A lone detective in a rainy city." in result
-        assert OUTCOME_DIRECTIONS[2] in result
+        assert _has_tier_phrasing(result, 2)
         assert "exactly 80 words long" in result
         assert "So far" not in result
 
@@ -29,22 +33,32 @@ class TestBuildPrompt:
         )
         assert "The hero entered the cave." in result
         assert "A dragon appeared." in result
-        assert OUTCOME_DIRECTIONS[4] in result
+        assert _has_tier_phrasing(result, 4)
 
     def test_all_tiers_produce_different_directions(self):
         results = {}
         for tier in range(5):
             results[tier] = build_prompt("Test.", [], outcome_tier=tier)
         for tier in range(5):
-            assert OUTCOME_DIRECTIONS[tier] in results[tier]
+            assert _has_tier_phrasing(results[tier], tier), f"tier {tier} missing"
 
     def test_outcome_tier_out_of_range_defaults_to_tier_2(self):
         result = build_prompt("Test.", [], outcome_tier=99)
-        assert OUTCOME_DIRECTIONS[2] in result
+        assert _has_tier_phrasing(result, 2)
 
     def test_negative_tier_defaults_to_tier_2(self):
         result = build_prompt("Test.", [], outcome_tier=-1)
-        assert OUTCOME_DIRECTIONS[2] in result
+        assert _has_tier_phrasing(result, 2)
+
+    def test_custom_directions_list(self):
+        custom = {2: ["custom direction two"]}
+        result = build_prompt("Test.", [], outcome_tier=2, outcome_directions=custom)
+        assert "custom direction two" in result
+
+    def test_custom_directions_old_string_format(self):
+        custom = {2: "old string direction"}
+        result = build_prompt("Test.", [], outcome_tier=2, outcome_directions=custom)
+        assert "old string direction" in result
 
 
 class TestParseLlmResponse:
