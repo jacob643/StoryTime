@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unicodedata
 
 from backend.logger import logger
@@ -123,4 +124,6 @@ def parse_llm_response(raw: str) -> str:
     if raw and raw[-1] not in {".", "!", "?"}:
         raw += "."
 
-    return raw
+    raw = re.sub(r'\n+', ' ', raw)
+
+    return raw.strip()
