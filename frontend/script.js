@@ -372,10 +372,14 @@ async function loadSettings() {
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
         buildFixedThresholdInputs(s.fixed_thresholds);
+        outcomeDirectionsData = {};
         for (let t = 0; t <= 4; t++) {
-            const el = document.getElementById('optDirection' + t);
-            if (el) el.value = s.outcome_directions[t.toString()] || '';
+            const dirs = s.outcome_directions[t.toString()];
+            outcomeDirectionsData[t] = Array.isArray(dirs) ? [...dirs] : [dirs || ''];
         }
+        currentTierForPrompts = 0;
+        document.getElementById('tierPromptSelector').value = '0';
+        renderTierPrompts();
     } catch (e) {
         console.error('loadSettings:', e);
     }
@@ -401,10 +405,10 @@ function collectSettings() {
             safeParseFloat(ftHigh[i].value, 9999),
         ]);
     }
+    saveCurrentTierPrompts();
     const outcomeDirections = {};
     for (let t = 0; t <= 4; t++) {
-        const el = document.getElementById('optDirection' + t);
-        if (el) outcomeDirections[t] = el.value;
+        outcomeDirections[t] = outcomeDirectionsData[t] || [''];
     }
     return {
         scoring_mode: document.getElementById('optScoringMode').value,
@@ -421,6 +425,91 @@ function collectSettings() {
         outcome_directions: outcomeDirections,
     };
 }
+
+// tier prompt dynamic UI
+
+let outcomeDirectionsData = {};
+let currentTierForPrompts = 0;
+
+function renderTierPrompts() {
+    const list = document.getElementById('tierPromptList');
+    if (!list) return;
+    const phrasings = outcomeDirectionsData[currentTierForPrompts] || [''];
+    list.innerHTML = '';
+    for (let i = 0; i < phrasings.length; i++) {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.gap = '4px';
+        row.style.marginBottom = '4px';
+        row.style.alignItems = 'center';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = phrasings[i];
+        input.style.flex = '1';
+        input.dataset.index = i;
+        row.appendChild(input);
+        if (phrasings.length > 1) {
+            const minus = document.createElement('button');
+            minus.textContent = '−';
+            minus.type = 'button';
+            minus.addEventListener('click', () => {
+                saveCurrentTierPrompts();
+                outcomeDirectionsData[currentTierForPrompts].splice(i, 1);
+                renderTierPrompts();
+            });
+            row.appendChild(minus);
+        }
+        list.appendChild(row);
+    }
+    // empty trailing input for add-on-type
+    const trail = document.createElement('div');
+    trail.style.display = 'flex';
+    trail.style.gap = '4px';
+    trail.style.alignItems = 'center';
+    const trailInput = document.createElement('input');
+    trailInput.type = 'text';
+    trailInput.placeholder = 'type a new phrasing…';
+    trailInput.style.flex = '1';
+    trailInput.dataset.trail = '1';
+    trail.appendChild(trailInput);
+    list.appendChild(trail);
+}
+
+function saveCurrentTierPrompts() {
+    const list = document.getElementById('tierPromptList');
+    if (!list) return;
+    const inputs = list.querySelectorAll('input:not([data-trail])');
+    const phrasings = [];
+    for (const inp of inputs) {
+        const val = inp.value.trim();
+        if (val) phrasings.push(val);
+    }
+    if (phrasings.length === 0) phrasings.push('');
+    outcomeDirectionsData[currentTierForPrompts] = phrasings;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('tierPromptSelector');
+    if (sel) {
+        sel.addEventListener('change', () => {
+            saveCurrentTierPrompts();
+            currentTierForPrompts = parseInt(sel.value, 10);
+            renderTierPrompts();
+        });
+    }
+    // add-on-type via delegation
+    document.getElementById('tierPromptList')?.addEventListener('input', (e) => {
+        if (e.target.dataset.trail === '1' && e.target.value.trim()) {
+            saveCurrentTierPrompts();
+            outcomeDirectionsData[currentTierForPrompts].push('');
+            renderTierPrompts();
+            // focus the new empty trailing input
+            const list = document.getElementById('tierPromptList');
+            const inputs = list.querySelectorAll('input');
+            if (inputs.length) inputs[inputs.length - 1].focus();
+        }
+    });
+});
 
 document.getElementById('saveSettings').addEventListener('click', async () => {
     try {
@@ -453,11 +542,66 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
         min_split_size: 30,
         default_avg_cpm: 300,
         outcome_directions: {
-            0: 'an even worse situation with no clear way out',
-            1: 'a significant setback that makes things more difficult',
-            2: 'a minor challenge that the protagonist pushes through',
-            3: 'a small success that aids the journey',
-            4: 'a great improvement to the situation, a significant advance',
+            0: [
+                'an even worse situation with no clear way out',
+                'disaster strikes without warning',
+                'everything falls apart in the worst possible way',
+                'a catastrophic turn no one expected',
+                'the situation deteriorates into chaos',
+                'hope fades as things go from bad to worse',
+                'a devastating blow changes everything',
+                'the bottom falls out of the situation',
+                'darkness closes in from all sides',
+                'an irreversible tragedy unfolds',
+            ],
+            1: [
+                'a significant setback that makes things more difficult',
+                'an obstacle appears that complicates the journey',
+                'a painful loss that must be endured',
+                'circumstances take a turn for the worse',
+                'a difficult challenge tests resolve',
+                'progress is halted by unexpected trouble',
+                'a costly mistake has serious consequences',
+                'the path forward becomes more treacherous',
+                'a troubling revelation changes the stakes',
+                'trust is broken and must be rebuilt',
+            ],
+            2: [
+                'a minor challenge that the protagonist pushes through',
+                'a small hurdle that requires some effort',
+                'the journey continues with a moment of uncertainty',
+                'a brief moment of tension arises and passes',
+                'there is a slight bump in the road ahead',
+                'an ordinary obstacle turns into a learning moment',
+                'a simple test of patience presents itself',
+                'things remain steady with a touch of difficulty',
+                'a passing inconvenience slows things down',
+                'a mild complication arises but seems manageable',
+            ],
+            3: [
+                'a small success that aids the journey',
+                'a helpful coincidence brightens the path',
+                'a minor victory boosts morale and momentum',
+                'an unexpected advantage presents itself',
+                'kindness from an unlikely source changes things',
+                'a piece of luck shifts the situation slightly',
+                'a small discovery proves useful',
+                'things go better than expected for a moment',
+                'a brief moment of triumph lifts the spirit',
+                'a gentle wind of fortune pushes things forward',
+            ],
+            4: [
+                'a great improvement to the situation, a significant advance',
+                'a remarkable breakthrough changes the game entirely',
+                'fortune smiles in an extraordinary way',
+                'an incredible opportunity presents itself',
+                'things come together better than anyone could hope',
+                'a stunning victory leaves everyone in awe',
+                'the path clears in a truly unexpected way',
+                'a gift of fate changes the direction of the story',
+                'triumph emerges from the struggle in grand fashion',
+                'a brilliant stroke of genius leads to great success',
+            ],
         },
     };
     try {
