@@ -375,7 +375,7 @@ async function loadSettings() {
         outcomeDirectionsData = {};
         for (let t = 0; t <= 4; t++) {
             const dirs = s.outcome_directions[t.toString()];
-            outcomeDirectionsData[t] = Array.isArray(dirs) ? [...dirs] : [dirs || ''];
+            outcomeDirectionsData[t] = Array.isArray(dirs) && dirs.length > 0 ? [...dirs] : [...DEFAULT_PHRASINGS[t]];
         }
         currentTierForPrompts = 0;
         document.getElementById('tierPromptSelector').value = '0';
@@ -428,13 +428,80 @@ function collectSettings() {
 
 // tier prompt dynamic UI
 
+const DEFAULT_PHRASINGS = {
+    0: [
+        'an even worse situation with no clear way out',
+        'disaster strikes without warning',
+        'everything falls apart in the worst possible way',
+        'a catastrophic turn no one expected',
+        'the situation deteriorates into chaos',
+        'hope fades as things go from bad to worse',
+        'a devastating blow changes everything',
+        'the bottom falls out of the situation',
+        'darkness closes in from all sides',
+        'an irreversible tragedy unfolds',
+    ],
+    1: [
+        'a significant setback that makes things more difficult',
+        'an obstacle appears that complicates the journey',
+        'a painful loss that must be endured',
+        'circumstances take a turn for the worse',
+        'a difficult challenge tests resolve',
+        'progress is halted by unexpected trouble',
+        'a costly mistake has serious consequences',
+        'the path forward becomes more treacherous',
+        'a troubling revelation changes the stakes',
+        'trust is broken and must be rebuilt',
+    ],
+    2: [
+        'a minor challenge that the protagonist pushes through',
+        'a small hurdle that requires some effort',
+        'the journey continues with a moment of uncertainty',
+        'a brief moment of tension arises and passes',
+        'there is a slight bump in the road ahead',
+        'an ordinary obstacle turns into a learning moment',
+        'a simple test of patience presents itself',
+        'things remain steady with a touch of difficulty',
+        'a passing inconvenience slows things down',
+        'a mild complication arises but seems manageable',
+    ],
+    3: [
+        'a small success that aids the journey',
+        'a helpful coincidence brightens the path',
+        'a minor victory boosts morale and momentum',
+        'an unexpected advantage presents itself',
+        'kindness from an unlikely source changes things',
+        'a piece of luck shifts the situation slightly',
+        'a small discovery proves useful',
+        'things go better than expected for a moment',
+        'a brief moment of triumph lifts the spirit',
+        'a gentle wind of fortune pushes things forward',
+    ],
+    4: [
+        'a great improvement to the situation, a significant advance',
+        'a remarkable breakthrough changes the game entirely',
+        'fortune smiles in an extraordinary way',
+        'an incredible opportunity presents itself',
+        'things come together better than anyone could hope',
+        'a stunning victory leaves everyone in awe',
+        'the path clears in a truly unexpected way',
+        'a gift of fate changes the direction of the story',
+        'triumph emerges from the struggle in grand fashion',
+        'a brilliant stroke of genius leads to great success',
+    ],
+};
+
 let outcomeDirectionsData = {};
 let currentTierForPrompts = 0;
+
+function getTierPhrasings(tier) {
+    return outcomeDirectionsData[tier] || DEFAULT_PHRASINGS[tier] || [''];
+}
 
 function renderTierPrompts() {
     const list = document.getElementById('tierPromptList');
     if (!list) return;
-    const phrasings = outcomeDirectionsData[currentTierForPrompts] || [''];
+    const phrasings = getTierPhrasings(currentTierForPrompts);
     list.innerHTML = '';
     for (let i = 0; i < phrasings.length; i++) {
         const row = document.createElement('div');
@@ -488,7 +555,8 @@ function saveCurrentTierPrompts() {
     outcomeDirectionsData[currentTierForPrompts] = phrasings;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// register tier prompt event listeners (run after the first DOMContentLoaded handler)
+document.addEventListener('DOMContentLoaded', function initTierPrompts() {
     const sel = document.getElementById('tierPromptSelector');
     if (sel) {
         sel.addEventListener('change', () => {
@@ -498,17 +566,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     // add-on-type via delegation
-    document.getElementById('tierPromptList')?.addEventListener('input', (e) => {
-        if (e.target.dataset.trail === '1' && e.target.value.trim()) {
-            saveCurrentTierPrompts();
-            outcomeDirectionsData[currentTierForPrompts].push('');
-            renderTierPrompts();
-            // focus the new empty trailing input
-            const list = document.getElementById('tierPromptList');
-            const inputs = list.querySelectorAll('input');
-            if (inputs.length) inputs[inputs.length - 1].focus();
-        }
-    });
+    const list = document.getElementById('tierPromptList');
+    if (list) {
+        list.addEventListener('input', (e) => {
+            if (e.target.dataset.trail === '1' && e.target.value.trim()) {
+                saveCurrentTierPrompts();
+                if (!Array.isArray(outcomeDirectionsData[currentTierForPrompts])) {
+                    outcomeDirectionsData[currentTierForPrompts] = [];
+                }
+                outcomeDirectionsData[currentTierForPrompts].push('');
+                renderTierPrompts();
+                const container = document.getElementById('tierPromptList');
+                const allInputs = container.querySelectorAll('input');
+                if (allInputs.length) allInputs[allInputs.length - 1].focus();
+            }
+        });
+    }
 });
 
 document.getElementById('saveSettings').addEventListener('click', async () => {
@@ -541,68 +614,7 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
         target_split_size: 50,
         min_split_size: 30,
         default_avg_cpm: 300,
-        outcome_directions: {
-            0: [
-                'an even worse situation with no clear way out',
-                'disaster strikes without warning',
-                'everything falls apart in the worst possible way',
-                'a catastrophic turn no one expected',
-                'the situation deteriorates into chaos',
-                'hope fades as things go from bad to worse',
-                'a devastating blow changes everything',
-                'the bottom falls out of the situation',
-                'darkness closes in from all sides',
-                'an irreversible tragedy unfolds',
-            ],
-            1: [
-                'a significant setback that makes things more difficult',
-                'an obstacle appears that complicates the journey',
-                'a painful loss that must be endured',
-                'circumstances take a turn for the worse',
-                'a difficult challenge tests resolve',
-                'progress is halted by unexpected trouble',
-                'a costly mistake has serious consequences',
-                'the path forward becomes more treacherous',
-                'a troubling revelation changes the stakes',
-                'trust is broken and must be rebuilt',
-            ],
-            2: [
-                'a minor challenge that the protagonist pushes through',
-                'a small hurdle that requires some effort',
-                'the journey continues with a moment of uncertainty',
-                'a brief moment of tension arises and passes',
-                'there is a slight bump in the road ahead',
-                'an ordinary obstacle turns into a learning moment',
-                'a simple test of patience presents itself',
-                'things remain steady with a touch of difficulty',
-                'a passing inconvenience slows things down',
-                'a mild complication arises but seems manageable',
-            ],
-            3: [
-                'a small success that aids the journey',
-                'a helpful coincidence brightens the path',
-                'a minor victory boosts morale and momentum',
-                'an unexpected advantage presents itself',
-                'kindness from an unlikely source changes things',
-                'a piece of luck shifts the situation slightly',
-                'a small discovery proves useful',
-                'things go better than expected for a moment',
-                'a brief moment of triumph lifts the spirit',
-                'a gentle wind of fortune pushes things forward',
-            ],
-            4: [
-                'a great improvement to the situation, a significant advance',
-                'a remarkable breakthrough changes the game entirely',
-                'fortune smiles in an extraordinary way',
-                'an incredible opportunity presents itself',
-                'things come together better than anyone could hope',
-                'a stunning victory leaves everyone in awe',
-                'the path clears in a truly unexpected way',
-                'a gift of fate changes the direction of the story',
-                'triumph emerges from the struggle in grand fashion',
-                'a brilliant stroke of genius leads to great success',
-            ],
-        },
+        outcome_directions: DEFAULT_PHRASINGS,
     };
     try {
         const r = await fetch('/api/settings', {
