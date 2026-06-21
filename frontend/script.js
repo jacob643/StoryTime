@@ -580,12 +580,15 @@ document.addEventListener('DOMContentLoaded', function initTierPrompts() {
             renderTierPrompts();
         });
     }
-    // add-on-type via delegation
+    // add-on-type / delete-if-empty via delegation
     const list = document.getElementById('tierPromptList');
     if (list) {
         list.addEventListener('input', (e) => {
-            if (e.target.dataset.trail === '1' && e.target.value.trim()) {
-                const typed = e.target.value.trim();
+            const target = e.target;
+            if (target.nodeName !== 'INPUT') return;
+
+            if (target.dataset.trail === '1' && target.value.trim()) {
+                const typed = target.value.trim();
                 saveCurrentTierPrompts();
                 if (!Array.isArray(outcomeDirectionsData[currentTierForPrompts])) {
                     outcomeDirectionsData[currentTierForPrompts] = [];
@@ -598,8 +601,22 @@ document.addEventListener('DOMContentLoaded', function initTierPrompts() {
                 if (targetScrollTop !== undefined) {
                     list.parentElement.scrollTop = targetScrollTop;
                 }
-                // focus the new empty trailing input
-                if (allInputs.length) allInputs[allInputs.length - 1].focus();
+                // focus the last REAL input (the one just populated), not the trailing one
+                const focusIdx = allInputs.length - 2;
+                if (focusIdx >= 0) allInputs[focusIdx].focus();
+            } else if (!target.dataset.trail && !target.value.trim()) {
+                // real phrasing input erased empty — delete it only if it's the last one
+                const realInputs = list.querySelectorAll('input:not([data-trail])');
+                const lastReal = realInputs[realInputs.length - 1];
+                if (target === lastReal) {
+                    const arr = outcomeDirectionsData[currentTierForPrompts];
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        arr.pop();
+                        renderTierPrompts();
+                        const newInputs = list.querySelectorAll('input');
+                        if (newInputs.length) newInputs[newInputs.length - 1].focus();
+                    }
+                }
             }
         });
     }
