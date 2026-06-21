@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from backend.game_logic import (
@@ -145,6 +147,20 @@ class TestComputeOutcomeTierAdaptive:
 
     def test_negative_speed_fixed_still_tier_0(self):
         assert compute_outcome_tier(-5, avg=300, stddev=50) == 0
+
+    def test_effective_stddev_overrides_min_stddev_floor(self):
+        rolling = [500.0] * 24
+        split_speeds = [505.0] * 14
+        params = ScoringParams(min_stddev_cpm=10)
+        avg, stddev = compute_speed_stats(rolling, params.min_stddev_cpm)
+        assert avg == 500.0
+        assert stddev == 10.0
+        effective_stddev = stddev / math.sqrt(len(split_speeds))
+        tier = compute_outcome_tier(
+            sum(split_speeds) / len(split_speeds),
+            avg=avg, stddev=effective_stddev, params=params,
+        )
+        assert tier == 4
 
 
 # ── get_outcome_label ───────────────────────────────────────────────────

@@ -76,6 +76,12 @@ class TestParseLlmResponse:
         raw = 'Here is the next paragraph: "Into the void."'
         assert parse_llm_response(raw) == 'Into the void.'
 
+    def test_collapses_newlines_to_space(self):
+        assert parse_llm_response("hello\n\nworld") == "hello world."
+        assert parse_llm_response("a\nb\nc") == "a b c."
+        assert parse_llm_response("no newlines") == "no newlines."
+        assert parse_llm_response("multi\n\n\npara") == "multi para."
+
 
 class TestBuildFirstParagraphPrompt:
     def test_wraps_user_input(self):
