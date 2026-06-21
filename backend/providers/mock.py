@@ -32,9 +32,10 @@ MOCK_RESPONSES: dict[int, str] = {
 
 
 def _extract_tier_from_prompt(prompt: str, default: int = 2) -> int:
-    for tier, direction in OUTCOME_DIRECTIONS.items():
-        if direction in prompt:
-            return tier
+    for tier, phrasings in OUTCOME_DIRECTIONS.items():
+        for p in phrasings:
+            if p in prompt:
+                return tier
     return default
 
 

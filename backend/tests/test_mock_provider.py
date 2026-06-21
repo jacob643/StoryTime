@@ -37,9 +37,16 @@ def test_mock_is_available_returns_true(provider):
 
 
 def test_extract_tier_from_prompt_all_tiers():
-    for tier, direction in OUTCOME_DIRECTIONS.items():
-        prompt = f"Continue the story with {direction}."
+    for tier, phrasings in OUTCOME_DIRECTIONS.items():
+        prompt = f"Continue the story with {phrasings[0]}."
         assert _extract_tier_from_prompt(prompt) == tier
+
+
+def test_extract_tier_from_prompt_matches_any_phrasing():
+    for tier, phrasings in OUTCOME_DIRECTIONS.items():
+        for phrasing in phrasings:
+            prompt = f"Continue the story with {phrasing}."
+            assert _extract_tier_from_prompt(prompt) == tier
 
 
 def test_extract_tier_from_prompt_no_match_defaults_to_2():

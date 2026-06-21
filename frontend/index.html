@@ -72,21 +72,16 @@
                 </section>
                 <section>
                     <h3>Tier Prompts</h3>
-                    <label>Tier 0 (very negative)
-                        <textarea id="optDirection0" rows="2"></textarea>
+                    <label>Tier
+                        <select id="tierPromptSelector">
+                            <option value="0">0 (very negative)</option>
+                            <option value="1">1 (negative)</option>
+                            <option value="2">2 (neutral)</option>
+                            <option value="3">3 (positive)</option>
+                            <option value="4">4 (very positive)</option>
+                        </select>
                     </label>
-                    <label>Tier 1 (negative)
-                        <textarea id="optDirection1" rows="2"></textarea>
-                    </label>
-                    <label>Tier 2 (neutral)
-                        <textarea id="optDirection2" rows="2"></textarea>
-                    </label>
-                    <label>Tier 3 (positive)
-                        <textarea id="optDirection3" rows="2"></textarea>
-                    </label>
-                    <label>Tier 4 (very positive)
-                        <textarea id="optDirection4" rows="2"></textarea>
-                    </label>
+                    <div id="tierPromptList"></div>
                 </section>
             </div>
             <div class="settings-actions">
