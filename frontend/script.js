@@ -174,6 +174,15 @@ function updateTierChart(tier, boundaries) {
     }
 }
 
+function autoScrollTextDisplay() {
+    const container = document.getElementById('textDisplayContainer');
+    if (!container) return;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    if (isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
 function updateTextDisplay() {
     const inputText = inputBox.value;
     let displayedText = '';
@@ -256,6 +265,7 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         inputBox.focus();
         initSplits(textContent);
         retryAction = null;
+        autoScrollTextDisplay();
     } catch (error) {
         showError(error.message, retryAction);
     }
@@ -522,7 +532,9 @@ async function sendSimulate(cpm, deviation) {
     startTime = new Date();
     inputBox.value = textContent;
     const splitSpeeds = computeSplitSpeeds();
-    fetchNextParagraph(textContent, simulatedCpm, splitSpeeds);
+    await fetchNextParagraph(textContent, simulatedCpm, splitSpeeds);
+    simulatedCpm = null;
+    simulatedDeviation = 0;
 }
 
 window.simulate = function(cpm, deviation) {
@@ -567,6 +579,7 @@ async function sendPrompt(prompt) {
         inputBox.focus();
         initSplits(textContent);
         updateTierChart(data.outcome_tier, data.tier_boundaries);
+        autoScrollTextDisplay();
         retryAction = null;
     } catch (error) {
         showError(error.message, retryAction);
