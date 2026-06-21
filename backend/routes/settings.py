@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+from backend.prompt_engine import _normalize_directions
 from backend.settings_manager import GameSettings, get_settings, update_settings
 from backend.logger import logger
 
@@ -20,7 +21,7 @@ class SettingsResponse(BaseModel):
     target_split_size: int
     min_split_size: int
     default_avg_cpm: float
-    outcome_directions: dict[int, str]
+    outcome_directions: dict[int, list[str]]
     provider: str
     custom_endpoint: str
     custom_api_key: str
@@ -39,7 +40,7 @@ class SettingsPatch(BaseModel):
     target_split_size: int | None = None
     min_split_size: int | None = None
     default_avg_cpm: float | None = None
-    outcome_directions: dict[int, str] | None = None
+    outcome_directions: dict[int, list[str]] | None = None
     provider: str | None = None
     custom_endpoint: str | None = None
     custom_api_key: str | None = None
@@ -86,5 +87,7 @@ async def get_settings_endpoint():
 async def update_settings_endpoint(body: SettingsPatch):
     dumped = body.model_dump(exclude_none=True)
     logger.info("POST /api/settings body=%s", dumped)
+    if "outcome_directions" in dumped:
+        dumped["outcome_directions"] = _normalize_directions(dumped["outcome_directions"])
     updated = update_settings(**dumped)
     return _settings_to_response(updated)

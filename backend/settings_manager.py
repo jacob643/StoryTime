@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Union
 
 from backend.game_logic import (
     DEFAULT_AVG_CPM,
@@ -17,8 +17,8 @@ def _default_fixed_thresholds() -> list[list[float]]:
     return [list(pair) for pair in FIXED_THRESHOLDS]
 
 
-def _default_outcome_directions() -> Dict[int, str]:
-    return dict(OUTCOME_DIRECTIONS)
+def _default_outcome_directions() -> Dict[int, list[str]]:
+    return {k: list(v) for k, v in OUTCOME_DIRECTIONS.items()}
 
 
 @dataclass
@@ -34,7 +34,7 @@ class GameSettings:
     target_split_size: int = 50
     min_split_size: int = 30
     default_avg_cpm: float = DEFAULT_AVG_CPM
-    outcome_directions: Dict[int, str] = field(default_factory=_default_outcome_directions)
+    outcome_directions: Dict[int, list[str]] = field(default_factory=_default_outcome_directions)
     provider: str = "ollama"
     custom_endpoint: str = ""
     custom_api_key: str = ""
@@ -45,8 +45,12 @@ def _settings_path() -> Path:
     return Path.home() / ".storytime" / "config.json"
 
 
-def _coerce_keys(d: dict) -> dict[int, str]:
+def _coerce_keys(d: dict) -> dict[int, Union[str, list[str]]]:
     return {int(k): v for k, v in d.items()}
+
+
+def _migrate_outcome_directions(d: dict[int, Union[str, list[str]]]) -> dict[int, list[str]]:
+    return {k: (v if isinstance(v, list) else [v]) for k, v in d.items()}
 
 
 def load_settings() -> GameSettings:
@@ -56,7 +60,7 @@ def load_settings() -> GameSettings:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
         gs = GameSettings(**raw)
-        gs.outcome_directions = _coerce_keys(gs.outcome_directions)
+        gs.outcome_directions = _migrate_outcome_directions(_coerce_keys(gs.outcome_directions))
         return gs
     except (json.JSONDecodeError, TypeError, KeyError, ValueError):
         return GameSettings()

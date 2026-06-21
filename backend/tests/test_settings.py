@@ -124,16 +124,29 @@ def test_update_settings_partial(monkeypatch, tmp_path):
 def test_outcome_directions_roundtrip(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
     custom = {
-        0: "custom bad",
-        1: "custom worse",
-        2: "custom neutral",
-        3: "custom good",
-        4: "custom great",
+        0: ["custom bad"],
+        1: ["custom worse"],
+        2: ["custom neutral"],
+        3: ["custom good"],
+        4: ["custom great"],
     }
     update_settings(outcome_directions=custom)
     loaded = load_settings()
-    assert loaded.outcome_directions[2] == "custom neutral"
-    assert loaded.outcome_directions[0] == "custom bad"
+    assert loaded.outcome_directions[2] == ["custom neutral"]
+    assert loaded.outcome_directions[0] == ["custom bad"]
+
+
+def test_outcome_directions_migrates_old_string_format(monkeypatch, tmp_path):
+    _patch_path(monkeypatch, tmp_path)
+    import json
+    path = tmp_path / ".storytime" / "config.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "outcome_directions": {"0": "old bad", "1": "old worse", "2": "old ok", "3": "old good", "4": "old great"},
+    }), encoding="utf-8")
+    loaded = load_settings()
+    assert loaded.outcome_directions[2] == ["old ok"]
+    assert loaded.outcome_directions[0] == ["old bad"]
 
 
 # --- API tests ---
@@ -146,6 +159,7 @@ def test_get_settings_returns_defaults(monkeypatch, tmp_path, client):
     assert data["scoring_mode"] == "split"
     assert data["default_avg_cpm"] == 300.0
     assert len(data["outcome_directions"]) == 5
+    assert all(isinstance(v, list) for v in data["outcome_directions"].values())
     assert len(data["fixed_thresholds"]) == 5
 
 
@@ -154,7 +168,7 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     r = client.post("/api/settings", json={
         "scoring_mode": "fixed",
         "default_avg_cpm": 500.0,
-        "outcome_directions": {0: "bad", 1: "worse", 2: "ok", 3: "good", 4: "great"},
+        "outcome_directions": {"0": ["bad"], "1": ["worse"], "2": ["ok"], "3": ["good"], "4": ["great"]},
         "fixed_thresholds": [[0, 20], [20, 40], [40, 60], [60, 80], [80, 9999]],
         "target_split_size": 40,
         "min_split_size": 20,
@@ -168,8 +182,8 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     data = r.json()
     assert data["scoring_mode"] == "fixed"
     assert data["default_avg_cpm"] == 500.0
-    assert data["outcome_directions"]["2"] == "ok"
-    assert data["outcome_directions"]["0"] == "bad"
+    assert data["outcome_directions"]["2"] == ["ok"]
+    assert data["outcome_directions"]["0"] == ["bad"]
     assert data["fixed_thresholds"][0] == [0, 20]
     assert data["target_split_size"] == 40
 

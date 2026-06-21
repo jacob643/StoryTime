@@ -1,24 +1,85 @@
 from __future__ import annotations
 
+import random
 import re
 import unicodedata
+from typing import Union
 
 from backend.logger import logger
 
-OUTCOME_DIRECTIONS: dict[int, str] = {
-    0: "an even worse situation with no clear way out",
-    1: "a significant setback that makes things more difficult",
-    2: "a minor challenge that the protagonist pushes through",
-    3: "a small success that aids the journey",
-    4: "a great improvement to the situation, a significant advance",
+OUTCOME_DIRECTIONS: dict[int, list[str]] = {
+    0: [
+        "an even worse situation with no clear way out",
+        "disaster strikes without warning",
+        "everything falls apart in the worst possible way",
+        "a catastrophic turn no one expected",
+        "the situation deteriorates into chaos",
+        "hope fades as things go from bad to worse",
+        "a devastating blow changes everything",
+        "the bottom falls out of the situation",
+        "darkness closes in from all sides",
+        "an irreversible tragedy unfolds",
+    ],
+    1: [
+        "a significant setback that makes things more difficult",
+        "an obstacle appears that complicates the journey",
+        "a painful loss that must be endured",
+        "circumstances take a turn for the worse",
+        "a difficult challenge tests resolve",
+        "progress is halted by unexpected trouble",
+        "a costly mistake has serious consequences",
+        "the path forward becomes more treacherous",
+        "a troubling revelation changes the stakes",
+        "trust is broken and must be rebuilt",
+    ],
+    2: [
+        "a minor challenge that the protagonist pushes through",
+        "a small hurdle that requires some effort",
+        "the journey continues with a moment of uncertainty",
+        "a brief moment of tension arises and passes",
+        "there is a slight bump in the road ahead",
+        "an ordinary obstacle turns into a learning moment",
+        "a simple test of patience presents itself",
+        "things remain steady with a touch of difficulty",
+        "a passing inconvenience slows things down",
+        "a mild complication arises but seems manageable",
+    ],
+    3: [
+        "a small success that aids the journey",
+        "a helpful coincidence brightens the path",
+        "a minor victory boosts morale and momentum",
+        "an unexpected advantage presents itself",
+        "kindness from an unlikely source changes things",
+        "a piece of luck shifts the situation slightly",
+        "a small discovery proves useful",
+        "things go better than expected for a moment",
+        "a brief moment of triumph lifts the spirit",
+        "a gentle wind of fortune pushes things forward",
+    ],
+    4: [
+        "a great improvement to the situation, a significant advance",
+        "a remarkable breakthrough changes the game entirely",
+        "fortune smiles in an extraordinary way",
+        "an incredible opportunity presents itself",
+        "things come together better than anyone could hope",
+        "a stunning victory leaves everyone in awe",
+        "the path clears in a truly unexpected way",
+        "a gift of fate changes the direction of the story",
+        "triumph emerges from the struggle in grand fashion",
+        "a brilliant stroke of genius leads to great success",
+    ],
 }
+
+
+def _normalize_directions(directions: dict[int, Union[str, list[str]]]) -> dict[int, list[str]]:
+    return {k: (v if isinstance(v, list) else [v]) for k, v in directions.items()}
 
 
 def build_prompt(
     initial_context: str,
     history: list[str],
     outcome_tier: int,
-    outcome_directions: dict[int, str] | None = None,
+    outcome_directions: dict[int, Union[str, list[str]]] | None = None,
     max_words: int = 80,
 ) -> str:
     parts: list[str] = []
@@ -32,8 +93,9 @@ def build_prompt(
             f"- {p}" for p in history
         ))
 
-    directions = outcome_directions if outcome_directions is not None else OUTCOME_DIRECTIONS
-    direction = directions.get(outcome_tier, directions[2])
+    raw = outcome_directions if outcome_directions is not None else OUTCOME_DIRECTIONS
+    directions = _normalize_directions(raw)
+    direction = random.choice(directions.get(outcome_tier, directions[2]))
     parts.append(
         f"Continue the story with {direction}. "
         f"The paragraph should be exactly {max_words} words long, nothing else."
