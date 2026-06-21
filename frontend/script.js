@@ -331,7 +331,6 @@ const fixedThresholdsContainer = document.getElementById('fixedThresholdsContain
 settingsToggle.addEventListener('click', () => {
     settingsPanel.classList.toggle('collapsed');
     if (!settingsPanel.classList.contains('collapsed')) {
-        console.log('[TierDebug] Settings panel opened, calling loadSettings()');
         loadSettings();
     }
 });
@@ -373,16 +372,13 @@ async function loadSettings() {
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
         buildFixedThresholdInputs(s.fixed_thresholds);
-        console.log('[TierDebug] API outcome_directions:', JSON.stringify(s.outcome_directions));
         outcomeDirectionsData = {};
         for (let t = 0; t <= 4; t++) {
             const dirs = s.outcome_directions[t.toString()];
             outcomeDirectionsData[t] = Array.isArray(dirs) && dirs.length > 0 ? [...dirs] : [...DEFAULT_PHRASINGS[t]];
-            console.log(`[TierDebug] Tier ${t}: dirs=`, dirs, '→ outcomeDirectionsData[t]=', outcomeDirectionsData[t]);
         }
         currentTierForPrompts = 0;
         document.getElementById('tierPromptSelector').value = '0';
-        console.log('[TierDebug] Calling renderTierPrompts()');
         renderTierPrompts();
     } catch (e) {
         console.error('loadSettings:', e);
@@ -499,17 +495,13 @@ let outcomeDirectionsData = {};
 let currentTierForPrompts = 0;
 
 function getTierPhrasings(tier) {
-    const result = outcomeDirectionsData[tier] || DEFAULT_PHRASINGS[tier] || [''];
-    console.log(`[TierDebug] getTierPhrasings(${tier}) →`, JSON.stringify(result).slice(0, 120));
-    return result;
+    return outcomeDirectionsData[tier] || DEFAULT_PHRASINGS[tier] || [''];
 }
 
 function renderTierPrompts() {
     const list = document.getElementById('tierPromptList');
-    console.log('[TierDebug] renderTierPrompts() called, list element:', !!list, 'currentTierForPrompts:', currentTierForPrompts, 'outcomeDirectionsData:', JSON.stringify(outcomeDirectionsData).slice(0, 100));
     if (!list) return;
     const phrasings = getTierPhrasings(currentTierForPrompts);
-    console.log('[TierDebug] phrasings length:', phrasings.length, 'first:', phrasings[0]?.slice(0, 40));
     list.innerHTML = '';
     for (let i = 0; i < phrasings.length; i++) {
         const row = document.createElement('div');
@@ -517,16 +509,11 @@ function renderTierPrompts() {
         row.style.gap = '4px';
         row.style.marginBottom = '4px';
         row.style.alignItems = 'center';
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = phrasings[i];
-        input.style.flex = '1';
-        input.dataset.index = i;
-        row.appendChild(input);
         if (phrasings.length > 1) {
             const minus = document.createElement('button');
             minus.textContent = '−';
             minus.type = 'button';
+            minus.name = 'tierPromptRemove';
             minus.addEventListener('click', () => {
                 saveCurrentTierPrompts();
                 outcomeDirectionsData[currentTierForPrompts].splice(i, 1);
@@ -534,6 +521,19 @@ function renderTierPrompts() {
             });
             row.appendChild(minus);
         }
+        const wrap = document.createElement('div');
+        wrap.style.flex = '1';
+        wrap.style.display = 'flex';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = phrasings[i];
+        input.name = 'tierPromptPhrasing';
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
+        input.style.marginLeft = '0';
+        input.dataset.index = i;
+        wrap.appendChild(input);
+        row.appendChild(wrap);
         list.appendChild(row);
     }
     // empty trailing input for add-on-type
@@ -541,12 +541,19 @@ function renderTierPrompts() {
     trail.style.display = 'flex';
     trail.style.gap = '4px';
     trail.style.alignItems = 'center';
+    const trailWrap = document.createElement('div');
+    trailWrap.style.flex = '1';
+    trailWrap.style.display = 'flex';
     const trailInput = document.createElement('input');
     trailInput.type = 'text';
     trailInput.placeholder = 'type a new phrasing…';
-    trailInput.style.flex = '1';
+    trailInput.name = 'tierPromptPhrasing';
+    trailInput.style.width = '100%';
+    trailInput.style.boxSizing = 'border-box';
+    trailInput.style.marginLeft = '0';
     trailInput.dataset.trail = '1';
-    trail.appendChild(trailInput);
+    trailWrap.appendChild(trailInput);
+    trail.appendChild(trailWrap);
     list.appendChild(trail);
 }
 
@@ -578,14 +585,20 @@ document.addEventListener('DOMContentLoaded', function initTierPrompts() {
     if (list) {
         list.addEventListener('input', (e) => {
             if (e.target.dataset.trail === '1' && e.target.value.trim()) {
+                const typed = e.target.value.trim();
                 saveCurrentTierPrompts();
                 if (!Array.isArray(outcomeDirectionsData[currentTierForPrompts])) {
                     outcomeDirectionsData[currentTierForPrompts] = [];
                 }
-                outcomeDirectionsData[currentTierForPrompts].push('');
+                outcomeDirectionsData[currentTierForPrompts].push(typed);
+                const targetScrollTop = list.parentElement?.scrollTop;
                 renderTierPrompts();
                 const container = document.getElementById('tierPromptList');
                 const allInputs = container.querySelectorAll('input');
+                if (targetScrollTop !== undefined) {
+                    list.parentElement.scrollTop = targetScrollTop;
+                }
+                // focus the new empty trailing input
                 if (allInputs.length) allInputs[allInputs.length - 1].focus();
             }
         });
