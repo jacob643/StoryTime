@@ -331,6 +331,7 @@ const fixedThresholdsContainer = document.getElementById('fixedThresholdsContain
 settingsToggle.addEventListener('click', () => {
     settingsPanel.classList.toggle('collapsed');
     if (!settingsPanel.classList.contains('collapsed')) {
+        console.log('[TierDebug] Settings panel opened, calling loadSettings()');
         loadSettings();
     }
 });
@@ -372,13 +373,16 @@ async function loadSettings() {
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
         buildFixedThresholdInputs(s.fixed_thresholds);
+        console.log('[TierDebug] API outcome_directions:', JSON.stringify(s.outcome_directions));
         outcomeDirectionsData = {};
         for (let t = 0; t <= 4; t++) {
             const dirs = s.outcome_directions[t.toString()];
             outcomeDirectionsData[t] = Array.isArray(dirs) && dirs.length > 0 ? [...dirs] : [...DEFAULT_PHRASINGS[t]];
+            console.log(`[TierDebug] Tier ${t}: dirs=`, dirs, '→ outcomeDirectionsData[t]=', outcomeDirectionsData[t]);
         }
         currentTierForPrompts = 0;
         document.getElementById('tierPromptSelector').value = '0';
+        console.log('[TierDebug] Calling renderTierPrompts()');
         renderTierPrompts();
     } catch (e) {
         console.error('loadSettings:', e);
@@ -495,13 +499,17 @@ let outcomeDirectionsData = {};
 let currentTierForPrompts = 0;
 
 function getTierPhrasings(tier) {
-    return outcomeDirectionsData[tier] || DEFAULT_PHRASINGS[tier] || [''];
+    const result = outcomeDirectionsData[tier] || DEFAULT_PHRASINGS[tier] || [''];
+    console.log(`[TierDebug] getTierPhrasings(${tier}) →`, JSON.stringify(result).slice(0, 120));
+    return result;
 }
 
 function renderTierPrompts() {
     const list = document.getElementById('tierPromptList');
+    console.log('[TierDebug] renderTierPrompts() called, list element:', !!list, 'currentTierForPrompts:', currentTierForPrompts, 'outcomeDirectionsData:', JSON.stringify(outcomeDirectionsData).slice(0, 100));
     if (!list) return;
     const phrasings = getTierPhrasings(currentTierForPrompts);
+    console.log('[TierDebug] phrasings length:', phrasings.length, 'first:', phrasings[0]?.slice(0, 40));
     list.innerHTML = '';
     for (let i = 0; i < phrasings.length; i++) {
         const row = document.createElement('div');
