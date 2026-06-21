@@ -117,7 +117,8 @@ async def generate(body: GenerateRequest):
         else:
             outcome_tier = _compute_subsequent_tier(split_speeds, rolling, params)
             avg, stddev = compute_speed_stats(rolling, params.min_stddev_cpm)
-            bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=params)
+            effective_stddev = stddev / math.sqrt(len(split_speeds)) if split_speeds else stddev
+            bounds = compute_tier_boundaries(avg=avg, stddev=effective_stddev, params=params)
             logger.debug("Outcome: subsequent splits=%s rolling=%s -> tier=%d", split_speeds, rolling, outcome_tier)
 
         paragraph_cpm = sum(split_speeds) / len(split_speeds) if split_speeds else (body.speed_cpm or 0.0)
