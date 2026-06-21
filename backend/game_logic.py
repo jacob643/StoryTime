@@ -90,7 +90,7 @@ def compute_outcome_tier(
         return 4
 
     diff = speed_cpm - avg
-    z = diff / max(stddev, p.min_stddev_cpm)
+    z = diff / stddev
 
     if z < p.tier_0_max_sigma:
         return 0
