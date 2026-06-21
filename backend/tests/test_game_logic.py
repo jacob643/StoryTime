@@ -137,8 +137,11 @@ class TestComputeOutcomeTierAdaptive:
         assert compute_outcome_tier(284, avg=300, stddev=10) == 0
         assert compute_outcome_tier(285, avg=300, stddev=10) == 1
 
-    def test_stddev_floor_applies(self):
-        assert compute_outcome_tier(305, avg=300, stddev=1) == 2
+    def test_stddev_floor_applies_in_speed_stats_not_in_outcome(self):
+        # compute_speed_stats floors stddev to min_stddev_cpm, but
+        # compute_outcome_tier does NOT re-floor — it trusts the caller.
+        # This allows effective_stddev = sigma/sqrt(N) to shrink with N.
+        assert compute_outcome_tier(305, avg=300, stddev=1) == 4
 
     def test_negative_speed_fixed_still_tier_0(self):
         assert compute_outcome_tier(-5, avg=300, stddev=50) == 0
