@@ -53,6 +53,10 @@ def test_send_prompt_displays_response(server, page):
     fake_text = "A brave warrior set out on a journey..."
 
     def handle_route(route):
+        if route.request.url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
         route.fulfill(
             status=200,
             content_type="application/json",
@@ -91,6 +95,10 @@ def test_full_game_loop(server, page):
 
     def handle_route(route):
         nonlocal call_count, second_call_body
+        if route.request.url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
         call_count += 1
         if call_count == 1:
             body = json.dumps({

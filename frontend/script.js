@@ -2,6 +2,32 @@ const textDisplay = document.getElementById('textDisplay');
 const inputBox = document.getElementById('inputBox');
 const messageDiv = document.getElementById('message');
 
+const MSG_WELCOME = "Welcome to Story Time! Type each paragraph to drive the story forward. Faster typing leads to brighter outcomes.";
+const MSG_OLLAMA_DOWN = "Ollama is not running. Open Setup to install or start a model.";
+const MSG_PROMPT_READY = "Enter a story prompt and send.";
+
+async function checkStartupHealth() {
+    try {
+        const r = await fetch('/api/health');
+        if (!r.ok) return;
+        const data = await r.json();
+        const firstVisit = data.first_visit;
+        const ollamaRunning = data.ollama_running;
+        if (firstVisit && !ollamaRunning) {
+            messageDiv.textContent = MSG_WELCOME + "\n\n" + MSG_OLLAMA_DOWN;
+            messageDiv.className = 'neutral';
+        } else if (firstVisit && ollamaRunning) {
+            messageDiv.textContent = MSG_WELCOME + "\n\n" + MSG_PROMPT_READY;
+            messageDiv.className = 'neutral';
+        } else if (!firstVisit && !ollamaRunning) {
+            messageDiv.textContent = MSG_OLLAMA_DOWN;
+            messageDiv.className = 'error';
+        }
+    } catch (_) {
+        // server not reachable — keep whatever reset() set
+    }
+}
+
 let textContent = textDisplay.innerText;
 let timeTakenSeconds = 0;
 let startTime = null;
@@ -116,6 +142,7 @@ function initDarkMode() {
 document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     reset();
+    checkStartupHealth();
     document.querySelectorAll('input[name="speedType"]').forEach(el => {
         el.addEventListener('change', () => {
             rebuildHistoryDisplay();
