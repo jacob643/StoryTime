@@ -74,19 +74,22 @@ ollama run llama3.2</pre>
     </ul>
 
     <h2>5. Open Story Time</h2>
-    <p>Start the game server:</p>
+
+    <h3>Binary (no Python required)</h3>
+    <p>Download <code>StoryTime</code> from the latest release and double-click to run. Your browser opens automatically after a moment.</p>
+
+    <h3>Source (with Python)</h3>
+    <p>Run the launcher script from the project root:</p>
+    <pre>scripts\run.bat</pre>
+    <p>Or start the server directly:</p>
     <pre>python -m backend.main</pre>
-    <p>Or use the convenience script:</p>
-    <pre>backend/run.bat</pre>
-    <p>
-        Your browser should open automatically. If not, navigate to
-        <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a>.
-    </p>
-    <p>Type a story premise and press <strong>Send</strong> to begin!</p>
+    <p>Your browser should open automatically. If not, navigate to <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a>.</p>
+    <p>Type a story prompt and press <strong>Send</strong> to begin!</p>
 
     <h2>Troubleshooting</h2>
     <ul>
-        <li><strong>"Connection refused" / 503 error:</strong> Ollama isn't running. Start it as described in step 2 and wait for the tray icon to appear.</li>
+        <li><strong>"Ollama is not running" message on startup:</strong> Ollama isn't running. Start it as described in step 2 and wait for the tray icon to appear. The page updates automatically once Ollama is detected.</li>
+        <li><strong>"Connection refused" / 503 error mid-game:</strong> Ollama was running but stopped. Start it again, then click the <strong>Retry</strong> button that appears on screen.</li>
         <li><strong>Story generation is very slow:</strong> Check <code>ollama ps</code> — if you see less than 100% GPU, reduce <code>num_ctx</code> as described above.</li>
         <li><strong>Ollama runs out of memory:</strong> Try a smaller model like <code>llama3.2:1b</code> or <code>qwen2.5:0.5b</code>.</li>
     </ul>
