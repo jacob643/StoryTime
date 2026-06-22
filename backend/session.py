@@ -52,7 +52,7 @@ class SessionStore:
             id=str(uuid.uuid4()),
             created_at=datetime.now(timezone.utc),
             initial_prompt=initial_prompt,
-            initial_avg_cpm=initial_avg_cpm if initial_avg_cpm is not None else gs.default_avg_cpm,
+            initial_avg_cpm=initial_avg_cpm if initial_avg_cpm is not None else DEFAULT_AVG_CPM,
             scoring_params=params,
         )
         self._sessions[session.id] = session

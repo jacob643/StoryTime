@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from backend.game_logic import (
-    DEFAULT_AVG_CPM,
     DEFAULT_MIN_STDDEV_CPM,
     FIXED_THRESHOLDS,
 )
@@ -33,7 +32,6 @@ class GameSettings:
     paragraph_word_count: int = 80
     target_split_size: int = 50
     min_split_size: int = 30
-    default_avg_cpm: float = DEFAULT_AVG_CPM
     outcome_directions: Dict[int, list[str]] = field(default_factory=_default_outcome_directions)
     provider: str = "ollama"
     custom_endpoint: str = ""
@@ -53,13 +51,17 @@ def _migrate_outcome_directions(d: dict[int, Union[str, list[str]]]) -> dict[int
     return {k: (v if isinstance(v, list) else [v]) for k, v in d.items()}
 
 
+def _filter_known_keys(d: dict) -> dict:
+    known = set(GameSettings.__dataclass_fields__)
+    return {k: v for k, v in d.items() if k in known}
+
 def load_settings() -> GameSettings:
     path = _settings_path()
     if not path.exists():
         return GameSettings()
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-        gs = GameSettings(**raw)
+        gs = GameSettings(**_filter_known_keys(raw))
         gs.outcome_directions = _migrate_outcome_directions(_coerce_keys(gs.outcome_directions))
         return gs
     except (json.JSONDecodeError, TypeError, KeyError, ValueError):
