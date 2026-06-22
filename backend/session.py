@@ -47,6 +47,7 @@ class SessionStore:
             tier_1_max_sigma=gs.tier_1_max_sigma,
             tier_2_max_sigma=gs.tier_2_max_sigma,
             tier_3_max_sigma=gs.tier_3_max_sigma,
+            fixed_thresholds=gs.fixed_thresholds,
         )
         session = GameSession(
             id=str(uuid.uuid4()),
