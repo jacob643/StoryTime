@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from backend.config import settings
 from backend.providers.registry import registry
 from backend.session import session_store
-from backend.game_logic import compute_outcome_tier, compute_speed_stats, compute_tier_boundaries, get_outcome_label
+from backend.game_logic import ScoringParams, compute_outcome_tier, compute_speed_stats, compute_tier_boundaries, get_outcome_label
 from backend.prompt_engine import build_prompt, parse_llm_response, sanitize_text
 from backend.settings_manager import get_settings
 from backend.logger import logger
@@ -39,18 +39,27 @@ async def simulate(body: SimulateRequest):
                 raise HTTPException(status_code=404, detail="Session not found")
 
         gs = get_settings()
+        params = ScoringParams(
+            mode=gs.scoring_mode,
+            min_stddev_cpm=gs.min_stddev_cpm,
+            tier_0_max_sigma=gs.tier_0_max_sigma,
+            tier_1_max_sigma=gs.tier_1_max_sigma,
+            tier_2_max_sigma=gs.tier_2_max_sigma,
+            tier_3_max_sigma=gs.tier_3_max_sigma,
+            fixed_thresholds=gs.fixed_thresholds,
+        )
         if session is not None and len(session.rolling_splits) > 0:
             avg, stddev = compute_speed_stats(
                 session.rolling_splits,
-                session.scoring_params.min_stddev_cpm,
+                params.min_stddev_cpm,
             )
             outcome_tier = compute_outcome_tier(
                 body.simulated_speed_cpm,
                 avg=avg,
                 stddev=stddev,
-                params=session.scoring_params,
+                params=params,
             )
-            bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=session.scoring_params)
+            bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=params)
             history_texts = [r.text for r in session.history]
             prompt = build_prompt(
                 initial_context=session.initial_prompt,
@@ -65,7 +74,6 @@ async def simulate(body: SimulateRequest):
             outcome_tier = compute_outcome_tier(body.simulated_speed_cpm)
             initial = session.initial_prompt if session else ""
             history_texts = [r.text for r in session.history] if session else []
-            params = session.scoring_params if session else None
             bounds = compute_tier_boundaries(params=params)
             prompt = build_prompt(
                 initial_context=initial,

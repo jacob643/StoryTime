@@ -20,6 +20,10 @@ def enable_dev_mode():
 @pytest.fixture
 def client(monkeypatch, tmp_path):
     monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+    from backend.settings_manager import GameSettings, load_settings as real_load
+    monkeypatch.setattr("backend.settings_manager.load_settings", lambda: GameSettings())
+    import backend.settings_manager
+    backend.settings_manager._game_settings = None
     app.dependency_overrides.clear()
     session_store._sessions.clear()
     with TestClient(app) as c:
