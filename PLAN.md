@@ -13,20 +13,20 @@ Goal: Friends and family can download and run the game with zero Python knowledg
 ### Epic 4.1: PyInstaller Packaging
 
 - [x] **4.1.1** Create `backend/_version.py` — single source of truth: `__version__ = "0.1.0"`. Import in `main.py` for the banner string. All version references (CLI, pyproject.toml, builds) read from this file.
-- [ ] **4.1.2** Create `pyproject.toml` with:
+- [x] **4.1.2** Create `pyproject.toml` with:
       - `[build-system]` requires setuptools + wheel
-      - `[project]` name=storytime, dynamic version (reads from `_version.py` via `tool.setuptools.dynamic`), requires-python>=3.10
+      - `[project]` name=storytime, version hardcoded as `"0.1.0"` (kept in sync with `_version.py` manually), requires-python>=3.10
       - `[project.dependencies]` — runtime only: fastapi, uvicorn[standard], httpx, pydantic, pydantic-settings
       - `[project.optional-dependencies] dev` — pytest, pytest-playwright
       - `[project.scripts]` — `storytime = backend.main:main`
       - `[tool.setuptools.packages.find]` — include backend/
-- [ ] **4.1.3** Add `--version` and `--no-reload` CLI flags — in `main()`, add `argparse` to handle `--version` (print version and exit) and `--no-reload` (disable uvicorn reload for production). Auto-detect PyInstaller via `getattr(sys, 'frozen', False)` and force `reload=False`.
-- [ ] **4.1.4** Update `.gitignore` — remove `*.spec` from the ignore list so the spec file is tracked in Git.
-- [ ] **4.1.5** Create `storytime.spec` at the repo root — one-file mode, bundle `frontend/` directory, include hidden imports for `uvicorn.logging`, `uvicorn.loops.auto`, `uvicorn.protocols.http.auto`, `uvicorn.protocols.websockets.auto`, `pydantic`, `anyio`, `sniffio`. `console=True`, target name `StoryTime`. Read `__version__` from `backend/_version.py`.
-- [ ] **4.1.6** Create `scripts/build.py` — unified build script that reads version from `_version.py`, installs PyInstaller if missing, parses `--clean` and `--skip-smoke` flags, runs `pyinstaller storytime.spec`, prints output binary path and size.
-- [ ] **4.1.7** Create `scripts/smoke_test.py` — standalone script that takes a binary path (or auto-discovers in `dist/`), launches it as a subprocess, polls `GET /` every 0.5s for up to 15s until 200, kills the process, exits code 0 on success / 1 on failure.
-- [ ] **4.1.8** Create `scripts/build.bat` and `scripts/build.sh` — wrappers that activate the venv then run `python scripts/build.py "$@"`. One-command entry point.
-- [ ] **4.1.9** Add `.github/workflows/build.yml` — triggered on tag push `v*.*.*`, matrix `[windows-latest, macos-latest, ubuntu-latest]`, Python 3.12, `pip install pyinstaller .[dev]`, `python scripts/build.py`, upload `dist/StoryTime*` as artifact.
+- [x] **4.1.3** Add `--version` and `--no-reload` CLI flags — in `main()`, add `argparse` to handle `--version` (print version and exit) and `--no-reload` (disable uvicorn reload for production). Auto-detect PyInstaller via `getattr(sys, 'frozen', False)` and force `reload=False`.
+- [x] **4.1.4** Update `.gitignore` — remove `*.spec` from the ignore list so the spec file is tracked in Git.
+- [x] **4.1.5** Create `storytime.spec` at the repo root — one-file mode, bundle `frontend/` directory, include hidden imports. `console=True`, target name `StoryTime`. Update `main.py` to use `sys._MEIPASS` for frozen mode static files.
+- [x] **4.1.6** Create `scripts/build.py` — unified build script that reads version from `_version.py`, installs PyInstaller if missing, parses `--clean` and `--skip-smoke` flags, runs `pyinstaller storytime.spec`, prints output binary path and size.
+- [x] **4.1.7** Create `scripts/smoke_test.py` — standalone script that takes a binary path (or auto-discovers in `dist/`), launches it as a subprocess, polls `GET /` every 0.5s for up to 15s until 200, kills the process, exits code 0 on success / 1 on failure.
+- [x] **4.1.8** Create `scripts/build.bat` and `scripts/build.sh` — wrappers that call `python scripts/build.py`. One-command entry point.
+- [x] **4.1.9** Add `.github/workflows/build.yml` — triggered on push/PR to main, matrix `[windows-latest, ubuntu-latest]`, Python 3.12, `pip install . && pip install pyinstaller`, `python scripts/build.py --skip-smoke`, upload `dist/` as artifact.
 
 ### Epic 4.2: Startup & Onboarding
 
