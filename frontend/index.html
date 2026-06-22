@@ -20,12 +20,72 @@
             <button id="setupLink">📖 Setup</button>
         </div>
 
+        <div id="settingsPanel" class="collapsed">
+            <div id="settingsSections">
+                <section>
+                    <h3>Appearance</h3>
+                    <label><input type="checkbox" id="optDarkMode" /> Dark mode</label>
+                </section>
+                <section>
+                    <h3>Speed Display</h3>
+                    <label><input type="radio" name="speedType" value="cpm" checked /> CPM (chars/min)</label>
+                    <label><input type="radio" name="speedType" value="wpm" /> WPM (words/min)</label>
+                </section>
+                <section>
+                    <h3>Word Count</h3>
+                    <label>Words per paragraph <input type="number" id="wordCountInput" step="5" min="10" /></label>
+                </section>
+                <section>
+                    <h3>Scoring Mode</h3>
+                    <label>Mode
+                        <select id="optScoringMode">
+                            <option value="split">Adaptive (split)</option>
+                            <option value="fixed">Fixed thresholds</option>
+                        </select>
+                    </label>
+                </section>
+                <section id="sectionAdaptiveParams">
+                    <h3>Adaptive Params</h3>
+                    <label>Min stddev per 50‑char split (CPM) <input type="number" id="optMinStddev" step="0.5" min="0" /></label>
+                    <label>σ tier 4 <input type="number" id="optTier4Sigma" step="0.1" /></label>
+                    <label>σ tier 3 <input type="number" id="optTier3Sigma" step="0.1" /></label>
+                    <label>σ tier 2 <input type="number" id="optTier2Sigma" step="0.1" /></label>
+                    <label>σ tier 1 <input type="number" id="optTier1Sigma" step="0.1" /></label>
+                    <label>σ tier 0 <input type="number" id="optTier0Sigma" step="0.1" /></label>
+                </section>
+                <section id="sectionFixedThresholds">
+                    <h3>Fixed Thresholds (tier boundaries)</h3>
+                    <div id="fixedThresholdsContainer"></div>
+                </section>
+                <section>
+                    <h3>Split Sizes</h3>
+                    <label>Target (chars) <input type="number" id="optTargetSplit" step="1" min="10" /></label>
+                    <label>Minimum (chars) <input type="number" id="optMinSplit" step="1" min="1" /></label>
+                </section>
+                <section>
+                    <h3>Tier Prompts</h3>
+                    <label>Tier
+                        <select id="tierPromptSelector">
+                            <option value="4">4 (very positive)</option>
+                            <option value="3">3 (positive)</option>
+                            <option value="2">2 (neutral)</option>
+                            <option value="1">1 (negative)</option>
+                            <option value="0">0 (very negative)</option>
+                        </select>
+                    </label>
+                    <div id="tierPromptList"></div>
+                </section>
+            </div>
+            <div class="settings-actions">
+                <button id="saveSettings">Save</button>
+                <button id="resetSettings">Reset to Defaults</button>
+            </div>
+        </div>
+
         <div id="initialPromptContainer">
             <input type="text" id="initialPrompt" placeholder='e.g. a skateboard with a soul trying to find its home' />
             <button id="restartButton">Start a new story</button>
         </div>
-
-        <div id="settingsPanel" class="collapsed">
             <div id="settingsSections">
                 <section>
                     <h3>Appearance</h3>
