@@ -183,7 +183,7 @@ def test_startup_message_first_visit(server, page):
     page.goto(URL)
     msg = _strip_newlines(page.locator("#message").text_content())
     assert "Welcome to Story Time" in msg, f"Expected welcome message, got: {msg}"
-    assert "Enter a story prompt and send" in msg, f"Expected prompt hint, got: {msg}"
+    assert "Enter a story prompt" in msg, f"Expected prompt hint, got: {msg}"
     assert len(errors) == 0, f"Console errors: {errors}"
 
 

@@ -13,3 +13,7 @@ On each paragraph submission, there's a configurable chance (default 20%) that t
 - **Tier 0 (very negative)**: a tragic, bleak ending
 
 The chance of ending is customizable per-game. After the ending paragraph, the game shows a "story over" state instead of fetching another paragraph. The player can then restart with a new prompt.
+
+## Continue a Written Story
+
+Instead of starting from scratch, let the player pick a previously written story (from `writtenStories/`) and resume it. The session is reconstructed — history, rolling split speeds, last outcome tier — so the LLM continues the narrative as if the game never stopped. Useful for long stories or returning to a story after a break.

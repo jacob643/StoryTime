@@ -4,7 +4,7 @@ const messageDiv = document.getElementById('message');
 
 const MSG_WELCOME = "Welcome to Story Time! Type each paragraph to drive the story forward. Faster typing leads to brighter outcomes.";
 const MSG_OLLAMA_DOWN = "Ollama is not running. Open Setup to install or start a model.";
-const MSG_PROMPT_READY = "Enter a story prompt and send.";
+const MSG_PROMPT_READY = "Enter a story prompt";
 
 async function checkStartupHealth() {
     try {
@@ -177,7 +177,7 @@ function reset() {
     inputWasEmpty = true;
     initialPromptInput.value = '';
     initialPromptInput.focus();
-    messageDiv.textContent = 'Enter a story prompt and send';
+    messageDiv.textContent = 'Enter a story prompt';
     messageDiv.className = 'neutral';
     timeTakenSeconds = 0;
     speed = 0;
