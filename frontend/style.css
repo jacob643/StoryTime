@@ -139,7 +139,7 @@ body
 }
 
 .history-item-new {
-    animation: historySlideIn 0.35s ease-out;
+    animation: historySlideIn 0.5s ease-out;
 }
 
 .history-item
