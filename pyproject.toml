@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "storytime"
+version = "0.1.0"
+description = "A typing game where your speed drives an AI-generated story"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+readme = "README.md"
+
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-playwright>=0.8.0",
+]
+
+[project.scripts]
+storytime = "backend.main:main"
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
