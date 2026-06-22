@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from backend._version import __version__
 from backend.config import settings
-from backend.logger import logger
+from backend.logger import logger, set_verbose
 from backend.routes.generate import router as generate_router
 from backend.routes.restart import router as restart_router
 from backend.routes.simulate import router as simulate_router
@@ -54,12 +54,16 @@ app.mount("/", StaticFiles(directory=_frontend_dir, html=True), name="frontend")
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="storytime", description="Story Time typing game")
     parser.add_argument("--version", action="store_true", help="print version and exit")
+    parser.add_argument("-v", "--verbose", action="store_true", help="enable debug logging")
     parser.add_argument("--no-reload", action="store_true", help="disable auto-reload (production)")
     args = parser.parse_args(argv)
 
     if args.version:
         print(f"Story Time v{__version__}")
         return
+
+    if args.verbose:
+        set_verbose()
 
     reload_enabled = not args.no_reload and not getattr(sys, "frozen", False)
 
@@ -76,6 +80,7 @@ def main(argv: list[str] | None = None) -> None:
         host=settings.host,
         port=settings.port,
         reload=reload_enabled,
+        log_level="debug" if args.verbose else "info",
     )
 
 
