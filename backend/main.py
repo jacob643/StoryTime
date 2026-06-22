@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from backend._version import __version__
 from backend.config import settings
 from backend.logger import logger
 from backend.routes.generate import router as generate_router
@@ -49,7 +50,7 @@ app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 def main():
     print("+------------------------------------+", flush=True)
-    print("|      Story Time v0.1.0             |", flush=True)
+    print(f"|      Story Time v{__version__}             |", flush=True)
     print(f"|  http://{settings.host}:{settings.port}             |", flush=True)
     print("+------------------------------------+", flush=True)
     threading.Timer(
