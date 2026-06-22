@@ -180,17 +180,45 @@ def test_generate_subsequent_call_unknown_session_returns_404(client):
     assert response.json()["detail"] == "Session not found"
 
 
-def test_health_returns_ollama_available_true(client):
+def test_health_first_visit(client, monkeypatch, tmp_path):
+    """No config file exists → first_visit: true."""
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     mock_resp = _mock_ollama_response(200)
 
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_resp):
         response = client.get("/api/health")
 
     assert response.status_code == 200
-    assert response.json() == {"ollama_available": True}
+    assert response.json()["first_visit"] is True
 
 
-def test_health_returns_ollama_available_false(client):
+def test_health_returning_visitor(client, monkeypatch, tmp_path):
+    """Config file exists → first_visit: false."""
+    config_dir = tmp_path / ".storytime"
+    config_dir.mkdir(parents=True)
+    config_file = config_dir / "config.json"
+    config_file.write_text("{}")
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+
+    mock_resp = _mock_ollama_response(200)
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_resp):
+        response = client.get("/api/health")
+
+    assert response.status_code == 200
+    assert response.json()["first_visit"] is False
+
+
+def test_health_ollama_running(client):
+    mock_resp = _mock_ollama_response(200)
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_resp):
+        response = client.get("/api/health")
+
+    assert response.status_code == 200
+    assert response.json()["ollama_running"] is True
+
+
+def test_health_ollama_down(client):
     with patch(
         "httpx.AsyncClient.get",
         new_callable=AsyncMock,
@@ -199,4 +227,4 @@ def test_health_returns_ollama_available_false(client):
         response = client.get("/api/health")
 
     assert response.status_code == 200
-    assert response.json() == {"ollama_available": False}
+    assert response.json()["ollama_running"] is False

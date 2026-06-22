@@ -190,5 +190,7 @@ async def generate(body: GenerateRequest):
 
 @router.get("/api/health")
 async def health():
-    available = await registry.is_available()
-    return {"ollama_available": available}
+    from backend.settings_manager import _settings_path
+    first_visit = not _settings_path().exists()
+    ollama_running = await registry.is_available()
+    return {"first_visit": first_visit, "ollama_running": ollama_running}
