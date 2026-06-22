@@ -114,7 +114,7 @@ curl -X POST http://127.0.0.1:8000/api/settings \
 curl http://127.0.0.1:8000/api/settings
 ```
 
-Settings persist in `~/.storytime/config.json` and affect **new sessions only** (existing sessions retain their own `ScoringParams`).
+Settings persist in `~/.storytime/user.cfg` and affect **new sessions only** (existing sessions retain their own `ScoringParams`).
 
 ## Settings Panel (Frontend)
 

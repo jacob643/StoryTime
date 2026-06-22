@@ -11,7 +11,6 @@ from backend.settings_manager import (
     save_settings,
     get_settings,
     update_settings,
-    _settings_path,
 )
 
 
@@ -31,7 +30,7 @@ def client():
 def _patch_path(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(
         "backend.settings_manager._settings_path",
-        lambda: tmp_path / ".storytime" / "config.json",
+        lambda: tmp_path / ".storytime" / "user.cfg",
     )
 
 
@@ -65,7 +64,8 @@ def test_save_and_load_roundtrip(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
     gs = GameSettings(scoring_mode="fixed", default_avg_cpm=500.0)
     save_settings(gs)
-    assert _settings_path().exists()
+    import backend.settings_manager as sm
+    assert sm._settings_path().exists()
     loaded = load_settings()
     assert loaded.scoring_mode == "fixed"
     assert loaded.default_avg_cpm == 500.0
@@ -79,8 +79,9 @@ def test_load_returns_defaults_when_no_file(monkeypatch, tmp_path):
 
 def test_load_returns_defaults_on_corrupt_file(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
-    _settings_path().parent.mkdir(parents=True, exist_ok=True)
-    _settings_path().write_text("not json", encoding="utf-8")
+    import backend.settings_manager as sm
+    sm._settings_path().parent.mkdir(parents=True, exist_ok=True)
+    sm._settings_path().write_text("not json", encoding="utf-8")
     gs = load_settings()
     assert gs.scoring_mode == "split"
 
@@ -139,7 +140,7 @@ def test_outcome_directions_roundtrip(monkeypatch, tmp_path):
 def test_outcome_directions_migrates_old_string_format(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
     import json
-    path = tmp_path / ".storytime" / "config.json"
+    path = tmp_path / ".storytime" / "user.cfg"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
         "outcome_directions": {"0": "old bad", "1": "old worse", "2": "old ok", "3": "old good", "4": "old great"},
