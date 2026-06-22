@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from backend.providers.registry import registry
 from backend.session import session_store
 from backend.settings_manager import get_settings
-from backend.game_logic import compute_tier_boundaries
+from backend.game_logic import ScoringParams, compute_tier_boundaries
 from backend.prompt_engine import build_first_paragraph_prompt, parse_llm_response, sanitize_text, validate_llm_response, NEUTRAL_FALLBACK
 from backend.logger import logger
 
@@ -30,7 +30,15 @@ async def restart(body: RestartRequest):
         session = session_store.create(initial_prompt=body.initial_prompt)
         gs = get_settings()
         max_words = gs.paragraph_word_count
-        params = session.scoring_params
+        params = ScoringParams(
+            mode=gs.scoring_mode,
+            min_stddev_cpm=gs.min_stddev_cpm,
+            tier_0_max_sigma=gs.tier_0_max_sigma,
+            tier_1_max_sigma=gs.tier_1_max_sigma,
+            tier_2_max_sigma=gs.tier_2_max_sigma,
+            tier_3_max_sigma=gs.tier_3_max_sigma,
+            fixed_thresholds=gs.fixed_thresholds,
+        )
         bounds = compute_tier_boundaries(params=params)
         prompt = build_first_paragraph_prompt(body.initial_prompt, max_words=max_words)
         logger.debug("Restart prompt:\n%s", prompt)

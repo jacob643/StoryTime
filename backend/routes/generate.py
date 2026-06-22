@@ -78,7 +78,15 @@ async def generate(body: GenerateRequest):
             if not validate_llm_response(text):
                 text = NEUTRAL_FALLBACK
                 logger.warning("First paragraph invalid, using fallback")
-            params = ScoringParams()
+            params = ScoringParams(
+                mode=gs.scoring_mode,
+                min_stddev_cpm=gs.min_stddev_cpm,
+                tier_0_max_sigma=gs.tier_0_max_sigma,
+                tier_1_max_sigma=gs.tier_1_max_sigma,
+                tier_2_max_sigma=gs.tier_2_max_sigma,
+                tier_3_max_sigma=gs.tier_3_max_sigma,
+                fixed_thresholds=gs.fixed_thresholds,
+            )
             bounds = compute_tier_boundaries(params=params)
             return GenerateResponse(
                 response=text,
@@ -92,8 +100,18 @@ async def generate(body: GenerateRequest):
         if session is None:
             raise HTTPException(status_code=404, detail="Session not found")
 
+        gs = get_settings()
+        params = ScoringParams(
+            mode=gs.scoring_mode,
+            min_stddev_cpm=gs.min_stddev_cpm,
+            tier_0_max_sigma=gs.tier_0_max_sigma,
+            tier_1_max_sigma=gs.tier_1_max_sigma,
+            tier_2_max_sigma=gs.tier_2_max_sigma,
+            tier_3_max_sigma=gs.tier_3_max_sigma,
+            fixed_thresholds=gs.fixed_thresholds,
+        )
+
         split_speeds = body.split_speeds or []
-        params = session.scoring_params
         rolling = session.rolling_splits
 
         bounds: list[float] = []
@@ -136,7 +154,6 @@ async def generate(body: GenerateRequest):
         )
 
         history_texts = [r.text for r in session.history]
-        gs = get_settings()
         assembled = build_prompt(
             initial_context=session.initial_prompt,
             history=history_texts,
