@@ -74,8 +74,8 @@ Goal: Adaptive speed scoring, customizable game parameters, settings UI, dev too
 - [x] **3.6.27** Collapse newlines to space in parse_llm_response — add `import re`, then `raw = re.sub(r'\n+', ' ', raw)` as the last step in `parse_llm_response` before `return raw`. Any number of consecutive newlines becomes a single space. No period-space or double-space normalization.
 - [x] **3.6.28** Regression test for double floor fix — add test that sets rolling=[500]*24, split_speeds=[505]*14, verifies `compute_speed_stats`→σ/√N→`compute_outcome_tier` returns tier=4. Already fixed in 3723a42.
 - [x] **3.6.29** Rename settings file from `config.json` to `user.cfg` — changed `_settings_path()` in `settings_manager.py` to return `~/.storytime/user.cfg`. Updated tests and docs. Settings persist across restarts as before.
-- [ ] **3.6.30** Reverse history order with scroll-to-top animation — history panel shows newest entry at the top. Automatically scroll to top when a new entry appears. Add a subtle animation (e.g. fade-in or slide-in) on the newest entry so it's visually distinct.
-- [ ] **3.6.31** Clear input resets paragraph progress — erasing the input box resets ongoing paragraph progress and split speeds so the user can retry the same paragraph for a better score. Add a retry button under "start a new story" on the right of the message div; disabled (greyed) when input is empty, enabled otherwise.
+- [x] **3.6.30** Reverse history order with scroll-to-top animation — history panel shows newest entry at the top. Automatically scroll to top when a new entry appears. Add a subtle animation (e.g. fade-in or slide-in) on the newest entry so it's visually distinct.
+- [x] **3.6.31** Clear input resets paragraph progress — erasing the input box resets ongoing paragraph progress and split speeds so the user can retry the same paragraph for a better score. Add a retry button under "start a new story" on the right of the message div; disabled (greyed) when input is empty, enabled otherwise.
 
 ---
 
