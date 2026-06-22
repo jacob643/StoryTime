@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 import threading
 import uvicorn
@@ -46,7 +47,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+_frontend_dir = os.path.join(sys._MEIPASS, "frontend") if getattr(sys, "frozen", False) else "frontend"
+app.mount("/", StaticFiles(directory=_frontend_dir, html=True), name="frontend")
 
 
 def main(argv: list[str] | None = None) -> None:
