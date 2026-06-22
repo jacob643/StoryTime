@@ -42,7 +42,7 @@ class GameSettings:
 
 
 def _settings_path() -> Path:
-    return Path.home() / ".storytime" / "user.cfg"
+    return Path.home() / ".storytime" / "config.json"
 
 
 def _coerce_keys(d: dict) -> dict[int, Union[str, list[str]]]:

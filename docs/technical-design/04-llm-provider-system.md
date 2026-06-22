@@ -222,7 +222,7 @@ Provider Selection:
 
 ### Configuration Persistence
 
-Saved to `~/.storytime/user.cfg`:
+Saved to `~/.storytime/config.json`:
 
 ```json
 {
