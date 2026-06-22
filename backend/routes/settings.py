@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from backend.prompt_engine import _normalize_directions
 from backend.game_logic import ScoringParams, compute_tier_boundaries
-from backend.settings_manager import GameSettings, get_settings, update_settings
+from backend.settings_manager import GameSettings, get_settings, reset_settings, update_settings
 from backend.logger import logger
 
 router = APIRouter()
@@ -17,7 +17,7 @@ class SettingsResponse(BaseModel):
     tier_1_max_sigma: float
     tier_2_max_sigma: float
     tier_3_max_sigma: float
-    fixed_thresholds: list[list[float]]
+    fixed_thresholds: list[float]
     paragraph_word_count: int
     target_split_size: int
     min_split_size: int
@@ -35,7 +35,7 @@ class SettingsPatch(BaseModel):
     tier_1_max_sigma: float | None = None
     tier_2_max_sigma: float | None = None
     tier_3_max_sigma: float | None = None
-    fixed_thresholds: list[list[float]] | None = None
+    fixed_thresholds: list[float] | None = None
     paragraph_word_count: int | None = None
     target_split_size: int | None = None
     min_split_size: int | None = None
@@ -47,13 +47,11 @@ class SettingsPatch(BaseModel):
 
 
 def _clamp_thresholds(
-    thresholds: list[list[float]],
+    thresholds: list[float],
+    min_val: float = 0,
     max_val: float = 9999,
-) -> list[list[float]]:
-    return [
-        [max(0.0, min(v if v != float("-inf") else 0.0, max_val)) for v in pair]
-        for pair in thresholds
-    ]
+) -> list[float]:
+    return [max(min_val, min(v, max_val)) for v in thresholds]
 
 
 def _settings_to_response(gs: GameSettings) -> SettingsResponse:
@@ -105,3 +103,9 @@ async def update_settings_endpoint(body: SettingsPatch):
         dumped["outcome_directions"] = _normalize_directions(dumped["outcome_directions"])
     updated = update_settings(**dumped)
     return _settings_to_response(updated)
+
+
+@router.post("/api/settings/reset", response_model=SettingsResponse)
+async def reset_settings_endpoint():
+    gs = reset_settings()
+    return _settings_to_response(gs)

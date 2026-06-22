@@ -82,29 +82,29 @@ class TestComputeSpeedStats:
 # ── compute_outcome_tier (fixed fallback) ───────────────────────────────
 
 class TestComputeOutcomeTierFixed:
-    def test_tier_0_below_30(self):
+    def test_tier_0_below_300(self):
         assert compute_outcome_tier(0) == 0
-        assert compute_outcome_tier(15) == 0
-        assert compute_outcome_tier(29.9) == 0
+        assert compute_outcome_tier(150) == 0
+        assert compute_outcome_tier(299.9) == 0
 
-    def test_tier_1_30_to_50(self):
-        assert compute_outcome_tier(30) == 1
-        assert compute_outcome_tier(40) == 1
-        assert compute_outcome_tier(49.9) == 1
+    def test_tier_1_300_to_350(self):
+        assert compute_outcome_tier(300) == 1
+        assert compute_outcome_tier(325) == 1
+        assert compute_outcome_tier(349.9) == 1
 
-    def test_tier_2_50_to_75(self):
-        assert compute_outcome_tier(50) == 2
-        assert compute_outcome_tier(62.5) == 2
-        assert compute_outcome_tier(74.9) == 2
+    def test_tier_2_350_to_400(self):
+        assert compute_outcome_tier(350) == 2
+        assert compute_outcome_tier(375) == 2
+        assert compute_outcome_tier(399.9) == 2
 
-    def test_tier_3_75_to_100(self):
-        assert compute_outcome_tier(75) == 3
-        assert compute_outcome_tier(88) == 3
-        assert compute_outcome_tier(99.9) == 3
+    def test_tier_3_400_to_450(self):
+        assert compute_outcome_tier(400) == 3
+        assert compute_outcome_tier(425) == 3
+        assert compute_outcome_tier(449.9) == 3
 
-    def test_tier_4_100_and_above(self):
-        assert compute_outcome_tier(100) == 4
-        assert compute_outcome_tier(150) == 4
+    def test_tier_4_450_and_above(self):
+        assert compute_outcome_tier(450) == 4
+        assert compute_outcome_tier(500) == 4
         assert compute_outcome_tier(1e6) == 4
 
     def test_negative_speed_returns_tier_0(self):

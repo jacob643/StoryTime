@@ -12,8 +12,8 @@ from backend.game_logic import (
 from backend.prompt_engine import OUTCOME_DIRECTIONS
 
 
-def _default_fixed_thresholds() -> list[list[float]]:
-    return [list(pair) for pair in FIXED_THRESHOLDS]
+def _default_fixed_thresholds() -> list[float]:
+    return list(FIXED_THRESHOLDS)
 
 
 def _default_outcome_directions() -> Dict[int, list[str]]:
@@ -28,8 +28,8 @@ class GameSettings:
     tier_1_max_sigma: float = -0.5
     tier_2_max_sigma: float = 0.5
     tier_3_max_sigma: float = 1.5
-    fixed_thresholds: list[list[float]] = field(default_factory=_default_fixed_thresholds)
-    paragraph_word_count: int = 80
+    fixed_thresholds: list[float] = field(default_factory=_default_fixed_thresholds)
+    paragraph_word_count: int = 40
     target_split_size: int = 50
     min_split_size: int = 30
     outcome_directions: Dict[int, list[str]] = field(default_factory=_default_outcome_directions)
@@ -51,6 +51,13 @@ def _migrate_outcome_directions(d: dict[int, Union[str, list[str]]]) -> dict[int
     return {k: (v if isinstance(v, list) else [v]) for k, v in d.items()}
 
 
+def _migrate_fixed_thresholds(v):
+    """Convert old 5-pair format [[0,30],[30,50],...] to 4-boundary format [30,50,75,100]."""
+    if v and isinstance(v[0], (list, tuple)):
+        return [pair[0] for pair in v[1:]]
+    return v
+
+
 def _filter_known_keys(d: dict) -> dict:
     known = set(GameSettings.__dataclass_fields__)
     return {k: v for k, v in d.items() if k in known}
@@ -63,6 +70,7 @@ def load_settings() -> GameSettings:
         raw = json.loads(path.read_text(encoding="utf-8"))
         gs = GameSettings(**_filter_known_keys(raw))
         gs.outcome_directions = _migrate_outcome_directions(_coerce_keys(gs.outcome_directions))
+        gs.fixed_thresholds = _migrate_fixed_thresholds(gs.fixed_thresholds)
         return gs
     except (json.JSONDecodeError, TypeError, KeyError, ValueError):
         return GameSettings()
@@ -106,3 +114,11 @@ def update_settings(**kwargs) -> GameSettings:
     save_settings(settings)
     _game_settings = settings
     return settings
+
+
+def reset_settings() -> GameSettings:
+    global _game_settings
+    gs = GameSettings()
+    save_settings(gs)
+    _game_settings = gs
+    return gs

@@ -90,7 +90,7 @@ def test_generate_subsequent_call_uses_fixed_fallback(client):
         second = client.post("/api/generate", json={
             "prompt": "A brave warrior...",
             "session_id": session_id,
-            "speed_cpm": 80.0,
+            "speed_cpm": 425.0,
         })
 
     assert second.status_code == 200

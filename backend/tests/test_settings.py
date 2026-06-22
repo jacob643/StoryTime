@@ -44,7 +44,7 @@ def test_game_settings_defaults():
     assert gs.tier_1_max_sigma == -0.5
     assert gs.tier_2_max_sigma == 0.5
     assert gs.tier_3_max_sigma == 1.5
-    assert gs.paragraph_word_count == 80
+    assert gs.paragraph_word_count == 40
     assert gs.target_split_size == 50
     assert gs.min_split_size == 30
     assert len(gs.outcome_directions) == 5
@@ -54,9 +54,9 @@ def test_game_settings_defaults():
     assert gs.custom_model == ""
 
 
-def test_default_fixed_thresholds_last_upper_is_9999():
+def test_default_fixed_thresholds_values():
     gs = GameSettings()
-    assert gs.fixed_thresholds[4][1] == 9999.0
+    assert gs.fixed_thresholds == [300, 350, 400, 450]
 
 
 def test_save_and_load_roundtrip(monkeypatch, tmp_path):
@@ -115,7 +115,7 @@ def test_update_settings_partial(monkeypatch, tmp_path):
     update_settings(scoring_mode="fixed")
     assert get_settings().scoring_mode == "fixed"
     # other fields untouched
-    assert get_settings().paragraph_word_count == 80
+    assert get_settings().paragraph_word_count == 40
 
 
 def test_outcome_directions_roundtrip(monkeypatch, tmp_path):
@@ -156,7 +156,7 @@ def test_get_settings_returns_defaults(monkeypatch, tmp_path, client):
     assert data["scoring_mode"] == "split"
     assert len(data["outcome_directions"]) == 5
     assert all(isinstance(v, list) for v in data["outcome_directions"].values())
-    assert len(data["fixed_thresholds"]) == 5
+    assert len(data["fixed_thresholds"]) == 4
 
 
 def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
@@ -164,7 +164,7 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     r = client.post("/api/settings", json={
         "scoring_mode": "fixed",
         "outcome_directions": {"0": ["bad"], "1": ["worse"], "2": ["ok"], "3": ["good"], "4": ["great"]},
-        "fixed_thresholds": [[0, 20], [20, 40], [40, 60], [60, 80], [80, 9999]],
+        "fixed_thresholds": [20, 40, 60, 80],
         "target_split_size": 40,
         "min_split_size": 20,
         "min_stddev_cpm": 5.0,
@@ -178,7 +178,7 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     assert data["scoring_mode"] == "fixed"
     assert data["outcome_directions"]["2"] == ["ok"]
     assert data["outcome_directions"]["0"] == ["bad"]
-    assert data["fixed_thresholds"][0] == [0, 20]
+    assert data["fixed_thresholds"][0] == 20
     assert data["target_split_size"] == 40
 
 
