@@ -25,10 +25,6 @@
             <button id="restartButton">Start a new story</button>
         </div>
 
-        <div id="retryContainer">
-            <button id="retryButton" disabled>Retry paragraph</button>
-        </div>
-
         <div id="settingsPanel" class="collapsed">
             <div id="settingsSections">
                 <section>
@@ -94,7 +90,10 @@
             </div>
         </div>
 
-        <div id="message"></div>
+        <div id="messageRow">
+            <div id="message"></div>
+            <button id="retryButton" disabled>Retry paragraph</button>
+        </div>
         <div id="textDisplayContainer"><div id="textDisplay">Type this.</div></div>
         <input type="text" id="inputBox" placeholder="Start typing here..." />
     </div>
