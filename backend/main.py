@@ -1,3 +1,4 @@
+import argparse
 import sys
 import threading
 import uvicorn
@@ -48,7 +49,18 @@ app.add_middleware(
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 
-def main():
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(prog="storytime", description="Story Time typing game")
+    parser.add_argument("--version", action="store_true", help="print version and exit")
+    parser.add_argument("--no-reload", action="store_true", help="disable auto-reload (production)")
+    args = parser.parse_args(argv)
+
+    if args.version:
+        print(f"Story Time v{__version__}")
+        return
+
+    reload_enabled = not args.no_reload and not getattr(sys, "frozen", False)
+
     print("+------------------------------------+", flush=True)
     print(f"|      Story Time v{__version__}             |", flush=True)
     print(f"|  http://{settings.host}:{settings.port}             |", flush=True)
@@ -61,7 +73,7 @@ def main():
         "backend.main:app",
         host=settings.host,
         port=settings.port,
-        reload=True,
+        reload=reload_enabled,
     )
 
 
