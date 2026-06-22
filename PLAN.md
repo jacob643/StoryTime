@@ -12,19 +12,26 @@ Goal: Friends and family can download and run the game with zero Python knowledg
 
 ### Epic 4.1: PyInstaller Packaging
 
-- [ ] **4.1.1** Create `pyproject.toml` with project metadata, Python version constraint (3.10+), and a `console_scripts` entry point (`storytime = backend.main:main`) so the app is installable via `pip install .`
-- [ ] **4.1.2** Extract version from hardcoded `"Story Time v0.1.0"` banner in `backend/main.py` into a shared `backend/__init__.py` or `backend/_version.py` constant so builds, CLI, and docs reference a single source of truth
-- [ ] **4.1.3** Add `--version` CLI flag to the entry point that prints the version string and exits
-- [ ] **4.1.4** Create `storytime.spec` (PyInstaller config) at the repo root — one-file mode, bundle `frontend/` as static data, include hidden imports for `uvicorn.logging`, `uvicorn.loops`, `uvicorn.protocols`, set console mode (keep terminal window for server output), target name `StoryTime`
-- [ ] **4.1.5** Add post-build smoke test: build script verifies the binary exists, can be launched, and `GET http://127.0.0.1:8000/` returns `200` (timeout after 10 s, kill the process after the check)
-- [ ] **4.1.6** Create `scripts/build.py` — unified cross-platform build script that installs PyInstaller, runs `pyinstaller storytime.spec`, and prints output path. Accept `--clean` flag to remove previous `dist/` and `build/` directories.
-- [ ] **4.1.7** Create `scripts/build.bat` (Windows) and `scripts/build.sh` (Unix) wrappers that activate the venv and call `python scripts/build.py` for convenience
-- [ ] **4.1.8** Add `.github/workflows/build.yml` — GitHub Actions workflow triggered on push of tags matching `v*.*.*`, with a matrix of `[windows-latest, macos-latest, ubuntu-latest]`, Python 3.12, installs PyInstaller + `-r requirements.txt`, runs `pyinstaller storytime.spec`, uploads the binary as a build artifact named per-platform
+- [x] **4.1.1** Create `backend/_version.py` — single source of truth: `__version__ = "0.1.0"`. Import in `main.py` for the banner string. All version references (CLI, pyproject.toml, builds) read from this file.
+- [ ] **4.1.2** Create `pyproject.toml` with:
+      - `[build-system]` requires setuptools + wheel
+      - `[project]` name=storytime, dynamic version (reads from `_version.py` via `tool.setuptools.dynamic`), requires-python>=3.10
+      - `[project.dependencies]` — runtime only: fastapi, uvicorn[standard], httpx, pydantic, pydantic-settings
+      - `[project.optional-dependencies] dev` — pytest, pytest-playwright
+      - `[project.scripts]` — `storytime = backend.main:main`
+      - `[tool.setuptools.packages.find]` — include backend/
+- [ ] **4.1.3** Add `--version` and `--no-reload` CLI flags — in `main()`, add `argparse` to handle `--version` (print version and exit) and `--no-reload` (disable uvicorn reload for production). Auto-detect PyInstaller via `getattr(sys, 'frozen', False)` and force `reload=False`.
+- [ ] **4.1.4** Update `.gitignore` — remove `*.spec` from the ignore list so the spec file is tracked in Git.
+- [ ] **4.1.5** Create `storytime.spec` at the repo root — one-file mode, bundle `frontend/` directory, include hidden imports for `uvicorn.logging`, `uvicorn.loops.auto`, `uvicorn.protocols.http.auto`, `uvicorn.protocols.websockets.auto`, `pydantic`, `anyio`, `sniffio`. `console=True`, target name `StoryTime`. Read `__version__` from `backend/_version.py`.
+- [ ] **4.1.6** Create `scripts/build.py` — unified build script that reads version from `_version.py`, installs PyInstaller if missing, parses `--clean` and `--skip-smoke` flags, runs `pyinstaller storytime.spec`, prints output binary path and size.
+- [ ] **4.1.7** Create `scripts/smoke_test.py` — standalone script that takes a binary path (or auto-discovers in `dist/`), launches it as a subprocess, polls `GET /` every 0.5s for up to 15s until 200, kills the process, exits code 0 on success / 1 on failure.
+- [ ] **4.1.8** Create `scripts/build.bat` and `scripts/build.sh` — wrappers that activate the venv then run `python scripts/build.py "$@"`. One-command entry point.
+- [ ] **4.1.9** Add `.github/workflows/build.yml` — triggered on tag push `v*.*.*`, matrix `[windows-latest, macos-latest, ubuntu-latest]`, Python 3.12, `pip install pyinstaller .[dev]`, `python scripts/build.py`, upload `dist/StoryTime*` as artifact.
 
 ### Epic 4.2: Startup & Onboarding
 
-- [ ] **4.2.1** Add `GET /api/health` endpoint — returns `{ first_visit: bool, ollama_running: bool }`. Checks if `~/.storytime/config.json` exists (`first_visit`), probes the configured provider via a lightweight HTTP call (`ollama_running`). Add a test that the endpoint returns correct booleans for each combination (config exists vs not, provider responds vs timeout/refused).
-- [ ] **4.2.2** Wire startup messages in frontend — in `reset()` or `DOMContentLoaded`, call `GET /api/health` and set the message box based on the two booleans. Define 3 message fragments as constants:
+- [x] **4.2.1** Add `GET /api/health` endpoint — returns `{ first_visit: bool, ollama_running: bool }`. Checks if `~/.storytime/config.json` exists (`first_visit`), probes the configured provider via a lightweight HTTP call (`ollama_running`). Add a test that the endpoint returns correct booleans for each combination (config exists vs not, provider responds vs timeout/refused).
+- [x] **4.2.2** Wire startup messages in frontend — in `reset()` or `DOMContentLoaded`, call `GET /api/health` and set the message box based on the two booleans. Define 3 message fragments as constants:
       ```js
       const MSG_WELCOME = "Welcome to Story Time! Type each paragraph to drive the story forward. Faster typing leads to brighter outcomes.";
       const MSG_OLLAMA_DOWN = "Ollama is not running. Open Setup to install or start a model.";
@@ -38,9 +45,9 @@ Goal: Friends and family can download and run the game with zero Python knowledg
       | 3 | false | false | `MSG_OLLAMA_DOWN` (`.error` class) |
       | 4 | false | true | `MSG_PROMPT_READY` (`.neutral` class) |
       Add a Playwright test that asserts the correct message appears for each state.
-- [ ] **4.2.3** Auto-open browser on startup — after Uvicorn binds, open `http://127.0.0.1:8000` in the default browser via `webbrowser.open`. On build failure (e.g., port in use), print the URL to the terminal and skip browser open. The terminal output is only for debugging, never for user instructions.
-- [ ] **4.2.4** Handle Ollama going down mid-game — if `POST /api/generate` gets a connection refused / timeout from the provider, return `503` with a structured error. Frontend already shows "Start Ollama" with retry button (3.5.1); verify this flow works end-to-end in a Playwright test.
-- [ ] **4.2.5** Add `scripts/run.sh` and `scripts/run.bat` — production launchers that run the PyInstaller binary (or fall back to `python -m backend.main` if the binary is not found), with a descriptive terminal title
+- [x] **4.2.3** Auto-open browser on startup — after Uvicorn binds, open `http://127.0.0.1:8000` in the default browser via `webbrowser.open`. On build failure (e.g., port in use), print the URL to the terminal and skip browser open. The terminal output is only for debugging, never for user instructions.
+- [x] **4.2.4** Handle Ollama going down mid-game — if `POST /api/generate` gets a connection refused / timeout from the provider, return `503` with a structured error. Frontend already shows "Start Ollama" with retry button (3.5.1); verify this flow works end-to-end in a Playwright test.
+- [x] **4.2.5** Add `scripts/run.sh` and `scripts/run.bat` — production launchers that run the PyInstaller binary (or fall back to `python -m backend.main` if the binary is not found), with a descriptive terminal title
 
 ### Epic 4.3: Release Infrastructure
 
