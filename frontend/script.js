@@ -321,7 +321,7 @@ function retryParagraph() {
     paragraphJustCompleted = false;
     resetSplitTracking();
     retryButton.disabled = true;
-    messageDiv.textContent = 'Input cleared — retype the paragraph above.';
+    messageDiv.textContent = 'Input cleared, retype the paragraph below';
     messageDiv.className = 'neutral';
     inputBox.focus();
 }
@@ -338,6 +338,8 @@ inputBox.addEventListener('input', () => {
             startTime = null;
             paragraphJustCompleted = false;
             resetSplitTracking();
+            messageDiv.textContent = 'Input cleared, retype the paragraph below';
+            messageDiv.className = 'neutral';
         }
         retryButton.disabled = true;
     } else {
@@ -345,7 +347,7 @@ inputBox.addEventListener('input', () => {
     }
     inputWasEmpty = isEmpty;
 
-    if (paragraphJustCompleted && !isEmpty) {
+    if (!isEmpty && (paragraphJustCompleted || messageDiv.textContent === 'Input cleared, retype the paragraph below')) {
         paragraphJustCompleted = false;
         messageDiv.textContent = 'Typing away...';
         messageDiv.className = 'success';
@@ -383,18 +385,39 @@ function safeVal(v, fallback) {
 
 function buildFixedThresholdInputs(thresholds) {
     fixedThresholdsContainer.innerHTML = '';
-    // 4 boundary inputs — the CPM ceilings between tiers, in reverse order (4→3→2→1→0)
-    const labels = [
-        'Tier 3→4 boundary (CPM)',
-        'Tier 2→3 boundary (CPM)',
-        'Tier 1→2 boundary (CPM)',
-        'Tier 0→1 boundary (CPM)',
+    // 4 boundary inputs — tier-chart style, centered, with tier labels stacked vertically
+    const tierNames = [
+        { tier: 4, name: 'very positive' },
+        { tier: 3, name: 'positive' },
+        { tier: 2, name: 'neutral' },
+        { tier: 1, name: 'negative' },
+        { tier: 0, name: 'very negative' },
     ];
-    for (let i = 0; i < labels.length; i++) {
-        const row = document.createElement('div');
-        const val = safeVal(thresholds[labels.length - 1 - i][1], 30);
-        row.innerHTML = `<label>${labels[i]} <input type="number" class="ft-boundary" step="1" min="0" value="${val}" /></label>`;
-        fixedThresholdsContainer.appendChild(row);
+    // boundaries in display order: 4→3, 3→2, 2→1, 1→0
+    const boundaries = [];
+    for (let i = 3; i >= 0; i--) boundaries.push(thresholds[i][1]);
+
+    for (let i = 0; i < tierNames.length; i++) {
+        const label = document.createElement('div');
+        label.className = 'ft-tier-label';
+        label.textContent = `${tierNames[i].name} (tier ${tierNames[i].tier})`;
+        fixedThresholdsContainer.appendChild(label);
+        if (i < boundaries.length) {
+            const row = document.createElement('div');
+            row.className = 'ft-row';
+            const inp = document.createElement('input');
+            inp.type = 'number';
+            inp.className = 'ft-boundary';
+            inp.step = '1';
+            inp.min = '0';
+            inp.value = safeVal(boundaries[i], 30);
+            row.appendChild(inp);
+            const unit = document.createElement('span');
+            unit.className = 'ft-unit';
+            unit.textContent = '(CPM)';
+            row.appendChild(unit);
+            fixedThresholdsContainer.appendChild(row);
+        }
     }
 }
 

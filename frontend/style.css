@@ -467,9 +467,43 @@ body
     font-family: inherit;
 }
 
-#fixedThresholdsContainer input
+#fixedThresholdsContainer
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3vw;
+}
+
+.ft-tier-label
+{
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    padding: 0.3vw 0.6vw;
+    border-radius: 0.3vw;
+    background: var(--bg-tier-inactive);
+    border: 1px solid var(--border-color);
+    text-align: center;
+    width: 80%;
+}
+
+.ft-row
+{
+    display: flex;
+    align-items: center;
+    gap: 0.4vw;
+}
+
+#fixedThresholdsContainer .ft-row input
 {
     width: 6vw;
+    margin-left: 0;
+}
+
+.ft-unit
+{
+    font-size: 0.75em;
+    color: var(--text-muted);
 }
 
 .settings-actions
