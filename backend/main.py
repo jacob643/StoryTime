@@ -1,4 +1,5 @@
 import sys
+import threading
 import uvicorn
 import webbrowser
 from fastapi import FastAPI, Request
@@ -51,7 +52,10 @@ def main():
     print("|      Story Time v0.1.0             |", flush=True)
     print(f"|  http://{settings.host}:{settings.port}             |", flush=True)
     print("+------------------------------------+", flush=True)
-    webbrowser.open(f"http://{settings.host}:{settings.port}")
+    threading.Timer(
+        1.5,
+        lambda: webbrowser.open(f"http://{settings.host}:{settings.port}"),
+    ).start()
     uvicorn.run(
         "backend.main:app",
         host=settings.host,
