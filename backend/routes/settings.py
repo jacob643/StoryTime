@@ -20,7 +20,6 @@ class SettingsResponse(BaseModel):
     paragraph_word_count: int
     target_split_size: int
     min_split_size: int
-    default_avg_cpm: float
     outcome_directions: dict[int, list[str]]
     provider: str
     custom_endpoint: str
@@ -39,7 +38,6 @@ class SettingsPatch(BaseModel):
     paragraph_word_count: int | None = None
     target_split_size: int | None = None
     min_split_size: int | None = None
-    default_avg_cpm: float | None = None
     outcome_directions: dict[int, list[str]] | None = None
     provider: str | None = None
     custom_endpoint: str | None = None
@@ -69,7 +67,6 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         paragraph_word_count=gs.paragraph_word_count,
         target_split_size=gs.target_split_size,
         min_split_size=gs.min_split_size,
-        default_avg_cpm=gs.default_avg_cpm,
         outcome_directions=gs.outcome_directions,
         provider=gs.provider,
         custom_endpoint=gs.custom_endpoint,

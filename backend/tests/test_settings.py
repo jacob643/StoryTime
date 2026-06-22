@@ -47,7 +47,6 @@ def test_game_settings_defaults():
     assert gs.paragraph_word_count == 80
     assert gs.target_split_size == 50
     assert gs.min_split_size == 30
-    assert gs.default_avg_cpm == 300.0
     assert len(gs.outcome_directions) == 5
     assert gs.provider == "ollama"
     assert gs.custom_endpoint == ""
@@ -62,13 +61,12 @@ def test_default_fixed_thresholds_last_upper_is_9999():
 
 def test_save_and_load_roundtrip(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
-    gs = GameSettings(scoring_mode="fixed", default_avg_cpm=500.0)
+    gs = GameSettings(scoring_mode="fixed")
     save_settings(gs)
     import backend.settings_manager as sm
     assert sm._settings_path().exists()
     loaded = load_settings()
     assert loaded.scoring_mode == "fixed"
-    assert loaded.default_avg_cpm == 500.0
 
 
 def test_load_returns_defaults_when_no_file(monkeypatch, tmp_path):
@@ -95,13 +93,11 @@ def test_get_settings_caches(monkeypatch, tmp_path):
 
 def test_update_settings_persists(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
-    updated = update_settings(scoring_mode="fixed", default_avg_cpm=200.0)
+    updated = update_settings(scoring_mode="fixed")
     assert updated.scoring_mode == "fixed"
-    assert updated.default_avg_cpm == 200.0
 
     loaded = load_settings()
     assert loaded.scoring_mode == "fixed"
-    assert loaded.default_avg_cpm == 200.0
 
 
 def test_update_settings_ignores_none(monkeypatch, tmp_path):
@@ -114,12 +110,12 @@ def test_update_settings_ignores_none(monkeypatch, tmp_path):
 def test_update_settings_partial(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
     gs = get_settings()
-    assert gs.default_avg_cpm == 300.0  # default
+    assert gs.scoring_mode == "split"
 
-    update_settings(default_avg_cpm=999.0)
-    assert get_settings().default_avg_cpm == 999.0
+    update_settings(scoring_mode="fixed")
+    assert get_settings().scoring_mode == "fixed"
     # other fields untouched
-    assert get_settings().scoring_mode == "split"
+    assert get_settings().paragraph_word_count == 80
 
 
 def test_outcome_directions_roundtrip(monkeypatch, tmp_path):
@@ -158,7 +154,6 @@ def test_get_settings_returns_defaults(monkeypatch, tmp_path, client):
     assert r.status_code == 200
     data = r.json()
     assert data["scoring_mode"] == "split"
-    assert data["default_avg_cpm"] == 300.0
     assert len(data["outcome_directions"]) == 5
     assert all(isinstance(v, list) for v in data["outcome_directions"].values())
     assert len(data["fixed_thresholds"]) == 5
@@ -168,7 +163,6 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     _patch_path(monkeypatch, tmp_path)
     r = client.post("/api/settings", json={
         "scoring_mode": "fixed",
-        "default_avg_cpm": 500.0,
         "outcome_directions": {"0": ["bad"], "1": ["worse"], "2": ["ok"], "3": ["good"], "4": ["great"]},
         "fixed_thresholds": [[0, 20], [20, 40], [40, 60], [60, 80], [80, 9999]],
         "target_split_size": 40,
@@ -182,7 +176,6 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     assert r.status_code == 200
     data = r.json()
     assert data["scoring_mode"] == "fixed"
-    assert data["default_avg_cpm"] == 500.0
     assert data["outcome_directions"]["2"] == ["ok"]
     assert data["outcome_directions"]["0"] == ["bad"]
     assert data["fixed_thresholds"][0] == [0, 20]
@@ -191,11 +184,10 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
 
 def test_post_partial_update(monkeypatch, tmp_path, client):
     _patch_path(monkeypatch, tmp_path)
-    r = client.post("/api/settings", json={"default_avg_cpm": 777.0})
+    r = client.post("/api/settings", json={"scoring_mode": "fixed"})
     assert r.status_code == 200
     data = r.json()
-    assert data["default_avg_cpm"] == 777.0
-    assert data["scoring_mode"] == "split"  # unchanged
+    assert data["scoring_mode"] == "fixed"
 
 
 def test_get_after_post_reflects_changes(monkeypatch, tmp_path, client):

@@ -373,19 +373,27 @@ document.getElementById('setupLink').addEventListener('click', () => {
     window.open('/getting_started.html', '_blank');
 });
 
+document.getElementById('optScoringMode').addEventListener('change', (e) => {
+    updateScoringSectionVisibility(e.target.value);
+});
+
 function safeVal(v, fallback) {
     return (v === null || v === undefined || v === '' || v !== v) ? fallback : v;
 }
 
 function buildFixedThresholdInputs(thresholds) {
     fixedThresholdsContainer.innerHTML = '';
-    for (let i = 0; i < thresholds.length; i++) {
-        const low = safeVal(thresholds[i][0], 0);
-        const high = safeVal(thresholds[i][1], 9999);
+    // 4 boundary inputs — the CPM ceilings between tiers, in reverse order (4→3→2→1→0)
+    const labels = [
+        'Tier 3→4 boundary (CPM)',
+        'Tier 2→3 boundary (CPM)',
+        'Tier 1→2 boundary (CPM)',
+        'Tier 0→1 boundary (CPM)',
+    ];
+    for (let i = 0; i < labels.length; i++) {
         const row = document.createElement('div');
-        row.innerHTML =
-            `<label>Tier ${i}: low <input type="number" class="ft-low" step="1" min="0" value="${low}" /></label>` +
-            `<label>high <input type="number" class="ft-high" step="1" min="0" value="${high}" /></label>`;
+        const val = safeVal(thresholds[labels.length - 1 - i][1], 30);
+        row.innerHTML = `<label>${labels[i]} <input type="number" class="ft-boundary" step="1" min="0" value="${val}" /></label>`;
         fixedThresholdsContainer.appendChild(row);
     }
 }
@@ -395,16 +403,16 @@ async function loadSettings() {
         const r = await fetch('/api/settings');
         if (!r.ok) throw new Error('Failed to load settings');
         const s = await r.json();
-        document.getElementById('optScoringMode').value = s.scoring_mode;
+        const mode = s.scoring_mode;
+        document.getElementById('optScoringMode').value = mode;
         document.getElementById('optMinStddev').value = s.min_stddev_cpm;
-        document.getElementById('optTier0Sigma').value = s.tier_0_max_sigma;
-        document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
-        document.getElementById('optTier2Sigma').value = s.tier_2_max_sigma;
         document.getElementById('optTier3Sigma').value = s.tier_3_max_sigma;
+        document.getElementById('optTier2Sigma').value = s.tier_2_max_sigma;
+        document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
+        document.getElementById('optTier0Sigma').value = s.tier_0_max_sigma;
         document.getElementById('wordCountInput').value = s.paragraph_word_count;
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optMinSplit').value = s.min_split_size;
-        document.getElementById('optDefaultAvgCpm').value = s.default_avg_cpm;
         buildFixedThresholdInputs(s.fixed_thresholds);
         outcomeDirectionsData = {};
         for (let t = 0; t <= 4; t++) {
@@ -414,9 +422,17 @@ async function loadSettings() {
         currentTierForPrompts = 0;
         document.getElementById('tierPromptSelector').value = '0';
         renderTierPrompts();
+        updateScoringSectionVisibility(mode);
     } catch (e) {
         console.error('loadSettings:', e);
     }
+}
+
+function updateScoringSectionVisibility(mode) {
+    const adaptiveSection = document.getElementById('sectionAdaptiveParams');
+    const fixedSection = document.getElementById('sectionFixedThresholds');
+    if (adaptiveSection) adaptiveSection.style.display = mode === 'split' ? '' : 'none';
+    if (fixedSection) fixedSection.style.display = mode === 'fixed' ? '' : 'none';
 }
 
 function safeParseFloat(v, fallback) {
@@ -430,15 +446,19 @@ function safeParseInt(v, fallback) {
 }
 
 function collectSettings() {
-    const ftLow = fixedThresholdsContainer.querySelectorAll('.ft-low');
-    const ftHigh = fixedThresholdsContainer.querySelectorAll('.ft-high');
-    const fixedThresholds = [];
-    for (let i = 0; i < ftLow.length; i++) {
-        fixedThresholds.push([
-            safeParseFloat(ftLow[i].value, 0),
-            safeParseFloat(ftHigh[i].value, 9999),
-        ]);
-    }
+    const boundaries = fixedThresholdsContainer.querySelectorAll('.ft-boundary');
+    // reconstruct 5-tier thresholds from 4 boundaries
+    const b = [];
+    for (const inp of boundaries) b.push(safeParseFloat(inp.value, 30));
+    // b is in reverse order [t3→4, t2→3, t1→2, t0→1]; flip to ascending
+    b.reverse();
+    const fixedThresholds = [
+        [0, b[0]],
+        [b[0], b[1]],
+        [b[1], b[2]],
+        [b[2], b[3]],
+        [b[3], 9999],
+    ];
     saveCurrentTierPrompts();
     const outcomeDirections = {};
     for (let t = 0; t <= 4; t++) {
@@ -455,7 +475,6 @@ function collectSettings() {
         fixed_thresholds: fixedThresholds,
         target_split_size: safeParseInt(document.getElementById('optTargetSplit').value, 50),
         min_split_size: safeParseInt(document.getElementById('optMinSplit').value, 30),
-        default_avg_cpm: safeParseFloat(document.getElementById('optDefaultAvgCpm').value, 300),
         outcome_directions: outcomeDirections,
     };
 }
@@ -685,7 +704,6 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
         fixed_thresholds: [[0, 30], [30, 50], [50, 75], [75, 100], [100, 9999]],
         target_split_size: 50,
         min_split_size: 30,
-        default_avg_cpm: 300,
         outcome_directions: DEFAULT_PHRASINGS,
     };
     try {
