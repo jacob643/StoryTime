@@ -190,7 +190,10 @@ async def generate(body: GenerateRequest):
 
 @router.get("/api/health")
 async def health():
-    from backend.settings_manager import _settings_path
-    first_visit = not _settings_path().exists()
+    from backend.settings_manager import _settings_path, GameSettings, save_settings
+    path = _settings_path()
+    first_visit = not path.exists()
+    if first_visit:
+        save_settings(GameSettings())
     ollama_running = await registry.is_available()
     return {"first_visit": first_visit, "ollama_running": ollama_running}
