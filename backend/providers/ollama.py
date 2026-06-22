@@ -2,6 +2,7 @@ import httpx
 from backend.config import settings
 from backend.providers import LLMProvider
 from backend.providers.mock import MockProvider
+from backend.settings_manager import get_settings
 from backend.logger import logger
 
 
@@ -26,6 +27,7 @@ class OllamaProvider(LLMProvider):
             "model": model or settings.default_model,
             "prompt": prompt,
             "stream": False,
+            "options": {"temperature": get_settings().temperature},
         }
         logger.debug("OllamaProvider: POST %s model=%s prompt_len=%d", url, payload["model"], len(prompt))
         async with httpx.AsyncClient() as client:

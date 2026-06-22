@@ -71,6 +71,11 @@
                     <label>Minimum (chars) <input type="number" id="optMinSplit" step="1" min="1" /></label>
                 </section>
                 <section>
+                    <h3>LLM Settings</h3>
+                    <label>Temperature <input type="number" id="optTemperature" step="0.05" min="0" max="2" value="0.7" /></label>
+                    <p class="setting-desc">Controls randomness. Lower (near 0) = more predictable, focused output. Higher (near 1) = more creative, varied text. Range: 0–2.</p>
+                </section>
+                <section>
                     <h3>Tier Prompts</h3>
                     <label>Tier
                         <select id="tierPromptSelector">

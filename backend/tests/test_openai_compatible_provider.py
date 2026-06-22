@@ -93,7 +93,7 @@ def test_generate_sends_chat_completions_payload():
         payload = mock_post.call_args.kwargs["json"]
         assert payload["messages"] == [{"role": "user", "content": "Tell a story"}]
         assert payload["max_tokens"] == 500
-        assert payload["temperature"] == 0.8
+        assert payload["temperature"] == 0.7
 
 
 def test_generate_raises_on_http_error(provider):

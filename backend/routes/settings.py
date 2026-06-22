@@ -22,6 +22,7 @@ class SettingsResponse(BaseModel):
     target_split_size: int
     min_split_size: int
     outcome_directions: dict[int, list[str]]
+    temperature: float
     provider: str
     custom_endpoint: str
     custom_api_key: str
@@ -40,6 +41,7 @@ class SettingsPatch(BaseModel):
     target_split_size: int | None = None
     min_split_size: int | None = None
     outcome_directions: dict[int, list[str]] | None = None
+    temperature: float | None = None
     provider: str | None = None
     custom_endpoint: str | None = None
     custom_api_key: str | None = None
@@ -67,6 +69,7 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         target_split_size=gs.target_split_size,
         min_split_size=gs.min_split_size,
         outcome_directions=gs.outcome_directions,
+        temperature=gs.temperature,
         provider=gs.provider,
         custom_endpoint=gs.custom_endpoint,
         custom_api_key=gs.custom_api_key,

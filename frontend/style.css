@@ -467,6 +467,14 @@ body
     font-family: inherit;
 }
 
+.setting-desc
+{
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-top: 0.2vw;
+    line-height: 1.4;
+}
+
 #fixedThresholdsContainer
 {
     display: flex;

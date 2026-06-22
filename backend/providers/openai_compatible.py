@@ -1,5 +1,6 @@
 import httpx
 from backend.providers import LLMProvider
+from backend.settings_manager import get_settings
 from backend.logger import logger
 
 
@@ -25,7 +26,7 @@ class OpenAICompatibleProvider(LLMProvider):
             "model": model or "gpt-4o-mini",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 500,
-            "temperature": 0.8,
+            "temperature": get_settings().temperature,
         }
         resolved_model = payload["model"]
         logger.debug("OpenAICompatibleProvider: POST %s/chat/completions model=%s prompt_len=%d",
