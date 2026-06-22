@@ -14,6 +14,24 @@ let splitBoundaries = [];
 let splitTimestamps = [];
 let retryAction = null;
 let paragraphJustCompleted = false;
+const historyData = [];
+let _cachedCpmThresholds = null;
+
+function getActiveSpeedType() {
+    return document.querySelector('input[name="speedType"]:checked')?.value || 'cpm';
+}
+
+function cpmToDisplay(cpm) {
+    return getActiveSpeedType() === 'wpm' ? cpm / 5 : cpm;
+}
+
+function displayToCpm(value) {
+    return getActiveSpeedType() === 'wpm' ? value * 5 : value;
+}
+
+function getSpeedUnit() {
+    return getActiveSpeedType() === 'wpm' ? 'WPM' : 'CPM';
+}
 
 function computeSplits(text) {
     const target = 50;
@@ -79,11 +97,7 @@ function computeSplitSpeeds() {
 }
 
 function applyDarkMode(enabled) {
-    if (enabled) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
+    document.documentElement.classList.toggle('dark-mode', enabled);
     const cb = document.getElementById('optDarkMode');
     if (cb) cb.checked = enabled;
     localStorage.setItem('storytime-dark-mode', enabled ? '1' : '0');
@@ -102,6 +116,24 @@ function initDarkMode() {
 document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     reset();
+    document.querySelectorAll('input[name="speedType"]').forEach(el => {
+        el.addEventListener('change', () => {
+            rebuildHistoryDisplay();
+            refreshTierChartFromSettings();
+            document.querySelectorAll('.ft-unit').forEach(u => {
+                u.textContent = `(${getSpeedUnit()})`;
+            });
+            const minStddevInput = document.getElementById('optMinStddev');
+            if (minStddevInput && minStddevInput.dataset.cpm) {
+                minStddevInput.value = cpmToDisplay(parseFloat(minStddevInput.dataset.cpm));
+            }
+            const minStddevUnit = document.getElementById('optMinStddevUnit');
+            if (minStddevUnit) minStddevUnit.textContent = getSpeedUnit();
+            if (_cachedCpmThresholds) {
+                buildFixedThresholdInputs(_cachedCpmThresholds);
+            }
+        });
+    });
 });
 
 function reset() {
@@ -124,15 +156,15 @@ function reset() {
     speed = 0;
     startTime = null;
     document.getElementById('historyEntries').querySelectorAll('.history-item').forEach(el => el.remove());
+    historyData.length = 0;
     document.getElementById('lastParagraph').textContent = '';
     resetSplitTracking();
 }
 
-function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds) {
-    const historyContainer = document.getElementById('historyEntries');
-
-    const historyItem = document.createElement('div');
-    historyItem.classList.add('history-item');
+function buildHistoryItem(data) {
+    const { text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds } = data;
+    const item = document.createElement('div');
+    item.classList.add('history-item');
 
     const textElement = document.createElement('div');
     textElement.classList.add('history-text');
@@ -141,23 +173,33 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitS
 
     const metaElement = document.createElement('div');
     metaElement.classList.add('history-meta');
-    const speedType = document.querySelector('input[name="speedType"]:checked').value;
-    let displaySpeed = speedCpm;
-    if (speedType !== 'cpm') {
-        displaySpeed /= 5;
-    }
-    let meta = `${outcomeLabel} | ${displaySpeed.toFixed(1)} ${speedType.toUpperCase()} | ${timeTaken.toFixed(2)}s`;
+    let meta = `${outcomeLabel} | ${cpmToDisplay(speedCpm).toFixed(1)} ${getSpeedUnit()} | ${timeTaken.toFixed(2)}s`;
     if (splitSpeeds && splitSpeeds.length > 0) {
-        const formatted = splitSpeeds.map(s => s.toFixed(1)).join(', ');
+        const formatted = splitSpeeds.map(s => cpmToDisplay(s).toFixed(1)).join(', ');
         meta += ` [${formatted}]`;
     }
     metaElement.textContent = meta;
 
-    historyItem.appendChild(textElement);
-    historyItem.appendChild(metaElement);
-    historyItem.classList.add('history-item-new');
-    historyContainer.prepend(historyItem);
-    historyContainer.scrollTop = 0;
+    item.appendChild(textElement);
+    item.appendChild(metaElement);
+    return item;
+}
+
+function rebuildHistoryDisplay() {
+    const container = document.getElementById('historyEntries');
+    container.innerHTML = '';
+    for (const data of historyData) {
+        container.prepend(buildHistoryItem(data));
+    }
+}
+
+function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds) {
+    historyData.push({ text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds });
+    const item = buildHistoryItem(historyData[historyData.length - 1]);
+    item.classList.add('history-item-new');
+    const container = document.getElementById('historyEntries');
+    container.prepend(item);
+    container.scrollTop = 0;
 }
 
 function updateStoryContext(text) {
@@ -172,7 +214,7 @@ function updateTierChart(tier, boundaries) {
     if (boundaries && boundaries.length >= 4) {
         for (let i = 0; i < 4; i++) {
             const b = document.querySelector(`.tier-boundary[data-index="${i}"]`);
-            if (b) b.textContent = `${boundaries[i]} CPM`;
+            if (b) b.textContent = `${cpmToDisplay(boundaries[i])} ${getSpeedUnit()}`;
         }
     }
 }
@@ -228,12 +270,7 @@ function CalculateSpeed() {
 }
 
 function GetSpeedDisplay() {
-    const speedType = document.querySelector('input[name="speedType"]:checked').value;
-    let displaySpeed = speed;
-    if (speedType !== 'cpm') {
-        displaySpeed /= 5;
-    }
-    return `${displaySpeed.toFixed(1)} ${speedType.toUpperCase()}`;
+    return `${cpmToDisplay(speed).toFixed(1)} ${getSpeedUnit()}`;
 }
 
 async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
@@ -403,9 +440,8 @@ function buildFixedThresholdInputs(thresholds) {
         { tier: 1, name: 'negative' },
         { tier: 0, name: 'very negative' },
     ];
-    // boundaries in display order: 4→3, 3→2, 2→1, 1→0
-    const boundaries = [];
-    for (let i = 3; i >= 0; i--) boundaries.push(thresholds[i][1]);
+    // thresholds is [b0, b1, b2, b3] ascending CPM; convert to display then reverse
+    const boundaries = thresholds.map(v => cpmToDisplay(v)).reverse();
 
     for (let i = 0; i < tierNames.length; i++) {
         const label = document.createElement('div');
@@ -424,7 +460,7 @@ function buildFixedThresholdInputs(thresholds) {
             row.appendChild(inp);
             const unit = document.createElement('span');
             unit.className = 'ft-unit';
-            unit.textContent = '(CPM)';
+            unit.textContent = `(${getSpeedUnit()})`;
             row.appendChild(unit);
             fixedThresholdsContainer.appendChild(row);
         }
@@ -438,7 +474,11 @@ async function loadSettings() {
         const s = await r.json();
         const mode = s.scoring_mode;
         document.getElementById('optScoringMode').value = mode;
-        document.getElementById('optMinStddev').value = s.min_stddev_cpm;
+        const minStddevInput = document.getElementById('optMinStddev');
+        minStddevInput.value = cpmToDisplay(s.min_stddev_cpm);
+        minStddevInput.dataset.cpm = s.min_stddev_cpm;
+        const minStddevUnit = document.getElementById('optMinStddevUnit');
+        if (minStddevUnit) minStddevUnit.textContent = getSpeedUnit();
         document.getElementById('optTier3Sigma').value = s.tier_3_max_sigma;
         document.getElementById('optTier2Sigma').value = s.tier_2_max_sigma;
         document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
@@ -446,6 +486,7 @@ async function loadSettings() {
         document.getElementById('wordCountInput').value = s.paragraph_word_count;
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optMinSplit').value = s.min_split_size;
+        _cachedCpmThresholds = s.fixed_thresholds;
         buildFixedThresholdInputs(s.fixed_thresholds);
         outcomeDirectionsData = {};
         for (let t = 0; t <= 4; t++) {
@@ -480,18 +521,11 @@ function safeParseInt(v, fallback) {
 
 function collectSettings() {
     const boundaries = fixedThresholdsContainer.querySelectorAll('.ft-boundary');
-    // reconstruct 5-tier thresholds from 4 boundaries
+    // collect 4 boundary values (display order: descending); flip to ascending
     const b = [];
-    for (const inp of boundaries) b.push(safeParseFloat(inp.value, 30));
-    // b is in reverse order [t3→4, t2→3, t1→2, t0→1]; flip to ascending
+    for (const inp of boundaries) b.push(displayToCpm(safeParseFloat(inp.value, 30)));
     b.reverse();
-    const fixedThresholds = [
-        [0, b[0]],
-        [b[0], b[1]],
-        [b[1], b[2]],
-        [b[2], b[3]],
-        [b[3], 9999],
-    ];
+    const fixedThresholds = b;
     saveCurrentTierPrompts();
     const outcomeDirections = {};
     for (let t = 0; t <= 4; t++) {
@@ -500,7 +534,7 @@ function collectSettings() {
     return {
         scoring_mode: document.getElementById('optScoringMode').value,
         paragraph_word_count: safeParseInt(document.getElementById('wordCountInput').value, 80),
-        min_stddev_cpm: safeParseFloat(document.getElementById('optMinStddev').value, 10),
+        min_stddev_cpm: displayToCpm(safeParseFloat(document.getElementById('optMinStddev').value, 10)),
         tier_0_max_sigma: safeParseFloat(document.getElementById('optTier0Sigma').value, -1.5),
         tier_1_max_sigma: safeParseFloat(document.getElementById('optTier1Sigma').value, -0.5),
         tier_2_max_sigma: safeParseFloat(document.getElementById('optTier2Sigma').value, 0.5),
@@ -710,12 +744,16 @@ document.addEventListener('DOMContentLoaded', function initTierPrompts() {
 
 document.getElementById('saveSettings').addEventListener('click', async () => {
     try {
+        const body = collectSettings();
         const r = await fetch('/api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(collectSettings()),
+            body: JSON.stringify(body),
         });
         if (!r.ok) throw new Error('Failed to save settings');
+        const minStddevInput = document.getElementById('optMinStddev');
+        if (minStddevInput) minStddevInput.dataset.cpm = body.min_stddev_cpm;
+        _cachedCpmThresholds = body.fixed_thresholds;
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
         settingsPanel.classList.add('collapsed');
@@ -727,25 +765,8 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
 });
 
 document.getElementById('resetSettings').addEventListener('click', async () => {
-    const defaults = {
-        scoring_mode: 'split',
-        character_amount: 200,
-        min_stddev_cpm: 10,
-        tier_0_max_sigma: -1.5,
-        tier_1_max_sigma: -0.5,
-        tier_2_max_sigma: 0.5,
-        tier_3_max_sigma: 1.5,
-        fixed_thresholds: [[0, 30], [30, 50], [50, 75], [75, 100], [100, 9999]],
-        target_split_size: 50,
-        min_split_size: 30,
-        outcome_directions: DEFAULT_PHRASINGS,
-    };
     try {
-        const r = await fetch('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(defaults),
-        });
+        const r = await fetch('/api/settings/reset', { method: 'POST' });
         if (!r.ok) throw new Error('Failed to reset settings');
         settingsPanel.classList.add('collapsed');
         await loadSettings();
@@ -777,11 +798,11 @@ initialPromptInput.addEventListener('keydown', (e) => {
 async function sendSimulate(cpm, deviation) {
     simulatedCpm = cpm;
     simulatedDeviation = deviation || 0;
-    const range = simulatedDeviation > 0 ? ` ±${simulatedDeviation}` : '';
+    const range = simulatedDeviation > 0 ? ` ±${cpmToDisplay(simulatedDeviation)}` : '';
 
     if (!textContent) {
         initialPromptInput.value = 'a skateboard with a soul trying to find its home';
-        messageDiv.textContent = `Starting simulation at ${cpm}${range} CPM...`;
+        messageDiv.textContent = `Starting simulation at ${cpmToDisplay(cpm)}${range} ${getSpeedUnit()}...`;
         messageDiv.className = 'simulation';
         fetch('/api/restart', {
             method: 'POST',
@@ -808,7 +829,7 @@ async function sendSimulate(cpm, deviation) {
         return;
     }
 
-    messageDiv.textContent = `[SIMULATION ${cpm}${range} CPM]`;
+    messageDiv.textContent = `[SIMULATION ${cpmToDisplay(cpm)}${range} ${getSpeedUnit()}]`;
     messageDiv.className = 'simulation';
     startTime = new Date();
     inputBox.value = textContent;

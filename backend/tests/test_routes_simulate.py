@@ -49,7 +49,7 @@ def test_simulate_without_session_uses_fixed_thresholds(client):
     mock_resp = _mock_ollama_response(200, {"response": "Simulated paragraph..."})
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
-        response = client.post("/api/simulate", json={"simulated_speed_cpm": 85.0})
+        response = client.post("/api/simulate", json={"simulated_speed_cpm": 420.0})
 
     assert response.status_code == 200
     data = response.json()

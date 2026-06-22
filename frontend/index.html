@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Story Time!</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <script>
+    (function() {
+        var stored = localStorage.getItem('storytime-dark-mode');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (stored !== null ? stored === '1' : prefersDark) {
+            document.documentElement.classList.add('dark-mode');
+        }
+    })();
+    </script>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -46,7 +55,7 @@
                 </section>
                 <section id="sectionAdaptiveParams">
                     <h3>Adaptive Params</h3>
-                    <label>Min stddev per 50‑char split (CPM) <input type="number" id="optMinStddev" step="0.5" min="0" /></label>
+                    <label>Min stddev per 50‑char split (<span id="optMinStddevUnit">CPM</span>) <input type="number" id="optMinStddev" step="0.5" min="0" /></label>
                     <label>σ tier 3 <input type="number" id="optTier3Sigma" step="0.1" /></label>
                     <label>σ tier 2 <input type="number" id="optTier2Sigma" step="0.1" /></label>
                     <label>σ tier 1 <input type="number" id="optTier1Sigma" step="0.1" /></label>
