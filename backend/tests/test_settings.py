@@ -30,7 +30,7 @@ def client():
 def _patch_path(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(
         "backend.settings_manager._settings_path",
-        lambda: tmp_path / ".storytime" / "user.cfg",
+        lambda: tmp_path / ".storytime" / "config.json",
     )
 
 
@@ -140,7 +140,7 @@ def test_outcome_directions_roundtrip(monkeypatch, tmp_path):
 def test_outcome_directions_migrates_old_string_format(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
     import json
-    path = tmp_path / ".storytime" / "user.cfg"
+    path = tmp_path / ".storytime" / "config.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
         "outcome_directions": {"0": "old bad", "1": "old worse", "2": "old ok", "3": "old good", "4": "old great"},

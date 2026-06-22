@@ -178,7 +178,7 @@ Returns complete story log with all metadata for the sidebar.
 }
 ```
 
-Persisted to a JSON file (`~/.storytime/user.cfg`) for reuse across sessions.
+Persisted to a JSON file (`~/.storytime/config.json`) for reuse across sessions.
 
 ## Game Logic (`game_logic.py`)
 
@@ -328,14 +328,14 @@ class Settings(BaseSettings):
     default_model: str = ""
     custom_endpoint: str = ""
     api_key: str = ""
-    config_path: str = "~/.storytime/user.cfg"
+    config_path: str = "~/.storytime/config.json"
     paragraph_length: int = 20
     log_level: str = "info"
 ```
 
 Loaded from:
 1. Environment variables (for packaging)
-2. Config file at `~/.storytime/user.cfg`
+2. Config file at `~/.storytime/config.json`
 3. Command-line arguments (for development)
 
 ## Error Handling & Resilience
