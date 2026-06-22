@@ -153,8 +153,9 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitS
 
     historyItem.appendChild(textElement);
     historyItem.appendChild(metaElement);
-    historyContainer.appendChild(historyItem);
-    historyContainer.scrollTop = historyContainer.scrollHeight;
+    historyItem.classList.add('history-item-new');
+    historyContainer.prepend(historyItem);
+    historyContainer.scrollTop = 0;
 }
 
 function updateStoryContext(text) {
