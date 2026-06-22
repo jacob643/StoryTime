@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 from backend.prompt_engine import _normalize_directions
+from backend.game_logic import ScoringParams, compute_tier_boundaries
 from backend.settings_manager import GameSettings, get_settings, update_settings
 from backend.logger import logger
 
@@ -73,6 +74,22 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         custom_api_key=gs.custom_api_key,
         custom_model=gs.custom_model,
     )
+
+
+@router.get("/api/settings/boundaries")
+async def get_settings_boundaries():
+    gs = get_settings()
+    params = ScoringParams(
+        mode=gs.scoring_mode,
+        min_stddev_cpm=gs.min_stddev_cpm,
+        tier_0_max_sigma=gs.tier_0_max_sigma,
+        tier_1_max_sigma=gs.tier_1_max_sigma,
+        tier_2_max_sigma=gs.tier_2_max_sigma,
+        tier_3_max_sigma=gs.tier_3_max_sigma,
+        fixed_thresholds=gs.fixed_thresholds,
+    )
+    boundaries = compute_tier_boundaries(params=params)
+    return {"boundaries": boundaries}
 
 
 @router.get("/api/settings", response_model=SettingsResponse)
