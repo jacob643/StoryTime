@@ -114,6 +114,8 @@ function reset() {
     textDisplay.className = '';
     inputBox.value = '';
     inputBox.disabled = true;
+    retryButton.disabled = true;
+    inputWasEmpty = true;
     initialPromptInput.value = '';
     initialPromptInput.focus();
     messageDiv.textContent = 'Enter a story prompt and send';
@@ -261,6 +263,8 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         inputBox.value = '';
         startTime = null;
         paragraphJustCompleted = true;
+        retryButton.disabled = true;
+        inputWasEmpty = true;
         messageDiv.textContent = 'paragraph over! take a breather';
         messageDiv.className = 'neutral';
         inputBox.focus();
@@ -311,8 +315,37 @@ function startTypingTimer() {
     }
 }
 
+function retryParagraph() {
+    inputBox.value = '';
+    startTime = null;
+    paragraphJustCompleted = false;
+    resetSplitTracking();
+    retryButton.disabled = true;
+    messageDiv.textContent = 'Input cleared — retype the paragraph above.';
+    messageDiv.className = 'neutral';
+    inputBox.focus();
+}
+
+const retryButton = document.getElementById('retryButton');
+retryButton.addEventListener('click', retryParagraph);
+
+let inputWasEmpty = true;
+
 inputBox.addEventListener('input', () => {
-    if (paragraphJustCompleted && inputBox.value.length > 0) {
+    const isEmpty = inputBox.value.length === 0;
+    if (isEmpty) {
+        if (!inputWasEmpty) {
+            startTime = null;
+            paragraphJustCompleted = false;
+            resetSplitTracking();
+        }
+        retryButton.disabled = true;
+    } else {
+        retryButton.disabled = false;
+    }
+    inputWasEmpty = isEmpty;
+
+    if (paragraphJustCompleted && !isEmpty) {
         paragraphJustCompleted = false;
         messageDiv.textContent = 'Typing away...';
         messageDiv.className = 'success';
@@ -768,6 +801,8 @@ async function sendPrompt(prompt) {
         inputBox.value = '';
         startTime = null;
         paragraphJustCompleted = true;
+        retryButton.disabled = true;
+        inputWasEmpty = true;
         messageDiv.textContent = 'Story ready, start typing the first paragraph.';
         messageDiv.className = 'neutral';
         inputBox.disabled = false;
