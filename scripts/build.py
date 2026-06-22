@@ -48,7 +48,11 @@ def main():
         smoke_path = os.path.join(ROOT, "scripts", "smoke_test.py")
         if os.path.isfile(smoke_path):
             print("Running smoke test...")
-            subprocess.check_call([sys.executable, smoke_path], cwd=ROOT)
+            try:
+                subprocess.check_call([sys.executable, smoke_path, "--timeout=30"], cwd=ROOT)
+            except subprocess.CalledProcessError:
+                print("Build failed — smoke test did not pass. Use --skip-smoke to override.", file=sys.stderr)
+                sys.exit(1)
 
     print("Build complete.")
 

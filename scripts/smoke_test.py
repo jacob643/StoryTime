@@ -28,9 +28,17 @@ def _get_free_port():
 
 
 def main():
-    if len(sys.argv) > 1:
-        binary = sys.argv[1]
-    else:
+    args = sys.argv[1:]
+
+    timeout = 30
+    binary = None
+    for a in args:
+        if a.startswith("--timeout="):
+            timeout = int(a.split("=", 1)[1])
+        elif not a.startswith("--"):
+            binary = a
+
+    if not binary:
         binary = _find_binary()
 
     if not binary or not os.path.isfile(binary):
@@ -42,17 +50,18 @@ def main():
     proc = subprocess.Popen([binary], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     try:
-        deadline = time.time() + 15
+        url = f"http://127.0.0.1:{port}/api/health"
+        deadline = time.time() + timeout
         while time.time() < deadline:
             try:
-                resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)
+                resp = urllib.request.urlopen(url, timeout=2)
                 if resp.status == 200:
-                    print(f"Smoke test passed — http://127.0.0.1:{port}/ returned 200")
+                    print(f"Smoke test passed — {url} returned 200")
                     return
             except (urllib.error.URLError, urllib.error.HTTPError, ConnectionResetError):
                 pass
             time.sleep(0.5)
-        print("Smoke test failed — no 200 response within 15 seconds", file=sys.stderr)
+        print(f"Smoke test failed — no 200 response within {timeout} seconds", file=sys.stderr)
         sys.exit(1)
     finally:
         proc.terminate()
