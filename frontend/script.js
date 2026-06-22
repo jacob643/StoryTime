@@ -177,6 +177,15 @@ function updateTierChart(tier, boundaries) {
     }
 }
 
+async function refreshTierChartFromSettings() {
+    try {
+        const r = await fetch('/api/settings/boundaries');
+        if (!r.ok) return;
+        const data = await r.json();
+        updateTierChart(-1, data.boundaries);
+    } catch (_) {}
+}
+
 function autoScrollTextDisplay() {
     const container = document.getElementById('textDisplayContainer');
     if (!container) return;
@@ -710,6 +719,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
         settingsPanel.classList.add('collapsed');
+        refreshTierChartFromSettings();
     } catch (e) {
         messageDiv.textContent = 'Settings save error: ' + e.message;
         messageDiv.className = 'error';
@@ -739,6 +749,7 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
         if (!r.ok) throw new Error('Failed to reset settings');
         settingsPanel.classList.add('collapsed');
         await loadSettings();
+        refreshTierChartFromSettings();
         messageDiv.textContent = 'Settings reset to defaults.';
         messageDiv.className = 'success';
     } catch (e) {
