@@ -324,6 +324,7 @@ function retryParagraph() {
     messageDiv.textContent = 'Input cleared, retype the paragraph below';
     messageDiv.className = 'neutral';
     inputBox.focus();
+    updateTextDisplay();
 }
 
 const retryButton = document.getElementById('retryButton');
