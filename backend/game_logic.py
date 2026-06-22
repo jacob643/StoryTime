@@ -37,6 +37,7 @@ class ScoringParams:
     tier_1_max_sigma: float = -0.5
     tier_2_max_sigma: float = 0.5
     tier_3_max_sigma: float = 1.5
+    fixed_thresholds: list[list[float]] | None = None
 
 
 def split_text(text: str, target: int = TARGET_SPLIT_SIZE, minimum: int = MIN_SPLIT_SIZE) -> list[str]:
@@ -83,6 +84,13 @@ def compute_outcome_tier(
 
     p = params or ScoringParams()
 
+    if p.mode == "fixed":
+        thresholds = p.fixed_thresholds or FIXED_THRESHOLDS
+        for tier, (low, high) in enumerate(thresholds):
+            if low <= speed_cpm < high:
+                return tier
+        return 4
+
     if avg is None or stddev is None:
         for tier, (low, high) in enumerate(FIXED_THRESHOLDS):
             if low <= speed_cpm < high:
@@ -108,11 +116,12 @@ def compute_tier_boundaries(
     stddev: float | None = None,
     params: ScoringParams | None = None,
 ) -> list[float]:
-    if params is not None and params.mode == "fixed":
-        return [round(th[0]) for th in FIXED_THRESHOLDS[1:]]
+    p = params or ScoringParams()
+    if p.mode == "fixed":
+        thresholds = p.fixed_thresholds or FIXED_THRESHOLDS
+        return [round(th[0]) for th in thresholds[1:]]
     if avg is None or stddev is None:
         return [round(th[0]) for th in FIXED_THRESHOLDS[1:]]
-    p = params or ScoringParams()
     return [
         max(0, round(avg + p.tier_0_max_sigma * stddev)),
         max(0, round(avg + p.tier_1_max_sigma * stddev)),
