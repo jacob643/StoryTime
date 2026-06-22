@@ -66,24 +66,12 @@ ollama run llama3.2</pre>
     <h3>Check Your VRAM</h3>
     <p><strong>NVIDIA users:</strong> Run <code>nvidia-smi</code> to see how much VRAM is used vs available. <br/>
     <strong>AMD / Intel users:</strong> Use <code>rocm-smi</code> (AMD) or check Task Manager (Windows) / <code>intel_gpu_top</code> (Linux).</p>
-    <p>Each model's size plus its context window (KV cache) must fit in your GPU's VRAM. As a rough guide:</p>
-    <ul>
-        <li><strong>8 GB VRAM:</strong> 3B–8B models with 4K–8K context</li>
-        <li><strong>12 GB VRAM:</strong> 7B–13B models with 8K–16K context</li>
-        <li><strong>24+ GB VRAM:</strong> Most models fit comfortably</li>
-    </ul>
 
     <h2>5. Open Story Time</h2>
-
-    <h3>Binary (no Python required)</h3>
-    <p>Download <code>StoryTime</code> from the latest release and double-click to run. Your browser opens automatically after a moment.</p>
-
-    <h3>Source (with Python)</h3>
-    <p>Run the launcher script from the project root:</p>
-    <pre>scripts\run.bat</pre>
-    <p>Or start the server directly:</p>
-    <pre>python -m backend.main</pre>
-    <p>Your browser should open automatically. If not, navigate to <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a>.</p>
+    <p>Run the launcher for your operating system:</p>
+    <pre>scripts\run.bat          Windows
+./scripts/run.sh         macOS / Linux</pre>
+    <p>Your browser opens automatically after a moment. If not, navigate to <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a>.</p>
     <p>Type a story prompt and press <strong>Send</strong> to begin!</p>
 
     <h2>Troubleshooting</h2>
