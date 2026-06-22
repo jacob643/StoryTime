@@ -338,18 +338,18 @@ body
 
 #retryButton
 {
-    padding: 0.3vw 1.2vw;
     border: 1px solid var(--border-color);
     border-radius: 0.3vw;
-    background: var(--bg-btn);
-    color: var(--text-primary);
+    padding: 0.3vw 0.8vw;
     cursor: pointer;
-    font-size: 0.85em;
+    font-size: 0.9em;
+    background: var(--bg-btn-topbar);
+    color: var(--text-primary);
 }
 
 #retryButton:hover:not(:disabled)
 {
-    background: var(--bg-btn-hover);
+    background: var(--bg-btn-topbar-hover);
 }
 
 #retryButton:disabled
