@@ -582,6 +582,8 @@ async function loadSettings() {
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optTemperature').value = s.temperature;
+        document.getElementById('optTopK').value = s.top_k;
+        document.getElementById('optTopP').value = s.top_p;
         _cachedCpmThresholds = s.fixed_thresholds;
         buildFixedThresholdInputs(s.fixed_thresholds);
         outcomeDirectionsData = {};
@@ -640,6 +642,8 @@ function collectSettings() {
         target_split_size: safeParseInt(document.getElementById('optTargetSplit').value, 50),
         min_split_size: safeParseInt(document.getElementById('optMinSplit').value, 30),
         temperature: Math.max(0, safeParseFloat(document.getElementById('optTemperature').value, 2)),
+        top_k: Math.max(0, safeParseInt(document.getElementById('optTopK').value, 40)),
+        top_p: Math.min(1, Math.max(0, safeParseFloat(document.getElementById('optTopP').value, 0.9))),
         outcome_directions: outcomeDirections,
     };
 }

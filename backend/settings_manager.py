@@ -34,6 +34,8 @@ class GameSettings:
     min_split_size: int = 30
     outcome_directions: Dict[int, list[str]] = field(default_factory=_default_outcome_directions)
     temperature: float = 2.0
+    top_k: int = 40
+    top_p: float = 0.9
     provider: str = "ollama"
     custom_endpoint: str = ""
     custom_api_key: str = ""

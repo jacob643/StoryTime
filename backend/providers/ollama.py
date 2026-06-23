@@ -27,7 +27,7 @@ class OllamaProvider(LLMProvider):
             "model": model or settings.default_model,
             "prompt": prompt,
             "stream": False,
-            "options": {"temperature": get_settings().temperature},
+            "options": {"temperature": get_settings().temperature, "top_k": get_settings().top_k, "top_p": get_settings().top_p},
         }
         logger.debug("OllamaProvider: POST %s model=%s prompt_len=%d", url, payload["model"], len(prompt))
         async with httpx.AsyncClient() as client:

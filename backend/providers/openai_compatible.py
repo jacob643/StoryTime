@@ -27,6 +27,7 @@ class OpenAICompatibleProvider(LLMProvider):
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 500,
             "temperature": get_settings().temperature,
+            "top_p": get_settings().top_p,
         }
         resolved_model = payload["model"]
         logger.debug("OpenAICompatibleProvider: POST %s/chat/completions model=%s prompt_len=%d",

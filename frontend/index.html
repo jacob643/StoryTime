@@ -86,7 +86,9 @@
                 </section>
                 <section>
                     <h3>LLM Settings</h3>
-                    <label>Temperature <input type="number" id="optTemperature" step="0.05" min="0" value="2" /><button class="default-btn" data-field="optTemperature" data-default="2">default: 2</button></label>
+                    <label>Temperature <input type="number" id="optTemperature" step="0.05" min="0" /><button class="default-btn" data-field="optTemperature" data-default="2">default: 2</button></label>
+                    <label>top_k <input type="number" id="optTopK" step="1" min="0" /><button class="default-btn" data-field="optTopK" data-default="40">default: 40</button></label>
+                    <label>top_p <input type="number" id="optTopP" step="0.05" min="0" max="1" /><button class="default-btn" data-field="optTopP" data-default="0.9">default: 0.9</button></label>
                 </section>
             </div>
             <div class="settings-actions">
