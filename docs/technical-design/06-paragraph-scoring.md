@@ -158,6 +158,8 @@ def _compute_subsequent_tier(split_speeds, rolling, params):
 
 The first-paragraph case would follow the same pattern: baseline provides avg + σ, evaluated splits are averaged and scored against `σ / √N_evaluated`.
 
+**Edge case — single-split first paragraph (n=1):** When there's only one split (the most common case for a 40-word first paragraph), the split-half approach has nothing to reserve for evaluation. The outcome is forced to tier 2 (neutral). The single split's CPM is appended to the rolling list so that the second paragraph has a baseline to score against.
+
 For a hybrid that also rewards consistency, consider combining C with a small penalty for within-paragraph variance:
 
 ```python
