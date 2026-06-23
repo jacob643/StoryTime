@@ -56,3 +56,9 @@ Goal: Friends and family can download and run the game with zero Python knowledg
 - [ ] **4.3.3** Create `CONTRIBUTING.md` — development setup guide (clone, venv, dependencies, running tests), code conventions, PR workflow, link to docs/. Keep it short.
 - [ ] **4.3.4** Add per-platform download badges to `README.md` — shields.io badges that link to the latest GitHub Release. Badges for Windows, macOS (Intel/ARM), Linux.
 - [ ] **4.3.5** Add `scripts/version.py` — CLI tool to bump the version across all files (`_version.py`, `CHANGELOG.md` new section, etc.). `python scripts/version.py bump 0.2.0` reads current version, rewrites files, and prints the diff.
+
+---
+
+## Milestone 5: Juice
+
+Goal: Add sound effects and animations to make the game feel polished and responsive. Details TBD.
