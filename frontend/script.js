@@ -63,11 +63,25 @@ const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
 function refreshDefaultButtons() {
     document.querySelectorAll('.default-btn').forEach(btn => {
         const field = btn.dataset.field;
-        const input = document.getElementById(field);
+        const input = document.getElementById(field) || btn.parentElement.querySelector('.ft-boundary');
         if (!input) return;
-        const def = parseFloat(btn.dataset.default);
-        const cur = parseFloat(input.value);
-        btn.disabled = !isNaN(cur) && Math.abs(cur - def) < 0.0001;
+        let def;
+        if (btn.dataset.defaultCpm) {
+            def = cpmToDisplay(parseFloat(btn.dataset.defaultCpm));
+            btn.textContent = `default: ${def} ${getSpeedUnit()}`;
+        } else {
+            def = btn.dataset.default;
+            btn.textContent = `default: ${def}`;
+        }
+        const cur = input.value;
+        let match = false;
+        if (input.tagName === 'SELECT') {
+            match = cur === def;
+        } else {
+            const curNum = parseFloat(cur);
+            match = !isNaN(curNum) && Math.abs(curNum - parseFloat(def)) < 0.0001;
+        }
+        btn.disabled = match;
     });
 }
 
@@ -187,15 +201,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (_cachedCpmThresholds) {
                 buildFixedThresholdInputs(_cachedCpmThresholds);
             }
+            refreshDefaultButtons();
         });
     });
     document.getElementById('settingsSections').addEventListener('click', (e) => {
         const btn = e.target.closest('.default-btn');
         if (!btn) return;
         const field = btn.dataset.field;
-        const input = document.getElementById(field);
+        const input = document.getElementById(field) || btn.parentElement.querySelector('.ft-boundary');
         if (!input) return;
-        input.value = btn.dataset.default;
+        if (btn.dataset.defaultCpm) {
+            input.value = cpmToDisplay(parseFloat(btn.dataset.defaultCpm));
+            if (input.dataset) input.dataset.cpm = btn.dataset.defaultCpm;
+        } else {
+            input.value = btn.dataset.default;
+        }
         refreshDefaultButtons();
     });
     document.getElementById('settingsSections').addEventListener('input', (e) => {
@@ -530,6 +550,13 @@ function buildFixedThresholdInputs(thresholds) {
             unit.className = 'ft-unit';
             unit.textContent = `(${getSpeedUnit()})`;
             row.appendChild(unit);
+            const defaultCpm = DEFAULT_FIXED_THRESHOLDS_CPM[DEFAULT_FIXED_THRESHOLDS_CPM.length - 1 - i];
+            const btn = document.createElement('button');
+            btn.className = 'default-btn';
+            btn.dataset.field = 'ft-boundary-' + i;
+            btn.dataset.defaultCpm = defaultCpm;
+            btn.textContent = `default: ${cpmToDisplay(defaultCpm)} ${getSpeedUnit()}`;
+            row.appendChild(btn);
             fixedThresholdsContainer.appendChild(row);
         }
     }

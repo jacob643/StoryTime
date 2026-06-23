@@ -42,7 +42,7 @@
                 </section>
                 <section>
                     <h3>Word Count</h3>
-                    <label>Words per paragraph <input type="number" id="wordCountInput" step="5" min="10" /></label>
+                    <label>Words per paragraph <input type="number" id="wordCountInput" step="5" min="10" /><button class="default-btn" data-field="wordCountInput" data-default="40">default: 40</button></label>
                 </section>
                 <section>
                     <h3>Scoring Mode</h3>
@@ -51,15 +51,16 @@
                             <option value="split">Adaptive (split)</option>
                             <option value="fixed">Fixed thresholds</option>
                         </select>
+                        <button class="default-btn" data-field="optScoringMode" data-default="split">default: split</button>
                     </label>
                 </section>
                 <section id="sectionAdaptiveParams">
                     <h3>Adaptive Params</h3>
-                    <label>Min stddev per 50‑char split (<span id="optMinStddevUnit">CPM</span>) <input type="number" id="optMinStddev" step="0.5" min="0" /></label>
-                    <label>σ tier 3 <input type="number" id="optTier3Sigma" step="0.1" /></label>
-                    <label>σ tier 2 <input type="number" id="optTier2Sigma" step="0.1" /></label>
-                    <label>σ tier 1 <input type="number" id="optTier1Sigma" step="0.1" /></label>
-                    <label>σ tier 0 <input type="number" id="optTier0Sigma" step="0.1" /></label>
+                    <label>Min stddev per 50‑char split (<span id="optMinStddevUnit">CPM</span>) <input type="number" id="optMinStddev" step="0.5" min="0" /><button class="default-btn" data-field="optMinStddev" data-default-cpm="10">default: 10 CPM</button></label>
+                    <label>σ tier 3 <input type="number" id="optTier3Sigma" step="0.1" /><button class="default-btn" data-field="optTier3Sigma" data-default="1.5">default: 1.5</button></label>
+                    <label>σ tier 2 <input type="number" id="optTier2Sigma" step="0.1" /><button class="default-btn" data-field="optTier2Sigma" data-default="0.5">default: 0.5</button></label>
+                    <label>σ tier 1 <input type="number" id="optTier1Sigma" step="0.1" /><button class="default-btn" data-field="optTier1Sigma" data-default="-0.5">default: -0.5</button></label>
+                    <label>σ tier 0 <input type="number" id="optTier0Sigma" step="0.1" /><button class="default-btn" data-field="optTier0Sigma" data-default="-1.5">default: -1.5</button></label>
                 </section>
                 <section id="sectionFixedThresholds">
                     <h3>Fixed Thresholds (tier boundaries)</h3>
@@ -67,8 +68,8 @@
                 </section>
                 <section>
                     <h3>Split Sizes</h3>
-                    <label>Target (chars) <input type="number" id="optTargetSplit" step="1" min="10" /></label>
-                    <label>Minimum (chars) <input type="number" id="optMinSplit" step="1" min="1" /></label>
+                    <label>Target (chars) <input type="number" id="optTargetSplit" step="1" min="10" /><button class="default-btn" data-field="optTargetSplit" data-default="50">default: 50</button></label>
+                    <label>Minimum (chars) <input type="number" id="optMinSplit" step="1" min="1" /><button class="default-btn" data-field="optMinSplit" data-default="30">default: 30</button></label>
                 </section>
                 <section>
                     <h3>Tier Prompts</h3>
