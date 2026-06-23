@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
-from backend.game_logic import ScoringParams, DEFAULT_AVG_CPM, MAX_ROLLING_WINDOW
-from backend.settings_manager import get_settings as _get_gs
+from backend.game_logic import ScoringParams, DEFAULT_AVG_CPM, MAX_ROLLING_WINDOW, get_outcome_label
+from backend.settings_manager import get_settings as _get_gs, build_scoring_params
 from backend.logger import logger
 
 
@@ -40,15 +40,7 @@ class SessionStore:
 
     def create(self, initial_prompt: str = "", initial_avg_cpm: float | None = None) -> GameSession:
         gs = _get_gs()
-        params = ScoringParams(
-            mode=gs.scoring_mode,
-            min_stddev_cpm=gs.min_stddev_cpm,
-            tier_0_max_sigma=gs.tier_0_max_sigma,
-            tier_1_max_sigma=gs.tier_1_max_sigma,
-            tier_2_max_sigma=gs.tier_2_max_sigma,
-            tier_3_max_sigma=gs.tier_3_max_sigma,
-            fixed_thresholds=gs.fixed_thresholds,
-        )
+        params = build_scoring_params(gs)
         session = GameSession(
             id=str(uuid.uuid4()),
             created_at=datetime.now(timezone.utc),
@@ -81,8 +73,7 @@ class SessionStore:
             f.write(f"\n--- Paragraph {len(session.history)} ---\n")
             f.write(f"Date: {now}\n")
             f.write(f"Speed: {record.speed_cpm:.1f} CPM | "
-                    f"Tier: {record.outcome_tier} ("
-                    f"{'very negative' if record.outcome_tier == 0 else 'negative' if record.outcome_tier == 1 else 'neutral' if record.outcome_tier == 2 else 'positive' if record.outcome_tier == 3 else 'very positive'})\n")
+                    f"Tier: {record.outcome_tier} ({get_outcome_label(record.outcome_tier)})\n")
             if record.split_speeds:
                 f.write(f"Splits: [{', '.join(f'{s:.1f}' for s in record.split_speeds)}]\n")
             f.write(f"\n{record.text}\n")

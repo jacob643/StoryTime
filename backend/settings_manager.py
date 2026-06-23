@@ -8,8 +8,9 @@ from typing import Dict, List, Optional, Union
 from backend.game_logic import (
     DEFAULT_MIN_STDDEV_CPM,
     FIXED_THRESHOLDS,
+    ScoringParams,
 )
-from backend.prompt_engine import OUTCOME_DIRECTIONS
+from backend.prompt_engine import OUTCOME_DIRECTIONS, _normalize_directions
 
 
 def _default_fixed_thresholds() -> list[float]:
@@ -50,8 +51,16 @@ def _coerce_keys(d: dict) -> dict[int, Union[str, list[str]]]:
     return {int(k): v for k, v in d.items()}
 
 
-def _migrate_outcome_directions(d: dict[int, Union[str, list[str]]]) -> dict[int, list[str]]:
-    return {k: (v if isinstance(v, list) else [v]) for k, v in d.items()}
+def build_scoring_params(gs: GameSettings) -> ScoringParams:
+    return ScoringParams(
+        mode=gs.scoring_mode,
+        min_stddev_cpm=gs.min_stddev_cpm,
+        tier_0_max_sigma=gs.tier_0_max_sigma,
+        tier_1_max_sigma=gs.tier_1_max_sigma,
+        tier_2_max_sigma=gs.tier_2_max_sigma,
+        tier_3_max_sigma=gs.tier_3_max_sigma,
+        fixed_thresholds=gs.fixed_thresholds,
+    )
 
 
 def _migrate_fixed_thresholds(v):
@@ -72,7 +81,7 @@ def load_settings() -> GameSettings:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
         gs = GameSettings(**_filter_known_keys(raw))
-        gs.outcome_directions = _migrate_outcome_directions(_coerce_keys(gs.outcome_directions))
+        gs.outcome_directions = _normalize_directions(_coerce_keys(gs.outcome_directions))
         gs.fixed_thresholds = _migrate_fixed_thresholds(gs.fixed_thresholds)
         return gs
     except (json.JSONDecodeError, TypeError, KeyError, ValueError):

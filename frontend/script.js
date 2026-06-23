@@ -632,7 +632,7 @@ function collectSettings() {
     }
     return {
         scoring_mode: document.getElementById('optScoringMode').value,
-        paragraph_word_count: safeParseInt(document.getElementById('wordCountInput').value, 80),
+        paragraph_word_count: safeParseInt(document.getElementById('wordCountInput').value, 40),
         min_stddev_cpm: displayToCpm(safeParseFloat(document.getElementById('optMinStddev').value, 10)),
         tier_0_max_sigma: safeParseFloat(document.getElementById('optTier0Sigma').value, -1.5),
         tier_1_max_sigma: safeParseFloat(document.getElementById('optTier1Sigma').value, -0.5),

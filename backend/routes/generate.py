@@ -15,7 +15,7 @@ from backend.game_logic import (
     DEFAULT_MIN_STDDEV_CPM,
 )
 from backend.prompt_engine import build_prompt, build_first_paragraph_prompt, parse_llm_response, sanitize_text, validate_llm_response, NEUTRAL_FALLBACK
-from backend.settings_manager import get_settings
+from backend.settings_manager import get_settings, build_scoring_params, GameSettings, _settings_path, save_settings
 from backend.logger import logger
 
 router = APIRouter()
@@ -77,15 +77,7 @@ async def generate(body: GenerateRequest):
             if not validate_llm_response(text):
                 text = NEUTRAL_FALLBACK
                 logger.warning("First paragraph invalid, using fallback")
-            params = ScoringParams(
-                mode=gs.scoring_mode,
-                min_stddev_cpm=gs.min_stddev_cpm,
-                tier_0_max_sigma=gs.tier_0_max_sigma,
-                tier_1_max_sigma=gs.tier_1_max_sigma,
-                tier_2_max_sigma=gs.tier_2_max_sigma,
-                tier_3_max_sigma=gs.tier_3_max_sigma,
-                fixed_thresholds=gs.fixed_thresholds,
-            )
+            params = build_scoring_params(gs)
             bounds = compute_tier_boundaries(params=params)
             return GenerateResponse(
                 response=text,
@@ -100,15 +92,7 @@ async def generate(body: GenerateRequest):
             raise HTTPException(status_code=404, detail="Session not found")
 
         gs = get_settings()
-        params = ScoringParams(
-            mode=gs.scoring_mode,
-            min_stddev_cpm=gs.min_stddev_cpm,
-            tier_0_max_sigma=gs.tier_0_max_sigma,
-            tier_1_max_sigma=gs.tier_1_max_sigma,
-            tier_2_max_sigma=gs.tier_2_max_sigma,
-            tier_3_max_sigma=gs.tier_3_max_sigma,
-            fixed_thresholds=gs.fixed_thresholds,
-        )
+        params = build_scoring_params(gs)
 
         split_speeds = body.split_speeds or []
         rolling = session.rolling_splits
@@ -189,7 +173,6 @@ async def generate(body: GenerateRequest):
 
 @router.get("/api/health")
 async def health():
-    from backend.settings_manager import _settings_path, GameSettings, save_settings
     path = _settings_path()
     first_visit = not path.exists()
     if first_visit:

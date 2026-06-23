@@ -25,12 +25,12 @@ Instructions and quick reference for AI agents working on this codebase.
 | File | Key contents |
 |---|---|
 | `game_logic.py` | `ScoringParams:27`, `split_text:37`, `compute_speed_stats:58`, `compute_outcome_tier:69`, `compute_tier_boundaries:104`, `get_outcome_label:123`. Constants: `FIXED_THRESHOLDS`, `DEFAULT_AVG_CPM`, `DEFAULT_MIN_STDDEV_CPM`, `TARGET_SPLIT_SIZE`, `MIN_SPLIT_SIZE`, `OUTCOME_LABELS` |
-| `settings_manager.py` | `GameSettings:24` (all config fields), `load_settings:68`, `save_settings:82`, `get_settings:104`, `update_settings:111`, `reset_settings:122`. Migrations: `_migrate_fixed_thresholds:57`, `_migrate_outcome_directions:53` |
+| `settings_manager.py` | `GameSettings:24` (all config fields), `load_settings:68`, `save_settings:82`, `get_settings:104`, `update_settings:111`, `reset_settings:122`, `build_scoring_params:57`. Migrations: `_migrate_fixed_thresholds:57` |
 | `session.py` | `ParagraphRecord:16`, `GameSession:26` (has `rolling_splits`), `SessionStore:37` |
 | `prompt_engine.py` | `build_prompt:78`, `build_first_paragraph_prompt:116`, `sanitize_text:140`, `validate_llm_response:160`, `parse_llm_response:171` |
 | `main.py` | `main:54` — CLI args via argparse, uvicorn launch, frozen detection |
 | `logger.py` | `set_verbose:17` bumps to DEBUG |
-| `config.py` | `Settings:4` — pydantic BaseSettings for env vars |
+| `config.py` | `Settings:4` — pydantic BaseSettings for env vars. Removed: `log_level` field |
 | `_version.py` | `__version__ = "0.1.0"` |
 
 ## Providers (backend/providers/)
