@@ -71,11 +71,6 @@
                     <label>Minimum (chars) <input type="number" id="optMinSplit" step="1" min="1" /></label>
                 </section>
                 <section>
-                    <h3>LLM Settings</h3>
-                    <label>Temperature <input type="number" id="optTemperature" step="0.05" min="0" value="0.7" /></label>
-                    <p class="setting-desc">0 is deterministic and generic, 1 is diversified, 2+ is increasingly incoherent.</p>
-                </section>
-                <section>
                     <h3>Tier Prompts</h3>
                     <label>Tier
                         <select id="tierPromptSelector">
@@ -87,6 +82,11 @@
                         </select>
                     </label>
                     <div id="tierPromptList"></div>
+                </section>
+                <section>
+                    <h3>LLM Settings</h3>
+                    <label>Temperature <input type="number" id="optTemperature" step="0.05" min="0" value="0.7" /></label>
+                    <p class="setting-desc">0 is deterministic and generic, 1 is diversified, 2+ is increasingly incoherent.</p>
                 </section>
             </div>
             <div class="settings-actions">
