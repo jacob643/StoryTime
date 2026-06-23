@@ -1,6 +1,15 @@
 # Agent guidance
 
-Quick reference for AI agents working on this codebase.
+Instructions and quick reference for AI agents working on this codebase.
+
+## Instructions
+
+- After each task, mark it `[x]` in `PLAN.md` and update affected docs in `docs/`.
+- When a milestone is fully completed, move it to `previous-milestones.md`.
+- When adding/renaming/moving files or key functions, update this file.
+- Always add or update corresponding tests (pytest for backend, Playwright for frontend). Keep existing tests passing.
+- Commit after each single task — never batch multiple tasks into one commit.
+- Status key in `PLAN.md`: `[ ]` pending, `[x]` completed, `[~]` in progress.
 
 ## Routes (backend/routes/)
 | File | Endpoints | Key functions |

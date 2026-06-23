@@ -1,8 +1,7 @@
 # Story Time — Development Plan
 
-> **Agent instructions**: When you complete a task, mark it `[x]` and update any affected documentation in `docs/`. When a milestone is fully completed, move it to `previous-milestones.md` to keep this file lean. Cross-reference all work against `docs/technical-design/` and `docs/development-process/` to ensure consistency with the architecture decisions and runbook. **When implementing a task, always add or update the corresponding tests** (pytest for backend, Playwright for frontend). Keep existing tests passing. **Commit after each single task** (e.g., after 3.4.1, then 3.4.2) — never batch multiple tasks into one commit.
->
 > **Status key**: `[ ]` pending, `[x]` completed, `[~]` in progress. Completed milestones are archived in `previous-milestones.md`.
+> **Agent instructions**: See `AGENTS.md`.
 
 ---
 
