@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> None:
         lambda: webbrowser.open(f"http://{settings.host}:{settings.port}"),
     ).start()
     uvicorn.run(
-        app,
+        "backend.main:app" if reload_enabled else app,
         host=settings.host,
         port=settings.port,
         reload=reload_enabled,
