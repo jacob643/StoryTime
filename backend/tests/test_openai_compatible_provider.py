@@ -89,11 +89,13 @@ def test_generate_sends_chat_completions_payload():
         "choices": [{"message": {"content": "ok"}}]
     })
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
-        _run(prov.generate("Tell a story"))
-        payload = mock_post.call_args.kwargs["json"]
-        assert payload["messages"] == [{"role": "user", "content": "Tell a story"}]
-        assert payload["max_tokens"] == 500
-        assert payload["temperature"] == 0.7
+        with patch("backend.providers.openai_compatible.get_settings") as mock_gs:
+            mock_gs.return_value.temperature = 0.7
+            _run(prov.generate("Tell a story"))
+            payload = mock_post.call_args.kwargs["json"]
+            assert payload["messages"] == [{"role": "user", "content": "Tell a story"}]
+            assert payload["max_tokens"] == 500
+            assert payload["temperature"] == 0.7
 
 
 def test_generate_raises_on_http_error(provider):

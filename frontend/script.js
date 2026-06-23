@@ -570,7 +570,7 @@ function collectSettings() {
         fixed_thresholds: fixedThresholds,
         target_split_size: safeParseInt(document.getElementById('optTargetSplit').value, 50),
         min_split_size: safeParseInt(document.getElementById('optMinSplit').value, 30),
-        temperature: Math.min(2, Math.max(0, safeParseFloat(document.getElementById('optTemperature').value, 0.7))),
+        temperature: Math.min(5, Math.max(0, safeParseFloat(document.getElementById('optTemperature').value, 0.7))),
         outcome_directions: outcomeDirections,
     };
 }
