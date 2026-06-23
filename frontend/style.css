@@ -475,6 +475,25 @@ body
     line-height: 1.4;
 }
 
+.default-btn
+{
+    margin-left: 0.3vw;
+    padding: 0.1vw 0.3vw;
+    font-size: 0.75em;
+    border: 1px solid var(--border-color);
+    border-radius: 0.2vw;
+    background: var(--bg-btn);
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.default-btn:disabled
+{
+    opacity: 0.35;
+    cursor: default;
+}
+
 #fixedThresholdsContainer
 {
     display: flex;

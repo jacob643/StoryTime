@@ -43,6 +43,34 @@ let paragraphJustCompleted = false;
 const historyData = [];
 let _cachedCpmThresholds = null;
 
+const SETTINGS_DEFAULTS = {
+    paragraph_word_count: 40,
+    scoring_mode: 'split',
+    min_stddev_cpm: 10,
+    tier_3_max_sigma: 1.5,
+    tier_2_max_sigma: 0.5,
+    tier_1_max_sigma: -0.5,
+    tier_0_max_sigma: -1.5,
+    target_split_size: 50,
+    min_split_size: 30,
+    temperature: 2,
+    top_k: 40,
+    top_p: 0.9,
+};
+
+const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
+
+function refreshDefaultButtons() {
+    document.querySelectorAll('.default-btn').forEach(btn => {
+        const field = btn.dataset.field;
+        const input = document.getElementById(field);
+        if (!input) return;
+        const def = parseFloat(btn.dataset.default);
+        const cur = parseFloat(input.value);
+        btn.disabled = !isNaN(cur) && Math.abs(cur - def) < 0.0001;
+    });
+}
+
 function getActiveSpeedType() {
     return document.querySelector('input[name="speedType"]:checked')?.value || 'cpm';
 }
@@ -160,6 +188,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 buildFixedThresholdInputs(_cachedCpmThresholds);
             }
         });
+    });
+    document.getElementById('settingsSections').addEventListener('click', (e) => {
+        const btn = e.target.closest('.default-btn');
+        if (!btn) return;
+        const field = btn.dataset.field;
+        const input = document.getElementById(field);
+        if (!input) return;
+        input.value = btn.dataset.default;
+        refreshDefaultButtons();
+    });
+    document.getElementById('settingsSections').addEventListener('input', (e) => {
+        if (e.target.closest('.default-btn')) return;
+        refreshDefaultButtons();
     });
 });
 
@@ -525,6 +566,7 @@ async function loadSettings() {
         document.getElementById('tierPromptSelector').value = '0';
         renderTierPrompts();
         updateScoringSectionVisibility(mode);
+        refreshDefaultButtons();
     } catch (e) {
         console.error('loadSettings:', e);
     }
