@@ -29,10 +29,9 @@ jobs:
         run: pip install pyinstaller
       - name: Build binary
         run: python scripts/build.py --skip-smoke
-      - name: Organize binary into platform folder
+      - name: Rename binary with platform suffix
         run: |
-          mkdir -p "dist/${{ matrix.platform }}"
-          mv dist/StoryTime* "dist/${{ matrix.platform }}/"
+          mv dist/StoryTime* "dist/StoryTime-${{ matrix.platform }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
@@ -60,6 +59,6 @@ jobs:
         with:
           body_path: release-notes.md
           files: |
-            linux/StoryTime
-            macOS/StoryTime
-            windows/StoryTime.exe
+            StoryTime-linux
+            StoryTime-macOS
+            StoryTime-windows.exe
