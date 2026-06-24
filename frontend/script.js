@@ -124,14 +124,14 @@ function resetSplitTracking() {
 
 function initSplits(text) {
     splitBoundaries = computeSplits(text);
-    splitTimestamps = new Array(splitBoundaries.length).fill(null);
+    splitTimestamps = [];
 }
 
 function updateSplitTimestamps() {
     const pos = inputBox.value.length;
     for (let i = 0; i < splitBoundaries.length; i++) {
-        if (pos >= splitBoundaries[i] && splitTimestamps[i] === null) {
-            splitTimestamps[i] = new Date();
+        if (pos >= splitBoundaries[i] && splitTimestamps.length <= i) {
+            splitTimestamps.push(new Date());
         }
     }
 }
