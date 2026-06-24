@@ -17,3 +17,10 @@ The chance of ending is customizable per-game. After the ending paragraph, the g
 ## Continue a Written Story
 
 Instead of starting from scratch, let the player pick a previously written story (from `writtenStories/`) and resume it. The session is reconstructed — history, rolling split speeds, last outcome tier — so the LLM continues the narrative as if the game never stopped. Useful for long stories or returning to a story after a break.
+
+## Max Tokens Safety Cap
+
+Smaller models can loop infinitely during generation. Add `max_tokens` (default 300) to `GameSettings` → `options.num_predict` in Ollama, mirroring the existing `max_tokens: 500` in the OpenAI-compatible provider. The Ollama API returns `"done_reason": "length"` when truncated, which we could optionally surface.
+
+- **Option A**: hardcode `num_predict: 300` in `ollama.py` — minimal change.
+- **Option B**: add `max_tokens` to settings (consistent with temperature/top_k/top_p pattern) — more user control.
