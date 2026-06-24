@@ -56,6 +56,7 @@ Instructions and quick reference for AI agents working on this codebase.
 | `smoke_test.py` | Launches binary, polls `/api/health` up to 30s |
 | `run.sh` / `run.bat` | Production launcher: binary first, python fallback |
 | `build.sh` / `build.bat` | Wrappers for `build.py` |
+| `version.py` | `python scripts/version.py bump x.y.z` — bumps version in `_version.py`, `pyproject.toml`, `CHANGELOG.md` |
 
 ## Testing (backend/tests/)
 | File | Tests for |

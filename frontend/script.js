@@ -543,8 +543,8 @@ settingsToggle.addEventListener('click', () => {
     }
 });
 
-const BUG_REPORT_URL = 'https://github.com/anomalyco/storytime/issues';
-const SUPPORT_URL = 'https://github.com/sponsors/anomalyco';
+const BUG_REPORT_URL = 'https://github.com/jacob643/StoryTime/issues';
+const SUPPORT_URL = 'https://github.com/sponsors/jacob643';
 
 document.getElementById('setupLink').addEventListener('click', () => {
     window.open('/getting_started.html', '_blank');

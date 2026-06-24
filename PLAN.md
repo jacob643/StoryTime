@@ -50,11 +50,11 @@ Goal: Friends and family can download and run the game with zero Python knowledg
 
 ### Epic 4.3: Release Infrastructure
 
-- [ ] **4.3.1** Add `.github/workflows/release.yml` — triggered on tag push `v*.*.*`, builds all platforms via `build.yml` (reuse as a reusable workflow or composite action), then creates a GitHub Release with the build artifacts attached. Include release notes auto-generated from commits since the last tag.
-- [ ] **4.3.2** Create `CHANGELOG.md` — keep a manual changelog with sections per version (Unreleased / x.y.z), categorized as Added, Changed, Fixed, Removed. Populate initial entries for v0.1.0 from completed Milestones 1-3.
-- [ ] **4.3.3** Create `CONTRIBUTING.md` — development setup guide (clone, venv, dependencies, running tests), code conventions, PR workflow, link to docs/. Keep it short.
-- [ ] **4.3.4** Add per-platform download badges to `README.md` — shields.io badges that link to the latest GitHub Release. Badges for Windows, macOS (Intel/ARM), Linux.
-- [ ] **4.3.5** Add `scripts/version.py` — CLI tool to bump the version across all files (`_version.py`, `CHANGELOG.md` new section, etc.). `python scripts/version.py bump 0.2.0` reads current version, rewrites files, and prints the diff.
+- [x] **4.3.1** Add `.github/workflows/release.yml` — triggered on tag push `v*.*.*`, builds all platforms, creates a GitHub Release with build artifacts and auto-generated release notes.
+- [x] **4.3.2** Create `CHANGELOG.md` — manual changelog with v0.1.0 entries for all completed work.
+- [x] **4.3.3** Create `CONTRIBUTING.md` — development setup, test commands, code conventions, PR workflow.
+- [x] **4.3.4** Add per-platform download badges to `README.md` — shields.io badges for Windows, Linux, linked to latest release.
+- [x] **4.3.5** Add `scripts/version.py` — `python scripts/version.py bump 0.2.0` rewrites `_version.py`, `pyproject.toml`, `CHANGELOG.md` and prints diff.
 
 ### Epic 4.4: Model Selection
 
