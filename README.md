@@ -2,6 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/jacob643/StoryTime?label=Download&style=for-the-badge)](https://github.com/jacob643/StoryTime/releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows)](https://github.com/jacob643/StoryTime/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple)](https://github.com/jacob643/StoryTime/releases/latest)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/jacob643/StoryTime/releases/latest)
 [![License](https://img.shields.io/github/license/jacob643/StoryTime?style=for-the-badge)](LICENSE)
 
