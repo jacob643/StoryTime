@@ -119,7 +119,6 @@ function computeSplits(text) {
 }
 
 function resetSplitTracking() {
-    splitBoundaries = [];
     splitTimestamps = [];
 }
 
