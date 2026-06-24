@@ -260,7 +260,7 @@ function reset() {
     resetSplitTracking();
 }
 
-function buildHistoryItem(data) {
+function buildHistoryItem(data, prevSpeedCpm) {
     const { text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds } = data;
     const item = document.createElement('div');
     item.classList.add('history-item');
@@ -280,21 +280,25 @@ function buildHistoryItem(data) {
     const speedLine = document.createElement('div');
     speedLine.classList.add('history-speed');
     const unit = getSpeedUnit();
-    speedLine.textContent = `Speed: ${cpmToDisplay(speedCpm).toFixed(1)} ${unit}    Time: ${timeTaken.toFixed(2)}s`;
+    const displaySpeed = cpmToDisplay(speedCpm).toFixed(1);
+    let speedText = `Speed: ${displaySpeed} ${unit}    Time: ${timeTaken.toFixed(2)}s`;
+    if (prevSpeedCpm != null) {
+        const deltaCpm = speedCpm - prevSpeedCpm;
+        const displayDelta = cpmToDisplay(Math.abs(deltaCpm)).toFixed(1);
+        if (deltaCpm > 0) {
+            speedText += `    ↑+${displayDelta} ${unit}`;
+        } else if (deltaCpm < 0) {
+            speedText += `    ↓-${displayDelta} ${unit}`;
+        }
+    }
+    speedLine.textContent = speedText;
     item.appendChild(speedLine);
 
     if (splitSpeeds && splitSpeeds.length > 0) {
         const displaySpeeds = splitSpeeds.map(s => cpmToDisplay(s).toFixed(1));
-        const first = displaySpeeds[0];
-        const last = displaySpeeds[displaySpeeds.length - 1];
-        let direction;
-        if (first < last) direction = 'increasing';
-        else if (first > last) direction = 'decreasing';
-        else direction = 'stable';
-
         const splitLine = document.createElement('div');
         splitLine.classList.add('history-splits');
-        splitLine.textContent = `Splits: ${displaySpeeds.join(' → ')} ${unit} (${direction})`;
+        splitLine.textContent = `Splits: ${displaySpeeds.join(' → ')} ${unit}`;
         item.appendChild(splitLine);
     }
 
@@ -304,14 +308,16 @@ function buildHistoryItem(data) {
 function rebuildHistoryDisplay() {
     const container = document.getElementById('historyEntries');
     container.innerHTML = '';
-    for (const data of historyData) {
-        container.prepend(buildHistoryItem(data));
+    for (let i = 0; i < historyData.length; i++) {
+        const prevSpeedCpm = i > 0 ? historyData[i - 1].speedCpm : null;
+        container.prepend(buildHistoryItem(historyData[i], prevSpeedCpm));
     }
 }
 
 function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds) {
+    const prevSpeedCpm = historyData.length > 0 ? historyData[historyData.length - 1].speedCpm : null;
     historyData.push({ text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitSpeeds });
-    const item = buildHistoryItem(historyData[historyData.length - 1]);
+    const item = buildHistoryItem(historyData[historyData.length - 1], prevSpeedCpm);
     item.classList.add('history-item-new');
     const container = document.getElementById('historyEntries');
     container.prepend(item);
