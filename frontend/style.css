@@ -494,6 +494,23 @@ body
     cursor: default;
 }
 
+.small-btn
+{
+    font-size: 0.75rem;
+    padding: 1px 6px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    border-radius: 0.2vw;
+    background: var(--bg-btn);
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.small-btn:hover
+{
+    background: var(--bg-btn-hover);
+}
+
 #fixedThresholdsContainer
 {
     display: flex;

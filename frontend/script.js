@@ -56,6 +56,7 @@ const SETTINGS_DEFAULTS = {
     temperature: 2,
     top_k: 40,
     top_p: 0.9,
+    ollama_model: 'llama3.2',
 };
 
 const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
@@ -79,7 +80,12 @@ function refreshDefaultButtons() {
             match = cur === def;
         } else {
             const curNum = parseFloat(cur);
-            match = !isNaN(curNum) && Math.abs(curNum - parseFloat(def)) < 0.0001;
+            const defNum = parseFloat(def);
+            if (!isNaN(curNum) && !isNaN(defNum)) {
+                match = Math.abs(curNum - defNum) < 0.0001;
+            } else {
+                match = cur === def;
+            }
         }
         btn.disabled = match;
     });
@@ -215,6 +221,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             input.value = btn.dataset.default;
         }
+        refreshDefaultButtons();
+    });
+    document.getElementById('refreshModels').addEventListener('click', async () => {
+        const current = document.getElementById('optModel')?.value || 'llama3.2';
+        await buildModelSelector(current);
         refreshDefaultButtons();
     });
     document.getElementById('settingsSections').addEventListener('input', (e) => {
@@ -561,6 +572,43 @@ function buildFixedThresholdInputs(thresholds) {
     }
 }
 
+async function buildModelSelector(currentModel) {
+    const container = document.getElementById('modelSelectorContainer');
+    container.innerHTML = '';
+    const defaultModel = 'llama3.2';
+    let models = [];
+    try {
+        const r = await fetch('/api/models');
+        const data = await r.json();
+        const ollama = data.providers.find(p => p.provider === 'ollama');
+        if (ollama && ollama.models && ollama.models.length > 0) {
+            models = ollama.models;
+        }
+    } catch (_) {}
+    if (models.length > 0) {
+        const sel = document.createElement('select');
+        sel.id = 'optModel';
+        sel.style.width = '14vw';
+        for (const m of models) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            sel.appendChild(opt);
+        }
+        if (currentModel && models.includes(currentModel)) {
+            sel.value = currentModel;
+        }
+        container.appendChild(sel);
+    } else {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = 'optModel';
+        inp.style.width = '14vw';
+        inp.value = currentModel || defaultModel;
+        container.appendChild(inp);
+    }
+}
+
 async function loadSettings() {
     try {
         const r = await fetch('/api/settings');
@@ -593,6 +641,7 @@ async function loadSettings() {
         currentTierForPrompts = 0;
         document.getElementById('tierPromptSelector').value = '0';
         renderTierPrompts();
+        await buildModelSelector(s.ollama_model);
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
     } catch (e) {
@@ -644,6 +693,7 @@ function collectSettings() {
         top_k: Math.max(0, safeParseInt(document.getElementById('optTopK').value, 40)),
         top_p: Math.min(1, Math.max(0, safeParseFloat(document.getElementById('optTopP').value, 0.9))),
         outcome_directions: outcomeDirections,
+        ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2',
     };
 }
 

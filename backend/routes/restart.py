@@ -5,7 +5,7 @@ from backend.providers.registry import registry
 from backend.session import session_store
 from backend.settings_manager import get_settings
 from backend.game_logic import ScoringParams, compute_tier_boundaries
-from backend.prompt_engine import build_first_paragraph_prompt, parse_llm_response, sanitize_text, validate_llm_response, NEUTRAL_FALLBACK
+from backend.prompt_engine import build_first_paragraph_prompt, parse_llm_response, sanitize_text, strip_thinking, validate_llm_response, NEUTRAL_FALLBACK
 from backend.logger import logger
 
 router = APIRouter()
@@ -43,7 +43,7 @@ async def restart(body: RestartRequest):
         prompt = build_first_paragraph_prompt(body.initial_prompt, max_words=max_words)
         logger.debug("Restart prompt:\n%s", prompt)
         raw = await registry.generate(prompt)
-        text = sanitize_text(parse_llm_response(raw))
+        text = sanitize_text(parse_llm_response(strip_thinking(raw)))
         logger.debug("Restart raw=%r parsed=%r valid=%s", raw, text, validate_llm_response(text))
         if not validate_llm_response(text):
             text = NEUTRAL_FALLBACK
