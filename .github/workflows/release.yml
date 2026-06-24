@@ -9,6 +9,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macOS
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -22,6 +29,11 @@ jobs:
         run: pip install pyinstaller
       - name: Build binary
         run: python scripts/build.py --skip-smoke
+      - name: Organize binary into platform folder
+        run: |
+          mkdir -p "dist/${{ matrix.platform }}"
+          mv dist/StoryTime* "dist/${{ matrix.platform }}/"
+        shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: storytime-${{ runner.os }}
@@ -48,5 +60,6 @@ jobs:
         with:
           body_path: release-notes.md
           files: |
-            StoryTime*
-            storytime*
+            linux/StoryTime
+            macOS/StoryTime
+            windows/StoryTime.exe
