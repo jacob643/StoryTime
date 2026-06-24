@@ -9,6 +9,7 @@ Reads current version from backend/_version.py, rewrites files,
 and prints the diff.
 """
 
+import datetime
 import re
 import sys
 from pathlib import Path
@@ -36,7 +37,7 @@ def bump(new_version: str):
         sys.exit(1)
 
     old = get_current_version()
-    print(f"  {old} → {new_version}")
+    print(f"  {old} -> {new_version}")
 
     # _version.py
     text = VERSION_FILE.read_text(encoding="utf-8")
@@ -50,13 +51,22 @@ def bump(new_version: str):
     PYPROJECT.write_text(text, encoding="utf-8")
     print(f"  wrote {PYPROJECT.relative_to(ROOT)}")
 
-    # CHANGELOG.md — add section header if not present
+    # CHANGELOG.md — replace [Unreleased] block with fresh placeholder + new version
     text = CHANGELOG.read_text(encoding="utf-8")
     header = f"## [{new_version}]"
     if header not in text:
-        unreleased = "## [Unreleased]"
-        insertion = f"{unreleased}\n\n### Added\n\n- \n\n{header}"
-        text = text.replace(unreleased, insertion, 1)
+        today = datetime.date.today().isoformat()
+        replacement = f"## [Unreleased]\n\n### Added\n\n- \n\n{header} - {today}\n"
+        # Replace the entire [Unreleased] block (up to the next ## or end)
+        match = re.search(r"## \[Unreleased\].*?(?=\n## |\Z)", text, re.DOTALL)
+        if match:
+            text = text[:match.start()] + replacement + text[match.end():]
+        else:
+            # No [Unreleased] at all — insert before the first existing version header
+            first_header = text.find("\n## [")
+            if first_header == -1:
+                first_header = len(text)
+            text = text[:first_header] + f"\n\n{replacement}" + text[first_header:]
         CHANGELOG.write_text(text, encoding="utf-8")
         print(f"  updated {CHANGELOG.relative_to(ROOT)} (added {new_version} section)")
     else:
