@@ -3,6 +3,7 @@ from backend.prompt_engine import (
     build_first_paragraph_prompt,
     parse_llm_response,
     sanitize_text,
+    strip_thinking,
     validate_llm_response,
     OUTCOME_DIRECTIONS,
     NEUTRAL_FALLBACK,
@@ -183,3 +184,40 @@ class TestSanitizeText:
 
     def test_danish_ae_kept(self):
         assert sanitize_text("Ærø") == "Ærø"
+
+
+class TestStripThinking:
+    def test_strips_thinking_tags(self):
+        raw = "<thinking>I need to figure out what happens next.</thinking>The hero walked forward."
+        assert strip_thinking(raw) == "The hero walked forward."
+
+    def test_strips_reasoning_tags(self):
+        raw = "<reasoning>Let me plan the story.</reasoning>It was a dark night."
+        assert strip_thinking(raw) == "It was a dark night."
+
+    def test_strips_bracket_thinking(self):
+        raw = "[thinking]Step by step analysis[/thinking]The door creaked open."
+        assert strip_thinking(raw) == "The door creaked open."
+
+    def test_strips_bracket_reasoning(self):
+        raw = "[reasoning]Consider alternatives[/reasoning]Rain began to fall."
+        assert strip_thinking(raw) == "Rain began to fall."
+
+    def test_no_thinking_content_passes_through(self):
+        raw = "The sun rose over the horizon."
+        assert strip_thinking(raw) == "The sun rose over the horizon."
+
+    def test_multiple_thinking_blocks(self):
+        raw = "<thinking>First thought</thinking>text<thinking>Second thought</thinking>more text"
+        assert strip_thinking(raw) == "textmore text"
+
+    def test_empty_input(self):
+        assert strip_thinking("") == ""
+
+    def test_only_thinking_content(self):
+        raw = "<thinking>Just thinking about things</thinking>"
+        assert strip_thinking(raw) == ""
+
+    def test_nested_style_tags_preserved(self):
+        raw = "<b>bold</b> and <i>italic</i> story text."
+        assert strip_thinking(raw) == "<b>bold</b> and <i>italic</i> story text."

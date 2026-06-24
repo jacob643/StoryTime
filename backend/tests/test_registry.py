@@ -23,8 +23,8 @@ def test_registry_default_active_is_ollama():
 
 
 def test_registry_default_active_model():
-    from backend.config import settings
-    assert registry.active_model == settings.default_model
+    from backend.settings_manager import get_settings
+    assert registry.active_model == get_settings().ollama_model
 
 
 def test_registry_active_switches_to_custom():

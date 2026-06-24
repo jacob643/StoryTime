@@ -52,6 +52,7 @@ def test_game_settings_defaults():
     assert gs.custom_endpoint == ""
     assert gs.custom_api_key == ""
     assert gs.custom_model == ""
+    assert gs.ollama_model == "llama3.2"
 
 
 def test_default_fixed_thresholds_values():
@@ -61,12 +62,13 @@ def test_default_fixed_thresholds_values():
 
 def test_save_and_load_roundtrip(monkeypatch, tmp_path):
     _patch_path(monkeypatch, tmp_path)
-    gs = GameSettings(scoring_mode="fixed")
+    gs = GameSettings(scoring_mode="fixed", ollama_model="qwen3:latest")
     save_settings(gs)
     import backend.settings_manager as sm
     assert sm._settings_path().exists()
     loaded = load_settings()
     assert loaded.scoring_mode == "fixed"
+    assert loaded.ollama_model == "qwen3:latest"
 
 
 def test_load_returns_defaults_when_no_file(monkeypatch, tmp_path):
@@ -212,6 +214,15 @@ def test_post_settings_provider_fields(monkeypatch, tmp_path, client):
     assert data["custom_endpoint"] == "https://api.openai.com/v1"
     assert data["custom_api_key"] == "sk-xxx"
     assert data["custom_model"] == "gpt-4o"
+    assert data["ollama_model"] == "llama3.2"
+
+
+def test_post_settings_ollama_model(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings", json={"ollama_model": "qwen3:latest"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ollama_model"] == "qwen3:latest"
 
 
 def test_get_settings_includes_provider_defaults(monkeypatch, tmp_path, client):
@@ -223,3 +234,4 @@ def test_get_settings_includes_provider_defaults(monkeypatch, tmp_path, client):
     assert data["custom_endpoint"] == ""
     assert data["custom_api_key"] == ""
     assert data["custom_model"] == ""
+    assert data["ollama_model"] == "llama3.2"
