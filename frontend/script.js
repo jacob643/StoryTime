@@ -265,22 +265,39 @@ function buildHistoryItem(data) {
     const item = document.createElement('div');
     item.classList.add('history-item');
 
+    const cropped = text.length > 20 ? text.slice(0, 20) + '[...]' : text;
+
     const textElement = document.createElement('div');
     textElement.classList.add('history-text');
-    const cropped = text.length > 20 ? text.slice(0, 20) + '[...]' : text;
     textElement.textContent = cropped;
-
-    const metaElement = document.createElement('div');
-    metaElement.classList.add('history-meta');
-    let meta = `${outcomeLabel} | ${cpmToDisplay(speedCpm).toFixed(1)} ${getSpeedUnit()} | ${timeTaken.toFixed(2)}s`;
-    if (splitSpeeds && splitSpeeds.length > 0) {
-        const formatted = splitSpeeds.map(s => cpmToDisplay(s).toFixed(1)).join(', ');
-        meta += ` [${formatted}]`;
-    }
-    metaElement.textContent = meta;
-
     item.appendChild(textElement);
-    item.appendChild(metaElement);
+
+    const labelElement = document.createElement('div');
+    labelElement.classList.add('history-label');
+    labelElement.textContent = outcomeLabel;
+    item.appendChild(labelElement);
+
+    const speedLine = document.createElement('div');
+    speedLine.classList.add('history-speed');
+    const unit = getSpeedUnit();
+    speedLine.textContent = `Speed: ${cpmToDisplay(speedCpm).toFixed(1)} ${unit}    Time: ${timeTaken.toFixed(2)}s`;
+    item.appendChild(speedLine);
+
+    if (splitSpeeds && splitSpeeds.length > 0) {
+        const displaySpeeds = splitSpeeds.map(s => cpmToDisplay(s).toFixed(1));
+        const first = displaySpeeds[0];
+        const last = displaySpeeds[displaySpeeds.length - 1];
+        let direction;
+        if (first < last) direction = 'increasing';
+        else if (first > last) direction = 'decreasing';
+        else direction = 'stable';
+
+        const splitLine = document.createElement('div');
+        splitLine.classList.add('history-splits');
+        splitLine.textContent = `Splits: ${displaySpeeds.join(' → ')} ${unit} (${direction})`;
+        item.appendChild(splitLine);
+    }
+
     return item;
 }
 
