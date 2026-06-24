@@ -25,9 +25,9 @@ Instructions and quick reference for AI agents working on this codebase.
 | File | Key contents |
 |---|---|
 | `game_logic.py` | `ScoringParams:27`, `split_text:37`, `compute_speed_stats:58`, `compute_outcome_tier:69`, `compute_tier_boundaries:104`, `get_outcome_label:123`. Constants: `FIXED_THRESHOLDS`, `DEFAULT_AVG_CPM`, `DEFAULT_MIN_STDDEV_CPM`, `TARGET_SPLIT_SIZE`, `MIN_SPLIT_SIZE`, `OUTCOME_LABELS` |
-| `settings_manager.py` | `GameSettings:24` (all config fields), `load_settings:68`, `save_settings:82`, `get_settings:104`, `update_settings:111`, `reset_settings:122`, `build_scoring_params:57`. Migrations: `_migrate_fixed_thresholds:57` |
+| `settings_manager.py` | `GameSettings:24` (all config fields), `load_settings:68`, `save_settings:82`, `get_settings:104`, `update_settings:111`, `reset_settings:122`, `build_scoring_params:57`. Migrations: `_migrate_fixed_thresholds:57`. Fields: `ollama_model:44` default `"llama3.2"` |
 | `session.py` | `ParagraphRecord:16`, `GameSession:26` (has `rolling_splits`), `SessionStore:37` |
-| `prompt_engine.py` | `build_prompt:78`, `build_first_paragraph_prompt:116`, `sanitize_text:140`, `validate_llm_response:160`, `parse_llm_response:171` |
+| `prompt_engine.py` | `build_prompt:78`, `build_first_paragraph_prompt:116`, `sanitize_text:140`, `strip_thinking:149`, `validate_llm_response:173`, `parse_llm_response:184` |
 | `main.py` | `main:54` — CLI args via argparse, uvicorn launch, frozen detection |
 | `logger.py` | `set_verbose:17` bumps to DEBUG |
 | `config.py` | `Settings:4` — pydantic BaseSettings for env vars. Removed: `log_level` field |
@@ -45,8 +45,8 @@ Instructions and quick reference for AI agents working on this codebase.
 ## Frontend (frontend/)
 | File | Key functions / elements |
 |---|---|
-| `index.html` | `#settingsPanel`, `#settingsSections` (toggles), `#textDisplay`, `#inputBox`, `#message`, `#retryButton`, `#historyEntries`, `#tierChart`, `#fixedThresholdsContainer`, `#initialPrompt`, `#lastParagraph` |
-| `script.js` | `checkStartupHealth:9`, `reset:227`, `fetchNextParagraph:364`, `showError:413`, `calculateAndSend:437`, `loadSettings:565`, `collectSettings:621`, `buildFixedThresholdInputs:521`, `refreshDefaultButtons:63`, `cpmToDisplay:92`, `displayToCpm:96`, `getActiveSpeedType:88`, `computeSplits:104`, `computeSplitSpeeds:140`, `updateTierChart:297`, `sendPrompt:952` |
+| `index.html` | `#settingsPanel`, `#settingsSections` (toggles), `#textDisplay`, `#inputBox`, `#message`, `#retryButton`, `#historyEntries`, `#tierChart`, `#fixedThresholdsContainer`, `#initialPrompt`, `#lastParagraph`, `#modelSelectorContainer`, `#refreshModels` |
+| `script.js` | `checkStartupHealth:9`, `reset:227`, `fetchNextParagraph:364`, `showError:413`, `calculateAndSend:437`, `loadSettings:565`, `collectSettings:621`, `buildFixedThresholdInputs:521`, `buildModelSelector:564`, `refreshDefaultButtons:63`, `cpmToDisplay:92`, `displayToCpm:96`, `getActiveSpeedType:88`, `computeSplits:104`, `computeSplitSpeeds:140`, `updateTierChart:297`, `sendPrompt:952` |
 | `style.css` | `.default-btn`, `.settings-group`, `.ft-boundary`, tier colors: `.tier-0` through `.tier-4`, `.message`, `.retry-button` |
 
 ## Scripts (scripts/)
@@ -65,6 +65,7 @@ Instructions and quick reference for AI agents working on this codebase.
 | `test_session.py` | Session creation, append, rolling window (max 50) |
 | `test_routes_generate.py` | First paragraph creation, subsequent submission, 503s, fallbacks |
 | `test_routes_simulate.py` | Dev sim endpoint |
+| `test_prompt_engine.py` | `sanitize_text`, `parse_llm_response`, `validate_llm_response`, `strip_thinking`, `build_prompt` |
 | `test_routes_settings.py` | (implied by test_settings) |
 | `test_frontend_smoke.py` | Playwright end-to-end: create session, type paragraph, check retry |
 

@@ -58,10 +58,10 @@ Goal: Friends and family can download and run the game with zero Python knowledg
 
 ### Epic 4.4: Model Selection
 
-- [ ] **4.4.1** Backend model setting plumbing — add `ollama_model` field to `GameSettings`, `SettingsResponse`/`SettingsPatch`, update `registry.active_model` to use it for Ollama provider.
-- [ ] **4.4.2** Add thinking-tag stripping to `prompt_engine.py` (`strip_thinking`) and apply in `generate.py` route so thinking models produce clean story text.
-- [ ] **4.4.3** Frontend model selector — add `<select>` (populated from `/api/models`) + refresh button + default button in LLM Settings section; text-input fallback when model list unreachable; wire `ollama_model` in `loadSettings`/`collectSettings`.
-- [ ] **4.4.4** Update existing tests and add new tests for model selection and thinking-tag stripping.
+- [x] **4.4.1** Backend model setting plumbing — add `ollama_model` field to `GameSettings`, `SettingsResponse`/`SettingsPatch`, update `registry.active_model` to use it for Ollama provider.
+- [x] **4.4.2** Add thinking-tag stripping to `prompt_engine.py` (`strip_thinking`) and apply in `generate.py` route so thinking models produce clean story text.
+- [x] **4.4.3** Frontend model selector — add `<select>` (populated from `/api/models`) + refresh button + default button in LLM Settings section; text-input fallback when model list unreachable; wire `ollama_model` in `loadSettings`/`collectSettings`.
+- [x] **4.4.4** Update existing tests and add new tests for model selection and thinking-tag stripping.
 
 ---
 
