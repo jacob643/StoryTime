@@ -588,7 +588,7 @@ async function buildModelSelector(currentModel) {
     if (models.length > 0) {
         const sel = document.createElement('select');
         sel.id = 'optModel';
-        sel.style.width = '14vw';
+        sel.style.width = '100%';
         for (const m of models) {
             const opt = document.createElement('option');
             opt.value = m;
@@ -603,7 +603,7 @@ async function buildModelSelector(currentModel) {
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.id = 'optModel';
-        inp.style.width = '14vw';
+        inp.style.width = '100%';
         inp.value = currentModel || defaultModel;
         container.appendChild(inp);
     }
