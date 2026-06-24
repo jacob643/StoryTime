@@ -543,8 +543,19 @@ settingsToggle.addEventListener('click', () => {
     }
 });
 
+const BUG_REPORT_URL = 'https://github.com/anomalyco/storytime/issues';
+const SUPPORT_URL = 'https://github.com/sponsors/anomalyco';
+
 document.getElementById('setupLink').addEventListener('click', () => {
     window.open('/getting_started.html', '_blank');
+});
+
+document.getElementById('bugReportLink').addEventListener('click', () => {
+    window.open(BUG_REPORT_URL, '_blank');
+});
+
+document.getElementById('supportLink').addEventListener('click', () => {
+    window.open(SUPPORT_URL, '_blank');
 });
 
 document.getElementById('optScoringMode').addEventListener('change', (e) => {

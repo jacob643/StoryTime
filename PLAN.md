@@ -63,6 +63,10 @@ Goal: Friends and family can download and run the game with zero Python knowledg
 - [x] **4.4.3** Frontend model selector — add `<select>` (populated from `/api/models`) + refresh button + default button in LLM Settings section; text-input fallback when model list unreachable; wire `ollama_model` in `loadSettings`/`collectSettings`.
 - [x] **4.4.4** Update existing tests and add new tests for model selection and thinking-tag stripping.
 
+### Epic 4.5: Community Buttons
+
+- [x] **4.5.1** Add Bug Report (🐛, dark red tint) and Support the Dev (❤️, gold tint) buttons to topBar with styled CSS classes and URL constants in script.js.
+
 ---
 
 ## Milestone 5: Juice

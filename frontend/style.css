@@ -384,6 +384,40 @@ body
     background: var(--bg-btn-topbar-hover);
 }
 
+.btn-bug
+{
+    background: var(--bg-btn-topbar) !important;
+    border-color: #8b0000 !important;
+    color: #d32f2f !important;
+}
+
+.btn-bug:hover
+{
+    background: #3a1a1a !important;
+}
+
+.btn-support
+{
+    background: var(--bg-btn-topbar) !important;
+    border-color: #b8860b !important;
+    color: #d4a017 !important;
+}
+
+.btn-support:hover
+{
+    background: #3a3010 !important;
+}
+
+.dark-mode .btn-bug:hover
+{
+    background: #2a0a0a !important;
+}
+
+.dark-mode .btn-support:hover
+{
+    background: #2a2010 !important;
+}
+
 #settingsPanel
 {
     width: 80%;

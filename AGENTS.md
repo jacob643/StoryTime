@@ -45,9 +45,9 @@ Instructions and quick reference for AI agents working on this codebase.
 ## Frontend (frontend/)
 | File | Key functions / elements |
 |---|---|
-| `index.html` | `#settingsPanel`, `#settingsSections` (toggles), `#textDisplay`, `#inputBox`, `#message`, `#retryButton`, `#historyEntries`, `#tierChart`, `#fixedThresholdsContainer`, `#initialPrompt`, `#lastParagraph`, `#modelSelectorContainer`, `#refreshModels` |
+| `index.html` | `#settingsPanel`, `#settingsSections` (toggles), `#textDisplay`, `#inputBox`, `#message`, `#retryButton`, `#historyEntries`, `#tierChart`, `#fixedThresholdsContainer`, `#initialPrompt`, `#lastParagraph`, `#modelSelectorContainer`, `#refreshModels`, `#bugReportLink`, `#supportLink` |
 | `script.js` | `checkStartupHealth:9`, `reset:227`, `fetchNextParagraph:364`, `showError:413`, `calculateAndSend:437`, `loadSettings:565`, `collectSettings:621`, `buildFixedThresholdInputs:521`, `buildModelSelector:564`, `refreshDefaultButtons:63`, `cpmToDisplay:92`, `displayToCpm:96`, `getActiveSpeedType:88`, `computeSplits:104`, `computeSplitSpeeds:140`, `updateTierChart:297`, `sendPrompt:952` |
-| `style.css` | `.default-btn`, `.settings-group`, `.ft-boundary`, tier colors: `.tier-0` through `.tier-4`, `.message`, `.retry-button` |
+| `style.css` | `.default-btn`, `.settings-group`, `.ft-boundary`, tier colors: `.tier-0` through `.tier-4`, `.message`, `.retry-button`, `.btn-bug`, `.btn-support` |
 
 ## Scripts (scripts/)
 | File | Purpose |
