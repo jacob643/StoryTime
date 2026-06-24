@@ -42,6 +42,7 @@ class GameSettings:
     custom_api_key: str = ""
     custom_model: str = ""
     ollama_model: str = "llama3.2"
+    ignore_case: bool = False
 
 
 def _settings_path() -> Path:

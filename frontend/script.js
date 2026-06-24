@@ -57,6 +57,7 @@ const SETTINGS_DEFAULTS = {
     top_k: 40,
     top_p: 0.9,
     ollama_model: 'llama3.2',
+    ignore_case: false,
 };
 
 const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
@@ -337,18 +338,40 @@ function autoScrollTextDisplay() {
 
 function updateTextDisplay() {
     const inputText = inputBox.value;
+    const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
     let displayedText = '';
+
+    let firstError = -1;
+    for (let i = 0; i < textContent.length; i++) {
+        const inputChar = inputText[i];
+        if (inputChar === undefined) break;
+        const char = textContent[i];
+        const match = ignoreCase
+            ? inputChar.toLowerCase() === char.toLowerCase()
+            : inputChar === char;
+        if (!match) {
+            firstError = i;
+            break;
+        }
+    }
 
     for (let i = 0; i < textContent.length; i++) {
         const char = textContent[i];
-        const inputChar = inputText[i] || '';
+        const inputChar = inputText[i];
 
-        if (inputChar === char) {
-            displayedText += `<span style="background-color: green; color: black;">${char}</span>`;
-        } else if (inputChar !== '' && inputChar !== char) {
+        if (firstError >= 0 && i >= firstError) {
             displayedText += `<span style="background-color: red; color: black;">${char}</span>`;
-        } else {
+        } else if (inputChar === undefined) {
             displayedText += `<span>${char}</span>`;
+        } else {
+            const match = ignoreCase
+                ? inputChar.toLowerCase() === char.toLowerCase()
+                : inputChar === char;
+            if (match) {
+                displayedText += `<span style="background-color: green; color: black;">${char}</span>`;
+            } else {
+                displayedText += `<span style="background-color: red; color: black;">${char}</span>`;
+            }
         }
     }
 
@@ -445,7 +468,11 @@ function escapeHtml(text) {
 }
 
 function CheckFinishedSentence() {
-    if (inputBox.value === textContent) {
+    const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
+    const isComplete = ignoreCase
+        ? inputBox.value.toLowerCase() === textContent.toLowerCase()
+        : inputBox.value === textContent;
+    if (isComplete) {
         CalculateSpeed();
         const splitSpeeds = computeSplitSpeeds();
         const displaySpeed = simulatedCpm !== null ? simulatedCpm : speed;
@@ -642,6 +669,7 @@ async function loadSettings() {
         document.getElementById('tierPromptSelector').value = '0';
         renderTierPrompts();
         await buildModelSelector(s.ollama_model);
+        document.getElementById('optIgnoreCase').checked = s.ignore_case;
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
     } catch (e) {
@@ -694,6 +722,7 @@ function collectSettings() {
         top_p: Math.min(1, Math.max(0, safeParseFloat(document.getElementById('optTopP').value, 0.9))),
         outcome_directions: outcomeDirections,
         ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2',
+        ignore_case: document.getElementById('optIgnoreCase').checked,
     };
 }
 

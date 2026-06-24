@@ -53,6 +53,7 @@ def test_game_settings_defaults():
     assert gs.custom_api_key == ""
     assert gs.custom_model == ""
     assert gs.ollama_model == "llama3.2"
+    assert gs.ignore_case is False
 
 
 def test_default_fixed_thresholds_values():
@@ -235,3 +236,12 @@ def test_get_settings_includes_provider_defaults(monkeypatch, tmp_path, client):
     assert data["custom_api_key"] == ""
     assert data["custom_model"] == ""
     assert data["ollama_model"] == "llama3.2"
+    assert data["ignore_case"] is False
+
+
+def test_post_settings_ignore_case(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings", json={"ignore_case": True})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ignore_case"] is True
