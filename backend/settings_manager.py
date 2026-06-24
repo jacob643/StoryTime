@@ -41,6 +41,7 @@ class GameSettings:
     custom_endpoint: str = ""
     custom_api_key: str = ""
     custom_model: str = ""
+    ollama_model: str = "llama3.2"
 
 
 def _settings_path() -> Path:

@@ -29,6 +29,7 @@ class SettingsResponse(BaseModel):
     custom_endpoint: str
     custom_api_key: str
     custom_model: str
+    ollama_model: str
 
 
 class SettingsPatch(BaseModel):
@@ -50,6 +51,7 @@ class SettingsPatch(BaseModel):
     custom_endpoint: str | None = None
     custom_api_key: str | None = None
     custom_model: str | None = None
+    ollama_model: str | None = None
 
 
 def _clamp_thresholds(
@@ -80,6 +82,7 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         custom_endpoint=gs.custom_endpoint,
         custom_api_key=gs.custom_api_key,
         custom_model=gs.custom_model,
+        ollama_model=gs.ollama_model,
     )
 
 

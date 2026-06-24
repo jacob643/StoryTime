@@ -56,6 +56,13 @@ Goal: Friends and family can download and run the game with zero Python knowledg
 - [ ] **4.3.4** Add per-platform download badges to `README.md` — shields.io badges that link to the latest GitHub Release. Badges for Windows, macOS (Intel/ARM), Linux.
 - [ ] **4.3.5** Add `scripts/version.py` — CLI tool to bump the version across all files (`_version.py`, `CHANGELOG.md` new section, etc.). `python scripts/version.py bump 0.2.0` reads current version, rewrites files, and prints the diff.
 
+### Epic 4.4: Model Selection
+
+- [ ] **4.4.1** Backend model setting plumbing — add `ollama_model` field to `GameSettings`, `SettingsResponse`/`SettingsPatch`, update `registry.active_model` to use it for Ollama provider.
+- [ ] **4.4.2** Add thinking-tag stripping to `prompt_engine.py` (`strip_thinking`) and apply in `generate.py` route so thinking models produce clean story text.
+- [ ] **4.4.3** Frontend model selector — add `<select>` (populated from `/api/models`) + refresh button + default button in LLM Settings section; text-input fallback when model list unreachable; wire `ollama_model` in `loadSettings`/`collectSettings`.
+- [ ] **4.4.4** Update existing tests and add new tests for model selection and thinking-tag stripping.
+
 ---
 
 ## Milestone 5: Juice

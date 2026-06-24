@@ -39,7 +39,7 @@ class ProviderRegistry:
         gs = get_settings()
         if gs.provider == "custom":
             return gs.custom_model or None
-        return settings.default_model
+        return gs.ollama_model or settings.default_model
 
     async def generate(self, prompt: str, model: str | None = None) -> str:
         resolved_model = model or self.active_model
