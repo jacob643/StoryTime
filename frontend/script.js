@@ -256,7 +256,7 @@ function reset() {
     startTime = null;
     document.getElementById('historyEntries').querySelectorAll('.history-item').forEach(el => el.remove());
     historyData.length = 0;
-    document.getElementById('lastParagraph').textContent = '';
+    document.getElementById('storyContent').textContent = '';
     resetSplitTracking();
 }
 
@@ -302,7 +302,12 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitS
 }
 
 function updateStoryContext(text) {
-    document.getElementById('lastParagraph').textContent = text;
+    const el = document.getElementById('storyContent');
+    if (el.textContent.length > 0) {
+        el.textContent += '\n\n';
+    }
+    el.textContent += text;
+    document.getElementById('storyContext').scrollTop = document.getElementById('storyContext').scrollHeight;
 }
 
 function updateTierChart(tier, boundaries) {
