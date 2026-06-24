@@ -14,7 +14,7 @@ from backend.game_logic import (
     DEFAULT_AVG_CPM,
     DEFAULT_MIN_STDDEV_CPM,
 )
-from backend.prompt_engine import build_prompt, build_first_paragraph_prompt, parse_llm_response, sanitize_text, validate_llm_response, NEUTRAL_FALLBACK
+from backend.prompt_engine import build_prompt, build_first_paragraph_prompt, parse_llm_response, sanitize_text, strip_thinking, validate_llm_response, NEUTRAL_FALLBACK
 from backend.settings_manager import get_settings, build_scoring_params, GameSettings, _settings_path, save_settings
 from backend.logger import logger
 
@@ -72,7 +72,7 @@ async def generate(body: GenerateRequest):
             wrapped = build_first_paragraph_prompt(body.prompt, max_words=gs.paragraph_word_count)
             logger.debug("First paragraph prompt:\n%s", wrapped)
             raw_llm = await registry.generate(wrapped, body.model)
-            text = sanitize_text(parse_llm_response(raw_llm))
+            text = sanitize_text(parse_llm_response(strip_thinking(raw_llm)))
             logger.debug("First paragraph raw=%r parsed=%r valid=%s", raw_llm, text, validate_llm_response(text))
             if not validate_llm_response(text):
                 text = NEUTRAL_FALLBACK
@@ -146,7 +146,7 @@ async def generate(body: GenerateRequest):
         )
         logger.debug("LLM prompt:\n%s", assembled)
         raw = await registry.generate(assembled, body.model)
-        next_text = sanitize_text(parse_llm_response(raw))
+        next_text = sanitize_text(parse_llm_response(strip_thinking(raw)))
         logger.debug("LLM response raw=%r parsed=%r valid=%s", raw, next_text, validate_llm_response(next_text))
         if not validate_llm_response(next_text):
             if session.history:

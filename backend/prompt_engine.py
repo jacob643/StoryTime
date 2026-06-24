@@ -137,6 +137,20 @@ _SANITIZE_REPLACEMENTS: dict[str, str] = {
 }
 
 
+THINKING_PATTERNS = [
+    (r'<thinking>.*?</thinking>', re.DOTALL),
+    (r'<reasoning>.*?</reasoning>', re.DOTALL),
+    (r'\[thinking\].*?\[/thinking\]', re.DOTALL),
+    (r'\[reasoning\].*?\[/reasoning\]', re.DOTALL),
+]
+
+
+def strip_thinking(raw: str) -> str:
+    for pattern, flags in THINKING_PATTERNS:
+        raw = re.sub(pattern, '', raw, flags=flags)
+    return raw.strip()
+
+
 def sanitize_text(text: str) -> str:
     result: list[str] = []
     for ch in text:
