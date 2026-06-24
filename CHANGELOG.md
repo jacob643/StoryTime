@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025-06-24
+
+### Added
+- macOS build support in CI (GitHub Actions matrix now includes `macos-latest`).
+
+### Changed
+- Story context left panel now appends all completed paragraphs instead of replacing the last one.
+- History items redesigned to multi-line labeled format (tier label, speed + time, split progression).
+- History shows speed delta (↑/↓) vs previous paragraph for paragraph 2 onward.
+- Min stddev label clarified: "per split" instead of "per 50-char split".
+- Changelog, contributing guide, and release infrastructure documented.
+
+### Removed
+- Split direction label ("increasing"/"decreasing") from history — arrows in the split chain already convey progression.
+
 ## [0.1.0] - 2025-06-24
 
 ### Added
