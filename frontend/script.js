@@ -359,10 +359,10 @@ function updateTextDisplay() {
         const char = textContent[i];
         const inputChar = inputText[i];
 
-        if (firstError >= 0 && i >= firstError) {
-            displayedText += `<span style="background-color: red; color: black;">${char}</span>`;
-        } else if (inputChar === undefined) {
+        if (inputChar === undefined) {
             displayedText += `<span>${char}</span>`;
+        } else if (firstError >= 0 && i >= firstError) {
+            displayedText += `<span style="background-color: red; color: black;">${char}</span>`;
         } else {
             const match = ignoreCase
                 ? inputChar.toLowerCase() === char.toLowerCase()
