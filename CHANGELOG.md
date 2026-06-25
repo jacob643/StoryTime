@@ -7,7 +7,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- 
+- Plan Milestone 5: sound effects, animations, per-user split tracking.
+- Plan Milestone 6: continuous mode with length-weighted split tracking and rolling character window.
 
 ## [0.2.1] - 2026-06-24
 
