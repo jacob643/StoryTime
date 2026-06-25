@@ -43,3 +43,4 @@ Goal: Eliminate paragraph-by-paragraph pauses by pre-fetching the next half whil
 
 ### 6.0 — Design clarification
 - [ ] Research and document the full continuous mode spec: half-paragraph overlap, split representation (CPM + char length), rolling char window, how stddev is length-weighted, when outcomes are computed, how the UI transitions between halves, and edge cases (first half, last half, restart, retry)
+- [ ] Brainstorm a new project name ("StoryTime" is very common). Candidates: Write-a-story, typerLuck, interactiveTyper, QuickTypeFunTimes, Good Type Good Story.
