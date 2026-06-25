@@ -17,6 +17,7 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 ### 5.2 — Animations
 - [ ] Paragraph-completion animation varying by tier (screen flash, text glow, confetti for high tiers; shake/dim for low tiers)
 - [ ] Settings: enable/disable animations, optional intensity preference
+- [ ] Animate tier chart transitions so repeated tiers are distinguishable (no sudden jumps — e.g. slide/fade between states)
 
 ### 5.3 — User profiles
 - [ ] Store rolling split history per user (not per story/session)
@@ -44,3 +45,4 @@ Goal: Eliminate paragraph-by-paragraph pauses by pre-fetching the next half whil
 ### 6.0 — Design clarification
 - [ ] Research and document the full continuous mode spec: half-paragraph overlap, split representation (CPM + char length), rolling char window, how stddev is length-weighted, when outcomes are computed, how the UI transitions between halves, and edge cases (first half, last half, restart, retry)
 - [ ] Brainstorm a new project name ("StoryTime" is very common). Candidates: Write-a-story, typerLuck, interactiveTyper, QuickTypeFunTimes, Good Type Good Story.
+- [ ] Auto-pause: 5 seconds of inactivity pauses the speed capture (doesn't affect metrics). Button and/or keyboard shortcut for manual pause too. Needed for continuous mode.
