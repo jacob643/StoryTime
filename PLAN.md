@@ -37,7 +37,7 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 - [x] Starting a new story now clears the story context pane
 
 ### 5.6 — Settings UX improvements
-- [ ] Word count preview: show a Lorem Ipsum sample that updates live as the word count slider/input changes
+- [x] Word count preview: show a Lorem Ipsum sample that updates live as the word count slider/input changes
 
 ## Milestone 6: Continuous Mode
 

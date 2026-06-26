@@ -696,3 +696,23 @@ body
     padding: 1px 0;
     line-height: 1;
 }
+
+#wordCountPreview
+{
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    font-size: 0.65em;
+    line-height: 1.3;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 0.3vw;
+    padding: 0.5vw 0.8vw;
+    max-height: 40vh;
+    overflow-y: auto;
+    box-shadow: 0 0.3vw 0.8vw var(--shadow);
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-secondary);
+    pointer-events: none;
+}

@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Plan Milestone 6: continuous mode with length-weighted split tracking and rolling character window.
 - Fix: default model changed to "llama3.2:latest" so dropdown doesn't go blank on default click.
 - Fix: new story now clears the story context pane.
+- Add: word count preview tooltip with live Lorem Ipsum (shows on input, hides after 3s or on blur).
 
 ## [0.2.1] - 2026-06-24
 

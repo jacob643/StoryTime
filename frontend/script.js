@@ -96,6 +96,51 @@ function getActiveSpeedType() {
     return document.querySelector('input[name="speedType"]:checked')?.value || 'cpm';
 }
 
+const LOREM_IPSUM = [
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+    "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.",
+    "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
+    "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.",
+    "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?",
+    "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?",
+    "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.",
+    "Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.",
+    "Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus.",
+    "Omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.",
+    "Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.",
+].join(' ');
+
+let wordCountHideTimer = null;
+
+function updateWordCountPreview(count) {
+    const el = document.getElementById('wordCountPreview');
+    const words = LOREM_IPSUM.split(/\s+/);
+    if (count <= words.length) {
+        el.textContent = words.slice(0, count).join(' ') + '...';
+    } else {
+        const reps = Math.ceil(count / words.length) + 1;
+        const full = Array(reps).fill(LOREM_IPSUM).join(' ');
+        el.textContent = full.split(/\s+/).slice(0, count).join(' ') + '...';
+    }
+    const input = document.getElementById('wordCountInput');
+    const rect = input.getBoundingClientRect();
+    el.style.left = rect.left + 'px';
+    el.style.top = (rect.bottom + 4) + 'px';
+    el.style.width = Math.max(300, rect.width * 2) + 'px';
+    el.style.display = 'block';
+    if (wordCountHideTimer) clearTimeout(wordCountHideTimer);
+    wordCountHideTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function hideWordCountPreview() {
+    const el = document.getElementById('wordCountPreview');
+    el.style.display = 'none';
+    if (wordCountHideTimer) clearTimeout(wordCountHideTimer);
+}
+
 function cpmToDisplay(cpm) {
     return getActiveSpeedType() === 'wpm' ? cpm / 5 : cpm;
 }
@@ -233,6 +278,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('.default-btn')) return;
         refreshDefaultButtons();
     });
+    document.getElementById('wordCountInput').addEventListener('input', () => {
+        const val = parseInt(document.getElementById('wordCountInput').value);
+        if (!isNaN(val) && val > 0) updateWordCountPreview(val);
+    });
+    document.getElementById('wordCountInput').addEventListener('blur', hideWordCountPreview);
 });
 
 function reset() {
@@ -568,6 +618,8 @@ settingsToggle.addEventListener('click', () => {
     settingsPanel.classList.toggle('collapsed');
     if (!settingsPanel.classList.contains('collapsed')) {
         loadSettings();
+    } else {
+        hideWordCountPreview();
     }
 });
 
@@ -692,6 +744,7 @@ async function loadSettings() {
         document.getElementById('optTier1Sigma').value = s.tier_1_max_sigma;
         document.getElementById('optTier0Sigma').value = s.tier_0_max_sigma;
         document.getElementById('wordCountInput').value = s.paragraph_word_count;
+        updateWordCountPreview(s.paragraph_word_count);
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optTemperature').value = s.temperature;
@@ -976,6 +1029,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
         settingsPanel.classList.add('collapsed');
+        hideWordCountPreview();
         refreshTierChartFromSettings();
     } catch (e) {
         messageDiv.textContent = 'Settings save error: ' + e.message;
@@ -988,6 +1042,7 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
         const r = await fetch('/api/settings/reset', { method: 'POST' });
         if (!r.ok) throw new Error('Failed to reset settings');
         settingsPanel.classList.add('collapsed');
+        hideWordCountPreview();
         await loadSettings();
         refreshTierChartFromSettings();
         messageDiv.textContent = 'Settings reset to defaults.';
