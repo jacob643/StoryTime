@@ -4,14 +4,23 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+### Security
+
+## [0.2.2] - 2026-06-26
 
 ### Added
-
-- Plan Milestone 5: sound effects, animations, per-user split tracking.
-- Plan Milestone 6: continuous mode with length-weighted split tracking and rolling character window.
-- Fix: default model changed to "llama3.2:latest" so dropdown doesn't go blank on default click.
-- Fix: new story now clears the story context pane.
-- Add: word count preview tooltip with live Lorem Ipsum (shows on input, hides after 3s or on blur).
+- word count preview tooltip with live Lorem Ipsum (shows on input, hides after 3s or on blur).
+### Changed
+### Deprecated
+### Removed
+### Fixed
+- default model changed to "llama3.2:latest" so dropdown doesn't go blank on default click.
+- new story now clears the story context pane.
 
 ## [0.2.1] - 2026-06-24
 
