@@ -113,10 +113,9 @@ const LOREM_IPSUM = [
     "Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.",
 ].join(' ');
 
-let wordCountHideTimer = null;
-
-function updateWordCountPreview(count) {
+function updateWordCountPreview(rawCount) {
     const el = document.getElementById('wordCountPreview');
+    const count = Math.min(Math.max(rawCount, 1), 10000);
     const words = LOREM_IPSUM.split(/\s+/);
     if (count <= words.length) {
         el.textContent = words.slice(0, count).join(' ') + '...';
@@ -129,16 +128,12 @@ function updateWordCountPreview(count) {
     const rect = input.getBoundingClientRect();
     el.style.left = rect.left + 'px';
     el.style.top = (rect.bottom + 4) + 'px';
-    el.style.width = Math.max(300, rect.width * 2) + 'px';
-    el.style.display = 'block';
-    if (wordCountHideTimer) clearTimeout(wordCountHideTimer);
-    wordCountHideTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+    const availableWidth = window.innerWidth - rect.left - 16;
+    el.style.width = Math.max(rect.width, availableWidth) + 'px';
 }
 
 function hideWordCountPreview() {
-    const el = document.getElementById('wordCountPreview');
-    el.style.display = 'none';
-    if (wordCountHideTimer) clearTimeout(wordCountHideTimer);
+    document.getElementById('wordCountPreview').style.display = 'none';
 }
 
 function cpmToDisplay(cpm) {
@@ -278,9 +273,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('.default-btn')) return;
         refreshDefaultButtons();
     });
-    document.getElementById('wordCountInput').addEventListener('input', () => {
+    document.getElementById('wordCountInput').addEventListener('focus', () => {
         const val = parseInt(document.getElementById('wordCountInput').value);
-        if (!isNaN(val) && val > 0) updateWordCountPreview(val);
+        if (!isNaN(val) && val > 0) {
+            updateWordCountPreview(val);
+            document.getElementById('wordCountPreview').style.display = 'block';
+        }
+    });
+    document.getElementById('wordCountInput').addEventListener('input', () => {
+        const el = document.getElementById('wordCountPreview');
+        const val = parseInt(document.getElementById('wordCountInput').value);
+        if (!isNaN(val) && val > 0 && document.activeElement === document.getElementById('wordCountInput')) {
+            updateWordCountPreview(val);
+            el.style.display = 'block';
+        } else {
+            el.style.display = 'none';
+        }
     });
     document.getElementById('wordCountInput').addEventListener('blur', hideWordCountPreview);
 });
