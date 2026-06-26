@@ -33,8 +33,8 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 - [ ] Redesign the favicon (SVG)
 
 ### 5.5 — Bug fixes
-- [ ] LLM model setting: when starting with no Ollama and clicking the default button, two input boxes appear at once
-- [ ] Starting a new story should clear the story context pane (same way a new written story file is created on the backend)
+- [x] LLM model setting: default value updated to "llama3.2:latest" so the dropdown doesn't go blank when Ollama is running
+- [x] Starting a new story now clears the story context pane
 
 ### 5.6 — Settings UX improvements
 - [ ] Word count preview: show a Lorem Ipsum sample that updates live as the word count slider/input changes

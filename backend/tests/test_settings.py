@@ -52,7 +52,7 @@ def test_game_settings_defaults():
     assert gs.custom_endpoint == ""
     assert gs.custom_api_key == ""
     assert gs.custom_model == ""
-    assert gs.ollama_model == "llama3.2"
+    assert gs.ollama_model == "llama3.2:latest"
     assert gs.ignore_case is False
 
 
@@ -215,7 +215,7 @@ def test_post_settings_provider_fields(monkeypatch, tmp_path, client):
     assert data["custom_endpoint"] == "https://api.openai.com/v1"
     assert data["custom_api_key"] == "sk-xxx"
     assert data["custom_model"] == "gpt-4o"
-    assert data["ollama_model"] == "llama3.2"
+    assert data["ollama_model"] == "llama3.2:latest"
 
 
 def test_post_settings_ollama_model(monkeypatch, tmp_path, client):
@@ -235,7 +235,7 @@ def test_get_settings_includes_provider_defaults(monkeypatch, tmp_path, client):
     assert data["custom_endpoint"] == ""
     assert data["custom_api_key"] == ""
     assert data["custom_model"] == ""
-    assert data["ollama_model"] == "llama3.2"
+    assert data["ollama_model"] == "llama3.2:latest"
     assert data["ignore_case"] is False
 
 

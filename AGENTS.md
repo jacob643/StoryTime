@@ -10,6 +10,7 @@ Instructions and quick reference for AI agents working on this codebase.
 - Always add or update corresponding tests (pytest for backend, Playwright for frontend). Keep existing tests passing.
 - Commit after each single task — never batch multiple tasks into one commit.
 - Status key in `PLAN.md`: `[ ]` pending, `[x]` completed, `[~]` in progress.
+- Update `CHANGELOG.md` under `## [Unreleased]` during development with only the changes you consider noteworthy. You decide what's important — not everything needs an entry.
 
 ## Routes (backend/routes/)
 | File | Endpoints | Key functions |

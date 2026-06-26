@@ -56,7 +56,7 @@ const SETTINGS_DEFAULTS = {
     temperature: 2,
     top_k: 40,
     top_p: 0.9,
-    ollama_model: 'llama3.2',
+    ollama_model: 'llama3.2:latest',
     ignore_case: false,
 };
 
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshDefaultButtons();
     });
     document.getElementById('refreshModels').addEventListener('click', async () => {
-        const current = document.getElementById('optModel')?.value || 'llama3.2';
+        const current = document.getElementById('optModel')?.value || 'llama3.2:latest';
         await buildModelSelector(current);
         refreshDefaultButtons();
     });
@@ -641,7 +641,7 @@ function buildFixedThresholdInputs(thresholds) {
 async function buildModelSelector(currentModel) {
     const container = document.getElementById('modelSelectorContainer');
     container.innerHTML = '';
-    const defaultModel = 'llama3.2';
+    const defaultModel = 'llama3.2:latest';
     let models = [];
     try {
         const r = await fetch('/api/models');
@@ -760,7 +760,7 @@ function collectSettings() {
         top_k: Math.max(0, safeParseInt(document.getElementById('optTopK').value, 40)),
         top_p: Math.min(1, Math.max(0, safeParseFloat(document.getElementById('optTopP').value, 0.9))),
         outcome_directions: outcomeDirections,
-        ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2',
+        ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2:latest',
         ignore_case: document.getElementById('optIgnoreCase').checked,
     };
 }
@@ -1068,6 +1068,8 @@ window.simulate = function(cpm, deviation) {
 
 async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
+
+    document.getElementById('storyContent').textContent = '';
 
     sessionId = null;
     const promptText = prompt;

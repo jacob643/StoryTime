@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 
 - Plan Milestone 5: sound effects, animations, per-user split tracking.
 - Plan Milestone 6: continuous mode with length-weighted split tracking and rolling character window.
+- Fix: default model changed to "llama3.2:latest" so dropdown doesn't go blank on default click.
+- Fix: new story now clears the story context pane.
 
 ## [0.2.1] - 2026-06-24
 
