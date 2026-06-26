@@ -51,24 +51,33 @@ def bump(new_version: str):
     PYPROJECT.write_text(text, encoding="utf-8")
     print(f"  wrote {PYPROJECT.relative_to(ROOT)}")
 
-    # CHANGELOG.md — replace [Unreleased] block with fresh placeholder + new version
+    # CHANGELOG.md — move [Unreleased] body into new version section
     text = CHANGELOG.read_text(encoding="utf-8")
     header = f"## [{new_version}]"
     if header not in text:
         today = datetime.date.today().isoformat()
-        replacement = f"## [Unreleased]\n\n### Added\n\n- \n\n{header} - {today}\n"
-        # Replace the entire [Unreleased] block (up to the next ## or end)
-        match = re.search(r"## \[Unreleased\].*?(?=\n## |\Z)", text, re.DOTALL)
-        if match:
-            text = text[:match.start()] + replacement + text[match.end():]
+        # Capture the body between [Unreleased] and the next ## or end
+        unreleased_match = re.search(
+            r"^## \[Unreleased\].*?\n(.*?)(?=^## |\Z)",
+            text, re.DOTALL | re.MULTILINE,
+        )
+        body = unreleased_match.group(1).lstrip("\n") if unreleased_match else ""
+
+        fresh_unreleased = "## [Unreleased]\n### Added\n### Changed\n### Deprecated\n### Removed\n### Fixed\n### Security\n"
+        new_section = f"{header} - {today}\n\n{body}" if body else f"{header} - {today}\n"
+
+        replacement = fresh_unreleased + "\n" + new_section
+
+        if unreleased_match:
+            text = text[:unreleased_match.start()] + replacement + text[unreleased_match.end():]
         else:
-            # No [Unreleased] at all — insert before the first existing version header
             first_header = text.find("\n## [")
             if first_header == -1:
                 first_header = len(text)
-            text = text[:first_header] + f"\n\n{replacement}" + text[first_header:]
+            text = text[:first_header] + f"\n\n{fresh_unreleased}\n{new_section}" + text[first_header:]
+
         CHANGELOG.write_text(text, encoding="utf-8")
-        print(f"  updated {CHANGELOG.relative_to(ROOT)} (added {new_version} section)")
+        print(f"  updated {CHANGELOG.relative_to(ROOT)} (moved content to {new_version} section)")
     else:
         print(f"  {CHANGELOG.relative_to(ROOT)} already has [{new_version}] section")
 
