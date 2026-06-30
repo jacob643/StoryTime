@@ -58,6 +58,7 @@ const SETTINGS_DEFAULTS = {
     top_p: 0.9,
     ollama_model: 'llama3.2:latest',
     ignore_case: false,
+    continuous_mode: false,
 };
 
 const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
@@ -186,15 +187,19 @@ function updateSplitTimestamps() {
 function computeSplitSpeeds() {
     if (simulatedCpm !== null) {
         const count = Math.max(splitBoundaries.length, 1);
-        const speeds = [];
+        const splits = [];
         for (let i = 0; i < count; i++) {
             const variation = simulatedDeviation > 0 ? (Math.random() * 2 - 1) * simulatedDeviation : 0;
-            speeds.push(Math.max(1, simulatedCpm + variation));
+            const cpm = Math.max(1, simulatedCpm + variation);
+            const chars = i < splitBoundaries.length
+                ? splitBoundaries[i] - (i > 0 ? splitBoundaries[i - 1] : 0)
+                : 50;
+            splits.push({ cpm, chars });
         }
-        return speeds;
+        return splits;
     }
     if (splitTimestamps.length === 0 || !startTime) return [];
-    const speeds = [];
+    const splits = [];
     let prevTime = startTime;
     let prevPos = 0;
     for (let i = 0; i < splitBoundaries.length; i++) {
@@ -203,11 +208,11 @@ function computeSplitSpeeds() {
         if (!splitTime) continue;
         const minutes = (splitTime - prevTime) / 60000;
         if (minutes <= 0) continue;
-        speeds.push(splitChars / minutes);
+        splits.push({ cpm: splitChars / minutes, chars: splitChars });
         prevTime = splitTime;
         prevPos = splitBoundaries[i];
     }
-    return speeds;
+    return splits;
 }
 
 function applyDarkMode(enabled) {
@@ -353,7 +358,7 @@ function buildHistoryItem(data, prevSpeedCpm) {
     item.appendChild(speedLine);
 
     if (splitSpeeds && splitSpeeds.length > 0) {
-        const displaySpeeds = splitSpeeds.map(s => cpmToDisplay(s).toFixed(1));
+        const displaySpeeds = splitSpeeds.map(s => `${cpmToDisplay(s.cpm).toFixed(1)}(${s.chars})`);
         const splitLine = document.createElement('div');
         splitLine.classList.add('history-splits');
         splitLine.textContent = `Splits: ${displaySpeeds.join(' → ')} ${unit}`;
@@ -480,19 +485,18 @@ function GetSpeedDisplay() {
     return `${cpmToDisplay(speed).toFixed(1)} ${getSpeedUnit()}`;
 }
 
-async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
+async function fetchNextParagraph(completedText, speedCpm, splitData) {
     if (!sessionId) return;
 
     const body = {
         prompt: completedText,
         session_id: sessionId,
-        speed_cpm: speedCpm,
     };
-    if (splitSpeeds && splitSpeeds.length > 0) {
-        body.split_speeds = splitSpeeds;
+    if (splitData && splitData.length > 0) {
+        body.splits = splitData;
     }
 
-    retryAction = () => fetchNextParagraph(completedText, speedCpm, splitSpeeds);
+    retryAction = () => fetchNextParagraph(completedText, speedCpm, splitData);
 
     try {
         const response = await fetch('/api/generate', {
@@ -506,7 +510,7 @@ async function fetchNextParagraph(completedText, speedCpm, splitSpeeds) {
         }
 
         const data = await response.json();
-        addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label, splitSpeeds);
+        addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label, splitData);
         updateStoryContext(completedText);
         updateTierChart(data.outcome_tier, data.tier_boundaries);
         sessionId = data.session_id;
@@ -770,6 +774,7 @@ async function loadSettings() {
         renderTierPrompts();
         await buildModelSelector(s.ollama_model);
         document.getElementById('optIgnoreCase').checked = s.ignore_case;
+        document.getElementById('optContinuousMode').checked = s.continuous_mode;
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
     } catch (e) {
@@ -823,6 +828,7 @@ function collectSettings() {
         outcome_directions: outcomeDirections,
         ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2:latest',
         ignore_case: document.getElementById('optIgnoreCase').checked,
+        continuous_mode: document.getElementById('optContinuousMode').checked,
     };
 }
 

@@ -7,9 +7,11 @@ from backend.providers.registry import registry
 from backend.session import session_store
 from backend.game_logic import (
     ScoringParams,
+    Split,
     compute_outcome_tier,
     compute_speed_stats,
     compute_tier_boundaries,
+    compute_weighted_avg,
     get_outcome_label,
     DEFAULT_AVG_CPM,
     DEFAULT_MIN_STDDEV_CPM,
@@ -25,8 +27,7 @@ class GenerateRequest(BaseModel):
     prompt: str
     model: str | None = None
     session_id: str | None = None
-    speed_cpm: float | None = None
-    split_speeds: list[float] | None = None
+    splits: list[Split] | None = None
 
 
 class GenerateResponse(BaseModel):
@@ -37,34 +38,34 @@ class GenerateResponse(BaseModel):
     tier_boundaries: list[float]
 
 
-def _compute_first_paragraph_tier(split_speeds: list[float], params: ScoringParams) -> int:
-    n = len(split_speeds)
+def _compute_first_paragraph_tier(splits: list[Split], params: ScoringParams) -> int:
+    n = len(splits)
     if n == 0:
         return 2
     baseline_count = math.ceil(n / 2)
-    baseline = split_speeds[:baseline_count]
-    evaluated = split_speeds[baseline_count:]
+    baseline = splits[:baseline_count]
+    evaluated = splits[baseline_count:]
     if not evaluated:
         return 2
     avg, stddev = compute_speed_stats(baseline, params.min_stddev_cpm)
-    evaluated_avg = sum(evaluated) / len(evaluated)
+    evaluated_avg = compute_weighted_avg(evaluated)
     effective_stddev = stddev / math.sqrt(len(evaluated))
     return compute_outcome_tier(evaluated_avg, avg=avg, stddev=effective_stddev, params=params)
 
 
-def _compute_subsequent_tier(split_speeds: list[float], rolling: list[float], params: ScoringParams) -> int:
-    if not split_speeds:
+def _compute_subsequent_tier(splits: list[Split], rolling: list[Split], params: ScoringParams) -> int:
+    if not splits:
         return 2
     avg, stddev = compute_speed_stats(rolling, params.min_stddev_cpm)
-    paragraph_avg = sum(split_speeds) / len(split_speeds)
-    effective_stddev = stddev / math.sqrt(len(split_speeds))
+    paragraph_avg = compute_weighted_avg(splits)
+    effective_stddev = stddev / math.sqrt(len(splits))
     return compute_outcome_tier(paragraph_avg, avg=avg, stddev=effective_stddev, params=params)
 
 
 @router.post("/api/generate", response_model=GenerateResponse)
 async def generate(body: GenerateRequest):
-    logger.info("POST /api/generate session_id=%s prompt_len=%d split_speeds=%s",
-                 body.session_id, len(body.prompt), body.split_speeds)
+    logger.info("POST /api/generate session_id=%s prompt_len=%d splits=%s",
+                 body.session_id, len(body.prompt), body.splits)
     try:
         if body.session_id is None:
             session = session_store.create(initial_prompt=body.prompt)
@@ -94,37 +95,33 @@ async def generate(body: GenerateRequest):
         gs = get_settings()
         params = build_scoring_params(gs)
 
-        split_speeds = body.split_speeds or []
-        rolling = session.rolling_splits
+        splits = body.splits or []
+        rolling = session.rolling_window.to_list()
 
         bounds: list[float] = []
-        if not split_speeds and body.speed_cpm is not None:
-            outcome_tier = compute_outcome_tier(body.speed_cpm)
-            bounds = compute_tier_boundaries(params=params)
-            logger.debug("Outcome: fixed speed=%.1f CPM -> tier=%d", body.speed_cpm, outcome_tier)
-        elif not rolling:
-            outcome_tier = _compute_first_paragraph_tier(split_speeds, params)
-            n = len(split_speeds)
+        if not rolling:
+            outcome_tier = _compute_first_paragraph_tier(splits, params)
+            n = len(splits)
             if n == 0:
                 bounds = compute_tier_boundaries(params=params)
             elif n == 1:
-                bounds = compute_tier_boundaries(avg=split_speeds[0], stddev=params.min_stddev_cpm, params=params)
+                bounds = compute_tier_boundaries(avg=splits[0].speed_cpm, stddev=params.min_stddev_cpm, params=params)
             else:
                 baseline_count = math.ceil(n / 2)
-                baseline = split_speeds[:baseline_count]
+                baseline = splits[:baseline_count]
                 avg, stddev = compute_speed_stats(baseline, params.min_stddev_cpm)
                 bounds = compute_tier_boundaries(avg=avg, stddev=stddev, params=params)
-            logger.debug("Outcome: first paragraph splits=%s rolling=[] -> tier=%d", split_speeds, outcome_tier)
+            logger.debug("Outcome: first paragraph splits=%d rolling=[] -> tier=%d", len(splits), outcome_tier)
         else:
-            outcome_tier = _compute_subsequent_tier(split_speeds, rolling, params)
+            outcome_tier = _compute_subsequent_tier(splits, rolling, params)
             avg, stddev = compute_speed_stats(rolling, params.min_stddev_cpm)
-            effective_stddev = stddev / math.sqrt(len(split_speeds)) if split_speeds else stddev
+            effective_stddev = stddev / math.sqrt(len(splits)) if splits else stddev
             bounds = compute_tier_boundaries(avg=avg, stddev=effective_stddev, params=params)
-            logger.debug("Outcome: subsequent splits=%s rolling=%s -> tier=%d", split_speeds, rolling, outcome_tier)
+            logger.debug("Outcome: subsequent splits=%d rolling=%d -> tier=%d", len(splits), len(rolling), outcome_tier)
 
-        paragraph_cpm = sum(split_speeds) / len(split_speeds) if split_speeds else (body.speed_cpm or 0.0)
-        logger.debug("Append paragraph text_len=%d cpm=%.1f tier=%d splits=%s",
-                     len(body.prompt), paragraph_cpm, outcome_tier, split_speeds)
+        paragraph_cpm = compute_weighted_avg(splits)
+        logger.debug("Append paragraph text_len=%d cpm=%.1f tier=%d splits=%d",
+                     len(body.prompt), paragraph_cpm, outcome_tier, len(splits))
 
         session_store.append_paragraph(
             session_id=body.session_id,
@@ -133,7 +130,7 @@ async def generate(body: GenerateRequest):
             time_taken_ms=0,
             accuracy=1.0,
             outcome_tier=outcome_tier,
-            split_speeds=split_speeds,
+            splits=splits,
         )
 
         history_texts = [r.text for r in session.history]

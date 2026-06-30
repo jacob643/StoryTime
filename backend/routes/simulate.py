@@ -40,9 +40,9 @@ async def simulate(body: SimulateRequest):
 
         gs = get_settings()
         params = build_scoring_params(gs)
-        if session is not None and len(session.rolling_splits) > 0:
+        if session is not None and len(session.rolling_window) > 0:
             avg, stddev = compute_speed_stats(
-                session.rolling_splits,
+                session.rolling_window.to_list(),
                 params.min_stddev_cpm,
             )
             outcome_tier = compute_outcome_tier(
@@ -61,7 +61,7 @@ async def simulate(body: SimulateRequest):
                 max_words=gs.paragraph_word_count,
             )
             logger.debug("Simulate adaptive: rolling=%s avg=%.1f stddev=%.1f -> tier=%d",
-                         session.rolling_splits, avg, stddev, outcome_tier)
+                         session.rolling_window.total_chars, avg, stddev, outcome_tier)
         else:
             outcome_tier = compute_outcome_tier(body.simulated_speed_cpm)
             initial = session.initial_prompt if session else ""

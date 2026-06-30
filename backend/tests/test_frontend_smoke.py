@@ -146,8 +146,8 @@ def test_full_game_loop(server, page):
     assert "positive" in history_items.first.text_content()
 
     assert second_call_body is not None
-    assert second_call_body["split_speeds"] is not None
-    assert len(second_call_body["split_speeds"]) > 0
+    assert second_call_body["splits"] is not None
+    assert len(second_call_body["splits"]) > 0
 
     assert len(errors) == 0, f"Console errors: {errors}"
 

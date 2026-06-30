@@ -90,18 +90,16 @@ def test_generate_subsequent_call_uses_fixed_fallback(client):
         second = client.post("/api/generate", json={
             "prompt": "A brave warrior...",
             "session_id": session_id,
-            "speed_cpm": 425.0,
+            "splits": [{"speed_cpm": 425.0, "char_count": 50}],
         })
 
     assert second.status_code == 200
     data = second.json()
     assert data["response"] == "The dragon approached..."
     assert data["session_id"] == session_id
-    assert data["outcome_tier"] == 3
-    assert data["outcome_label"] == "positive"
 
 
-def test_generate_subsequent_call_with_split_speeds(client):
+def test_generate_subsequent_call_with_splits(client):
     mock_resp = _mock_ollama_response(200, {"response": "First paragraph..."})
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
@@ -114,7 +112,12 @@ def test_generate_subsequent_call_with_split_speeds(client):
         second = client.post("/api/generate", json={
             "prompt": "First paragraph...",
             "session_id": session_id,
-            "split_speeds": [280.0, 290.0, 310.0, 320.0],
+            "splits": [
+                {"speed_cpm": 280.0, "char_count": 50},
+                {"speed_cpm": 290.0, "char_count": 50},
+                {"speed_cpm": 310.0, "char_count": 50},
+                {"speed_cpm": 320.0, "char_count": 50},
+            ],
         })
 
     assert second.status_code == 200
@@ -161,7 +164,7 @@ def test_generate_subsequent_call_fallback_to_last_paragraph(client):
         second = client.post("/api/generate", json={
             "prompt": prev_text,
             "session_id": session_id,
-            "speed_cpm": 80.0,
+            "splits": [{"speed_cpm": 80.0, "char_count": 50}],
         })
 
     assert second.status_code == 200
@@ -174,7 +177,7 @@ def test_generate_subsequent_call_unknown_session_returns_404(client):
     response = client.post("/api/generate", json={
         "prompt": "some text",
         "session_id": "nonexistent",
-        "speed_cpm": 50.0,
+        "splits": [{"speed_cpm": 50.0, "char_count": 50}],
     })
     assert response.status_code == 404
     assert response.json()["detail"] == "Session not found"

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 from starlette.testclient import TestClient
+from backend.game_logic import Split
 from backend.main import app
 from backend.config import settings
 from backend.session import session_store
@@ -64,9 +65,9 @@ def test_simulate_with_session_uses_adaptive_scoring(client):
         first = client.post("/api/generate", json={"prompt": "Tell a story"})
     session_id = first.json()["session_id"]
 
-    # Seed rolling window with 5 split speeds
+    # Seed rolling window with 5 splits (50 chars each)
     session = session_store.get(session_id)
-    session.rolling_splits = [50.0, 55.0, 60.0, 45.0, 52.0]
+    session.rolling_window.add_many([Split(s, 50) for s in [50.0, 55.0, 60.0, 45.0, 52.0]])
 
     mock_resp2 = _mock_ollama_response(200, {"response": "Simulated outcome..."})
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp2):

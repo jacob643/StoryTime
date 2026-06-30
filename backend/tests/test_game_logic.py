@@ -4,8 +4,10 @@ import pytest
 
 from backend.game_logic import (
     ScoringParams,
+    Split,
     compute_outcome_tier,
     compute_speed_stats,
+    compute_weighted_avg,
     get_outcome_label,
     split_text,
 )
@@ -59,24 +61,46 @@ class TestComputeSpeedStats:
         assert std == 10.0
 
     def test_single_value(self):
-        avg, std = compute_speed_stats([350.0])
+        avg, std = compute_speed_stats([Split(350.0, 50)])
         assert avg == 350.0
         assert std == 10.0
 
-    def test_two_values(self):
-        avg, std = compute_speed_stats([300.0, 320.0])
+    def test_two_equal_weight(self):
+        avg, std = compute_speed_stats([Split(300.0, 50), Split(320.0, 50)])
         assert avg == 310.0
         assert std > 0
 
     def test_stddev_floored_to_min(self):
-        avg, std = compute_speed_stats([300.0, 301.0])
+        avg, std = compute_speed_stats([Split(300.0, 50), Split(301.0, 50)])
         assert avg == 300.5
         assert std == 10.0
 
     def test_stddev_above_min(self):
-        avg, std = compute_speed_stats([200.0, 400.0])
+        avg, std = compute_speed_stats([Split(200.0, 50), Split(400.0, 50)])
         assert avg == 300.0
         assert std > 10.0
+
+    def test_weighted_mean_different_char_counts(self):
+        avg, std = compute_speed_stats([Split(100.0, 100), Split(200.0, 50)])
+        assert avg == 100.0 * 100 / 150 + 200.0 * 50 / 150  # 133.33...
+
+    def test_mixed_weights_variance(self):
+        result = compute_speed_stats([Split(100.0, 10), Split(200.0, 90)])
+        avg, std = result
+        expected_mean = (100 * 10 + 200 * 90) / 100
+        assert avg == expected_mean
+
+
+class TestComputeWeightedAvg:
+    def test_empty_returns_zero(self):
+        assert compute_weighted_avg([]) == 0.0
+
+    def test_single_split(self):
+        assert compute_weighted_avg([Split(350.0, 50)]) == 350.0
+
+    def test_weighted_average(self):
+        result = compute_weighted_avg([Split(100.0, 100), Split(200.0, 50)])
+        assert result == (100 * 100 + 200 * 50) / 150
 
 
 # ── compute_outcome_tier (fixed fallback) ───────────────────────────────
@@ -149,15 +173,15 @@ class TestComputeOutcomeTierAdaptive:
         assert compute_outcome_tier(-5, avg=300, stddev=50) == 0
 
     def test_effective_stddev_overrides_min_stddev_floor(self):
-        rolling = [500.0] * 24
-        split_speeds = [505.0] * 14
+        rolling = [Split(500.0, 50)] * 24
+        split_speeds = [Split(505.0, 50)] * 14
         params = ScoringParams(min_stddev_cpm=10)
         avg, stddev = compute_speed_stats(rolling, params.min_stddev_cpm)
         assert avg == 500.0
         assert stddev == 10.0
         effective_stddev = stddev / math.sqrt(len(split_speeds))
         tier = compute_outcome_tier(
-            sum(split_speeds) / len(split_speeds),
+            compute_weighted_avg(split_speeds),
             avg=avg, stddev=effective_stddev, params=params,
         )
         assert tier == 4

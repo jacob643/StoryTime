@@ -2,14 +2,42 @@ from __future__ import annotations
 
 import re
 import uuid
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
-from backend.game_logic import ScoringParams, DEFAULT_AVG_CPM, MAX_ROLLING_WINDOW, get_outcome_label
+from backend.game_logic import Split, ScoringParams, DEFAULT_AVG_CPM, ROLLING_MAX_CHARS, get_outcome_label
 from backend.settings_manager import get_settings as _get_gs, build_scoring_params
 from backend.logger import logger
+
+
+@dataclass
+class RollingWindow:
+    splits: deque[Split] = field(default_factory=deque)
+    total_chars: int = 0
+    max_chars: int = ROLLING_MAX_CHARS
+
+    def add(self, split: Split) -> None:
+        self.splits.append(split)
+        self.total_chars += split.char_count
+        while self.total_chars > self.max_chars and self.splits:
+            oldest = self.splits.popleft()
+            self.total_chars -= oldest.char_count
+
+    def add_many(self, splits: list[Split]) -> None:
+        for s in splits:
+            self.add(s)
+
+    def to_list(self) -> list[Split]:
+        return list(self.splits)
+
+    def __len__(self) -> int:
+        return len(self.splits)
+
+    def __bool__(self) -> bool:
+        return len(self.splits) > 0
 
 
 @dataclass
@@ -19,7 +47,7 @@ class ParagraphRecord:
     time_taken_ms: int
     accuracy: float
     outcome_tier: int
-    split_speeds: list[float] = field(default_factory=list)
+    splits: list[Split] = field(default_factory=list)
 
 
 @dataclass
@@ -29,7 +57,7 @@ class GameSession:
     history: list[ParagraphRecord] = field(default_factory=list)
     initial_prompt: str = ""
     current_outcome_tier: int = 0
-    rolling_splits: list[float] = field(default_factory=list)
+    rolling_window: RollingWindow = field(default_factory=RollingWindow)
     initial_avg_cpm: float = DEFAULT_AVG_CPM
     scoring_params: ScoringParams = field(default_factory=ScoringParams)
 
@@ -74,8 +102,9 @@ class SessionStore:
             f.write(f"Date: {now}\n")
             f.write(f"Speed: {record.speed_cpm:.1f} CPM | "
                     f"Tier: {record.outcome_tier} ({get_outcome_label(record.outcome_tier)})\n")
-            if record.split_speeds:
-                f.write(f"Splits: [{', '.join(f'{s:.1f}' for s in record.split_speeds)}]\n")
+            if record.splits:
+                chunk_str = ', '.join(f'{s.speed_cpm:.1f}({s.char_count})' for s in record.splits)
+                f.write(f"Splits: [{chunk_str}]\n")
             f.write(f"\n{record.text}\n")
 
     def append_paragraph(
@@ -86,7 +115,7 @@ class SessionStore:
         time_taken_ms: int,
         accuracy: float,
         outcome_tier: int,
-        split_speeds: list[float] | None = None,
+        splits: list[Split] | None = None,
     ) -> Optional[ParagraphRecord]:
         session = self.get(session_id)
         if session is None:
@@ -97,16 +126,14 @@ class SessionStore:
             time_taken_ms=time_taken_ms,
             accuracy=accuracy,
             outcome_tier=outcome_tier,
-            split_speeds=split_speeds or [],
+            splits=splits or [],
         )
         session.history.append(record)
-        if split_speeds:
-            session.rolling_splits.extend(split_speeds)
-            while len(session.rolling_splits) > MAX_ROLLING_WINDOW:
-                session.rolling_splits.pop(0)
+        if splits:
+            session.rolling_window.add_many(splits)
         self._persist_paragraph(session, record)
-        logger.debug("SessionStore.append_paragraph session=%s entry=%d cpm=%.1f tier=%d rolling_len=%d",
-                     session_id, len(session.history), speed_cpm, outcome_tier, len(session.rolling_splits))
+        logger.debug("SessionStore.append_paragraph session=%s entry=%d cpm=%.1f tier=%d rolling_chars=%d",
+                     session_id, len(session.history), speed_cpm, outcome_tier, session.rolling_window.total_chars)
         return record
 
 

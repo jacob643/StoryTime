@@ -7,7 +7,8 @@ from backend.logger import logger
 
 TARGET_SPLIT_SIZE = 50
 MIN_SPLIT_SIZE = 30
-MAX_ROLLING_WINDOW = 50
+ANCHOR_SPLIT_SIZE = 50
+ROLLING_MAX_CHARS = 2500
 
 OUTCOME_LABELS: list[str] = [
     "very negative",
@@ -21,6 +22,12 @@ FIXED_THRESHOLDS: list[float] = [300, 350, 400, 450]
 
 DEFAULT_AVG_CPM = 300.0
 DEFAULT_MIN_STDDEV_CPM = 10.0
+
+
+@dataclass
+class Split:
+    speed_cpm: float
+    char_count: int
 
 
 @dataclass
@@ -55,15 +62,27 @@ def split_text(text: str, target: int = TARGET_SPLIT_SIZE, minimum: int = MIN_SP
     return splits
 
 
-def compute_speed_stats(speeds: list[float], min_stddev: float = DEFAULT_MIN_STDDEV_CPM) -> tuple[float, float]:
-    if not speeds:
+def compute_speed_stats(splits: list[Split], min_stddev: float = DEFAULT_MIN_STDDEV_CPM) -> tuple[float, float]:
+    if not splits:
         return (DEFAULT_AVG_CPM, min_stddev)
-    mean = sum(speeds) / len(speeds)
-    if len(speeds) < 2:
+    total_chars = sum(s.char_count for s in splits)
+    if total_chars <= 0:
+        return (DEFAULT_AVG_CPM, min_stddev)
+    mean = sum(s.speed_cpm * s.char_count for s in splits) / total_chars
+    if len(splits) < 2:
         return (mean, min_stddev)
-    variance = sum((s - mean) ** 2 for s in speeds) / (len(speeds) - 1)
+    variance = sum(s.char_count * (s.speed_cpm - mean) ** 2 for s in splits) / (total_chars / ANCHOR_SPLIT_SIZE)
     stddev = max(math.sqrt(variance), min_stddev)
     return (mean, stddev)
+
+
+def compute_weighted_avg(splits: list[Split]) -> float:
+    if not splits:
+        return 0.0
+    total_chars = sum(s.char_count for s in splits)
+    if total_chars <= 0:
+        return 0.0
+    return sum(s.speed_cpm * s.char_count for s in splits) / total_chars
 
 
 def compute_outcome_tier(

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from backend.game_logic import Split
 from backend.session import GameSession, ParagraphRecord, SessionStore
 
 
@@ -11,7 +12,7 @@ class TestCreateSession:
         assert session.initial_prompt == "test prompt"
         assert session.history == []
         assert session.current_outcome_tier == 0
-        assert session.rolling_splits == []
+        assert len(session.rolling_window) == 0
         assert session.initial_avg_cpm == 300.0
         assert session.scoring_params is not None
 
@@ -58,13 +59,14 @@ class TestAppendParagraph:
         assert record.time_taken_ms == 5000
         assert record.accuracy == 0.95
         assert record.outcome_tier == 2
-        assert record.split_speeds == []
+        assert record.splits == []
         assert len(session.history) == 1
-        assert session.rolling_splits == []
+        assert len(session.rolling_window) == 0
 
-    def test_append_paragraph_with_split_speeds(self):
+    def test_append_paragraph_with_splits(self):
         store = SessionStore()
         session = store.create()
+        splits = [Split(300.0, 50), Split(320.0, 50)]
 
         record = store.append_paragraph(
             session_id=session.id,
@@ -73,30 +75,32 @@ class TestAppendParagraph:
             time_taken_ms=4000,
             accuracy=1.0,
             outcome_tier=3,
-            split_speeds=[300.0, 320.0],
+            splits=splits,
         )
 
-        assert record.split_speeds == [300.0, 320.0]
-        assert session.rolling_splits == [300.0, 320.0]
+        assert record.splits == splits
+        assert list(session.rolling_window.splits) == splits
 
-    def test_split_speeds_extend_rolling_window(self):
+    def test_splits_extend_rolling_window(self):
         store = SessionStore()
         session = store.create()
 
-        store.append_paragraph(session.id, "p1", 300, 1000, 1.0, 2, split_speeds=[1, 2, 3])
-        store.append_paragraph(session.id, "p2", 310, 1000, 1.0, 3, split_speeds=[4, 5, 6])
+        store.append_paragraph(session.id, "p1", 300, 1000, 1.0, 2, splits=[Split(100, 50), Split(200, 50), Split(300, 50)])
+        store.append_paragraph(session.id, "p2", 310, 1000, 1.0, 3, splits=[Split(400, 50), Split(500, 50), Split(600, 50)])
 
-        assert session.rolling_splits == [1, 2, 3, 4, 5, 6]
+        speeds = [s.speed_cpm for s in session.rolling_window.splits]
+        assert speeds == [100, 200, 300, 400, 500, 600]
 
-    def test_rolling_window_max_50(self):
+    def test_rolling_window_max_2500_chars(self):
         store = SessionStore()
         session = store.create()
 
         for i in range(17):
-            store.append_paragraph(session.id, f"p{i}", 300, 1000, 1.0, 2, split_speeds=[i] * 3)
+            store.append_paragraph(session.id, f"p{i}", 300, 1000, 1.0, 2, splits=[Split(float(i), 50)] * 3)
 
-        assert len(session.rolling_splits) == 50
-        assert session.rolling_splits[0] == 0  # 1st paragraph (3×0s) had 1 entry dropped
+        assert session.rolling_window.total_chars <= 2500
+        # 17 paragraphs × 3 splits × 50 chars = 2550 total → 1 split (50 chars) should be evicted
+        assert 2450 <= session.rolling_window.total_chars <= 2500
 
     def test_append_paragraph_multiple(self):
         store = SessionStore()
@@ -154,14 +158,14 @@ class TestAppendParagraph:
             time_taken_ms=5000,
             accuracy=0.95,
             outcome_tier=2,
-            split_speeds=[200.0, 300.0],
+            splits=[Split(200.0, 50), Split(300.0, 50)],
         )
         assert file_path.exists()
         content = file_path.read_text(encoding="utf-8")
         assert "Once upon a time." in content
         assert "250.0" in content
         assert "Tier: 2" in content
-        assert "200.0, 300.0" in content
+        assert "200.0(50), 300.0(50)" in content
 
     def test_append_persists_multiple_paragraphs(self, monkeypatch, tmp_path):
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)

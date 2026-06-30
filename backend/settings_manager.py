@@ -43,6 +43,7 @@ class GameSettings:
     custom_model: str = ""
     ollama_model: str = "llama3.2:latest"
     ignore_case: bool = False
+    continuous_mode: bool = False
 
 
 def _settings_path() -> Path:
