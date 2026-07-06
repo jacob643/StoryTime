@@ -52,6 +52,7 @@ let prefetchSent = false;
 let prefetchPending = false;
 let prefetchTriggerIndex = -1;
 let completedParagraphs = [];
+let _contDisplayInit = false;
 
 const SETTINGS_DEFAULTS = {
     paragraph_word_count: 40,
@@ -345,6 +346,14 @@ function advanceParagraph() {
 
     completedParagraphs.push(textContent);
 
+    const completedText = document.getElementById('completedText');
+    if (completedText) {
+        const pSpan = document.createElement('span');
+        pSpan.className = 'completed-p';
+        pSpan.textContent = textContent;
+        completedText.appendChild(pSpan);
+    }
+
     textContent = prefetchedText;
     prefetchedText = '';
     consumedChars = 0;
@@ -531,6 +540,7 @@ function reset() {
     prefetchPending = false;
     prefetchTriggerIndex = -1;
     completedParagraphs = [];
+    _contDisplayInit = false;
 }
 
 function buildHistoryItem(data, prevSpeedCpm) {
@@ -667,15 +677,12 @@ function updateTextDisplay() {
     let displayedText = '';
 
     if (isContinuousMode()) {
-        let html = '';
-
-        for (const p of completedParagraphs) {
-            html += `<span style="background-color:green;color:black">${escapeHtml(p)}</span>`;
+        if (!_contDisplayInit) {
+            textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="prefetchSpan"></span>';
+            _contDisplayInit = true;
         }
 
-        if (consumedChars > 0) {
-            html += `<span style="background-color:green;color:black">${escapeHtml(textContent.slice(0, consumedChars))}</span>`;
-        }
+        document.getElementById('consumedSpan').textContent = textContent.slice(0, consumedChars);
 
         const remainingText = textContent.slice(consumedChars);
 
@@ -691,22 +698,18 @@ function updateTextDisplay() {
         }
 
         const correctEnd = firstError >= 0 ? firstError : inputText.length;
-        if (correctEnd > 0) {
-            html += `<span style="background-color:green;color:black">${escapeHtml(remainingText.slice(0, correctEnd))}</span>`;
-        }
-        html += '<span id="sA"></span>';
+        document.getElementById('correctSpan').textContent = remainingText.slice(0, correctEnd);
+
+        const errorSpan = document.getElementById('errorSpan');
         if (firstError >= 0) {
-            html += `<span style="background-color:red;color:black">${escapeHtml(remainingText.slice(firstError, inputText.length))}</span>`;
+            errorSpan.textContent = remainingText.slice(firstError, inputText.length);
+            errorSpan.style.display = '';
+        } else {
+            errorSpan.style.display = 'none';
         }
-        if (inputText.length < remainingText.length) {
-            html += `<span>${escapeHtml(remainingText.slice(inputText.length))}</span>`;
-        }
+        document.getElementById('untypedSpan').textContent = remainingText.slice(inputText.length);
 
-        if (prefetchedText) {
-            html += escapeHtml(prefetchedText);
-        }
-
-        textDisplay.innerHTML = html;
+        document.getElementById('prefetchSpan').textContent = prefetchedText;
 
         const container = document.getElementById('textDisplayContainer');
         const anchor = document.getElementById('sA');

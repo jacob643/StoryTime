@@ -262,6 +262,13 @@ body
 {
 }
 
+#consumedSpan,
+#correctSpan { background-color: green; color: black; }
+#errorSpan { background-color: red; color: black; }
+.completed-p { background-color: green; color: black; }
+
+#completedText { display: inline; }
+
 #message.success
 {
     border-color: var(--border-llm-success);
