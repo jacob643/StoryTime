@@ -42,6 +42,16 @@ let retryAction = null;
 let paragraphJustCompleted = false;
 const historyData = [];
 let _cachedCpmThresholds = null;
+let continuousMode = false;
+
+// Continuous mode state
+let consumedChars = 0;
+let splitList = [];
+let prefetchedText = '';
+let prefetchSent = false;
+let prefetchPending = false;
+let prefetchTriggerIndex = -1;
+let completedParagraphs = [];
 
 const SETTINGS_DEFAULTS = {
     paragraph_word_count: 40,
@@ -52,7 +62,6 @@ const SETTINGS_DEFAULTS = {
     tier_1_max_sigma: -0.5,
     tier_0_max_sigma: -1.5,
     target_split_size: 50,
-    min_split_size: 30,
     temperature: 2,
     top_k: 40,
     top_p: 0.9,
@@ -151,18 +160,32 @@ function getSpeedUnit() {
 
 function computeSplits(text) {
     const target = 50;
-    const min = 30;
     const boundaries = [];
-    let i = 0;
-    while (i < text.length) {
-        let end = Math.min(i + target, text.length);
-        const remaining = text.length - end;
-        if (remaining > 0 && remaining < min) {
-            end = text.length;
-        }
-        boundaries.push(end);
-        i = end;
+    const p75 = Math.ceil(text.length * 0.75);
+
+    if (text.length <= target) {
+        boundaries.push(text.length);
+        return boundaries;
     }
+
+    let i = target;
+    while (i < p75) {
+        boundaries.push(i);
+        i += target;
+    }
+    if (boundaries.length === 0 || boundaries[boundaries.length - 1] < p75) {
+        boundaries.push(p75);
+    }
+
+    i = boundaries[boundaries.length - 1] + target;
+    while (i < text.length) {
+        boundaries.push(i);
+        i += target;
+    }
+    if (boundaries[boundaries.length - 1] < text.length) {
+        boundaries.push(text.length);
+    }
+
     return boundaries;
 }
 
@@ -170,17 +193,184 @@ function resetSplitTracking() {
     splitTimestamps = [];
 }
 
+function isContinuousMode() {
+    return continuousMode;
+}
+
 function initSplits(text) {
     splitBoundaries = computeSplits(text);
+    const p75 = text.length * 0.75;
+    prefetchTriggerIndex = -1;
+    for (let i = 0; i < splitBoundaries.length; i++) {
+        if (splitBoundaries[i] >= p75) {
+            prefetchTriggerIndex = i;
+            break;
+        }
+    }
     splitTimestamps = [];
 }
 
 function updateSplitTimestamps() {
+    if (isContinuousMode()) {
+        updateSplitTimestampsContinuous();
+        return;
+    }
     const pos = inputBox.value.length;
     for (let i = 0; i < splitBoundaries.length; i++) {
         if (pos >= splitBoundaries[i] && splitTimestamps.length <= i) {
             splitTimestamps.push(new Date());
         }
+    }
+}
+
+function updateSplitTimestampsContinuous() {
+    const absolutePos = consumedChars + inputBox.value.length;
+    const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
+    let consumedAny = false;
+
+    for (let i = 0; i < splitBoundaries.length; i++) {
+        if (absolutePos < splitBoundaries[i]) break;
+        if (consumedChars >= splitBoundaries[i]) continue;
+        const splitChars = splitBoundaries[i] - consumedChars;
+
+        let hasError = false;
+        for (let j = 0; j < splitChars; j++) {
+            const typed = inputBox.value[j];
+            if (typed === undefined) { hasError = true; break; }
+            const expected = textContent[consumedChars + j];
+            const match = ignoreCase
+                ? typed.toLowerCase() === expected.toLowerCase()
+                : typed === expected;
+            if (!match) { hasError = true; break; }
+        }
+        if (hasError) break;
+
+        const now = Date.now();
+        const prevTimestamp = splitTimestamps.length > 0 ? splitTimestamps[splitTimestamps.length - 1] : startTime;
+        const minutes = prevTimestamp ? (now - prevTimestamp) / 60000 : 0;
+        const cpm = minutes > 0 ? splitChars / minutes : 0;
+
+        splitTimestamps.push(new Date(now));
+        inputBox.value = inputBox.value.slice(splitChars);
+        splitList.push({ cpm, chars: splitChars });
+        consumedChars += splitChars;
+
+        if (!prefetchSent && !prefetchPending && i >= prefetchTriggerIndex) {
+            prefetchSent = true;
+            sendPrefetch();
+        }
+
+        consumedAny = true;
+    }
+
+    if (consumedAny && inputBox.value.length > 0) {
+        inputBox.setSelectionRange(inputBox.value.length, inputBox.value.length);
+    }
+
+    if (consumedChars >= textContent.length) {
+        advanceParagraph();
+    }
+
+    if (consumedAny) {
+        updateTextDisplay();
+    }
+}
+
+async function sendPrefetch() {
+    if (!sessionId || !textContent) return;
+
+    prefetchPending = true;
+    const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0;
+    const totalChars = splitList.reduce((sum, s) => sum + s.chars, 0);
+    const totalWeightedCpm = splitList.reduce((sum, s) => sum + s.cpm * s.chars, 0);
+    const avgSpeedCpm = totalChars > 0 ? totalWeightedCpm / totalChars : 0;
+
+    const body = {
+        prompt: textContent,
+        session_id: sessionId,
+    };
+    if (splitList.length > 0) {
+        body.splits = splitList.map(s => ({ speed_cpm: s.cpm, char_count: s.chars }));
+    }
+
+    const savedSplitList = [...splitList];
+
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        addHistory(textContent, elapsed, avgSpeedCpm, data.outcome_tier, data.outcome_label, savedSplitList);
+        updateStoryContext(textContent);
+        updateTierChart(data.outcome_tier, data.tier_boundaries);
+        sessionId = data.session_id;
+
+        prefetchedText = ' ' + data.response;
+        splitList = [];
+        const lastTs = splitTimestamps.length > 0 ? splitTimestamps[splitTimestamps.length - 1] : null;
+        splitTimestamps = [];
+        if (lastTs) splitTimestamps.push(lastTs);
+        prefetchPending = false;
+
+        if (consumedChars >= textContent.length) {
+            advanceParagraph();
+        }
+
+        updateTextDisplay();
+    } catch (error) {
+        prefetchPending = false;
+        prefetchSent = false;
+        showError(error.message, () => sendPrefetch());
+    }
+}
+
+function advanceParagraph() {
+    if (!prefetchedText) {
+        if (!prefetchPending) {
+            prefetchSent = true;
+            sendPrefetch();
+        }
+        messageDiv.textContent = 'Loading next paragraph...';
+        messageDiv.className = 'neutral';
+        return;
+    }
+
+    completedParagraphs.push(textContent);
+
+    textContent = prefetchedText;
+    prefetchedText = '';
+    consumedChars = 0;
+    prefetchSent = false;
+    splitList = [];
+    if (splitTimestamps.length > 0) {
+        startTime = new Date(splitTimestamps[splitTimestamps.length - 1]);
+    }
+    splitTimestamps = [];
+    initSplits(textContent);
+
+    if (isContinuousMode()) {
+        inputBox.focus();
+        updateTextDisplay();
+    } else {
+        startTime = null;
+        inputBox.value = '';
+        paragraphJustCompleted = true;
+        retryButton.disabled = false;
+        inputWasEmpty = true;
+        messageDiv.textContent = 'paragraph over! take a breather';
+        messageDiv.className = 'neutral';
+        const container = document.getElementById('textDisplayContainer');
+        if (container) container.scrollTop = 0;
+        inputBox.focus();
+        updateTextDisplay();
     }
 }
 
@@ -236,6 +426,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     reset();
     checkStartupHealth();
+    (async () => {
+        try {
+            const r = await fetch('/api/settings');
+            if (r.ok) {
+                const s = await r.json();
+                console.log('Continuous mode from settings:', s.continuous_mode);
+                continuousMode = s.continuous_mode;
+                document.getElementById('optContinuousMode').checked = s.continuous_mode;
+            }
+        } catch (_) {
+            console.log('Settings fetch failed, continuousMode stays:', continuousMode);
+        }
+    })();
     document.querySelectorAll('input[name="speedType"]').forEach(el => {
         el.addEventListener('change', () => {
             rebuildHistoryDisplay();
@@ -321,6 +524,13 @@ function reset() {
     historyData.length = 0;
     document.getElementById('storyContent').textContent = '';
     resetSplitTracking();
+    consumedChars = 0;
+    splitList = [];
+    prefetchedText = '';
+    prefetchSent = false;
+    prefetchPending = false;
+    prefetchTriggerIndex = -1;
+    completedParagraphs = [];
 }
 
 function buildHistoryItem(data, prevSpeedCpm) {
@@ -427,10 +637,101 @@ function autoScrollTextDisplay() {
     }
 }
 
+let _scrollRaf = null;
+
+function smoothScrollTo(container, target, duration = 800) {
+    if (_scrollRaf) cancelAnimationFrame(_scrollRaf);
+    const start = container.scrollTop;
+    const distance = target - start;
+    if (Math.abs(distance) < 1) return;
+    const startTime = performance.now();
+
+    function step(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        container.scrollTop = start + distance * ease;
+        if (t < 1) {
+            _scrollRaf = requestAnimationFrame(step);
+        } else {
+            _scrollRaf = null;
+        }
+    }
+
+    _scrollRaf = requestAnimationFrame(step);
+}
+
 function updateTextDisplay() {
     const inputText = inputBox.value;
     const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
     let displayedText = '';
+
+    if (isContinuousMode()) {
+        let html = '';
+
+        for (const p of completedParagraphs) {
+            html += `<span style="background-color:green;color:black">${escapeHtml(p)}</span>`;
+        }
+
+        if (consumedChars > 0) {
+            html += `<span style="background-color:green;color:black">${escapeHtml(textContent.slice(0, consumedChars))}</span>`;
+        }
+
+        html += '<span id="sA"></span>';
+
+        const remainingText = textContent.slice(consumedChars);
+
+        let firstError = -1;
+        for (let i = 0; i < remainingText.length; i++) {
+            const inputChar = inputText[i];
+            if (inputChar === undefined) break;
+            const char = remainingText[i];
+            const match = ignoreCase
+                ? inputChar.toLowerCase() === char.toLowerCase()
+                : inputChar === char;
+            if (!match) {
+                firstError = i;
+                break;
+            }
+        }
+
+        for (let i = 0; i < remainingText.length; i++) {
+            const char = remainingText[i];
+            const inputChar = inputText[i];
+
+            if (inputChar === undefined) {
+                html += `<span>${char}</span>`;
+            } else if (firstError >= 0 && i >= firstError) {
+                html += `<span style="background-color: red; color: black;">${char}</span>`;
+            } else {
+                const match = ignoreCase
+                    ? inputChar.toLowerCase() === char.toLowerCase()
+                    : inputChar === char;
+                if (match) {
+                    html += `<span style="background-color: green; color: black;">${char}</span>`;
+                } else {
+                    html += `<span style="background-color: red; color: black;">${char}</span>`;
+                }
+            }
+        }
+
+        if (prefetchedText) {
+            html += escapeHtml(prefetchedText);
+        }
+
+        textDisplay.innerHTML = html;
+
+        const container = document.getElementById('textDisplayContainer');
+        const anchor = document.getElementById('sA');
+        if (container && anchor) {
+            const ar = anchor.getBoundingClientRect();
+            const cr = container.getBoundingClientRect();
+            const offsetInContainer = ar.top - cr.top + container.scrollTop;
+            const target = Math.max(0, offsetInContainer - container.clientHeight / 3);
+            container.scrollTop = target;
+        }
+        return;
+    }
 
     let firstError = -1;
     for (let i = 0; i < textContent.length; i++) {
@@ -493,7 +794,7 @@ async function fetchNextParagraph(completedText, speedCpm, splitData) {
         session_id: sessionId,
     };
     if (splitData && splitData.length > 0) {
-        body.splits = splitData;
+        body.splits = splitData.map(s => ({ speed_cpm: s.cpm, char_count: s.chars }));
     }
 
     retryAction = () => fetchNextParagraph(completedText, speedCpm, splitData);
@@ -526,8 +827,14 @@ async function fetchNextParagraph(completedText, speedCpm, splitData) {
         messageDiv.className = 'neutral';
         inputBox.focus();
         initSplits(textContent);
-        retryAction = null;
-        autoScrollTextDisplay();
+        if (isContinuousMode()) {
+            splitTimestamps = [];
+            retryButton.disabled = false;
+            const container = document.getElementById('textDisplayContainer');
+            if (container) container.scrollTop = 0;
+        } else {
+            autoScrollTextDisplay();
+        }
     } catch (error) {
         showError(error.message, retryAction);
     }
@@ -558,6 +865,7 @@ function escapeHtml(text) {
 }
 
 function CheckFinishedSentence() {
+    if (isContinuousMode() && historyData.length > 0) return;
     const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
     const isComplete = ignoreCase
         ? inputBox.value.toLowerCase() === textContent.toLowerCase()
@@ -580,10 +888,22 @@ function retryParagraph() {
     inputBox.value = '';
     startTime = null;
     paragraphJustCompleted = false;
-    resetSplitTracking();
+    if (isContinuousMode()) {
+        consumedChars = 0;
+        splitList = [];
+        splitTimestamps = [];
+        prefetchedText = '';
+        prefetchSent = false;
+        prefetchPending = false;
+        initSplits(textContent);
+        messageDiv.textContent = 'Input cleared, retype the paragraph below';
+        messageDiv.className = 'neutral';
+    } else {
+        resetSplitTracking();
+        messageDiv.textContent = 'Input cleared, retype the paragraph below';
+        messageDiv.className = 'neutral';
+    }
     retryButton.disabled = true;
-    messageDiv.textContent = 'Input cleared, retype the paragraph below';
-    messageDiv.className = 'neutral';
     inputBox.focus();
     updateTextDisplay();
 }
@@ -596,14 +916,14 @@ let inputWasEmpty = true;
 inputBox.addEventListener('input', () => {
     const isEmpty = inputBox.value.length === 0;
     if (isEmpty) {
-        if (!inputWasEmpty) {
+        if (!isContinuousMode() && !inputWasEmpty) {
             startTime = null;
             paragraphJustCompleted = false;
             resetSplitTracking();
             messageDiv.textContent = 'Input cleared, retype the paragraph below';
             messageDiv.className = 'neutral';
         }
-        retryButton.disabled = true;
+        retryButton.disabled = !isContinuousMode();
     } else {
         retryButton.disabled = false;
     }
@@ -758,7 +1078,6 @@ async function loadSettings() {
         document.getElementById('wordCountInput').value = s.paragraph_word_count;
         updateWordCountPreview(s.paragraph_word_count);
         document.getElementById('optTargetSplit').value = s.target_split_size;
-        document.getElementById('optMinSplit').value = s.min_split_size;
         document.getElementById('optTemperature').value = s.temperature;
         document.getElementById('optTopK').value = s.top_k;
         document.getElementById('optTopP').value = s.top_p;
@@ -775,6 +1094,7 @@ async function loadSettings() {
         await buildModelSelector(s.ollama_model);
         document.getElementById('optIgnoreCase').checked = s.ignore_case;
         document.getElementById('optContinuousMode').checked = s.continuous_mode;
+        continuousMode = s.continuous_mode;
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
     } catch (e) {
@@ -821,7 +1141,6 @@ function collectSettings() {
         tier_3_max_sigma: safeParseFloat(document.getElementById('optTier3Sigma').value, 1.5),
         fixed_thresholds: fixedThresholds,
         target_split_size: safeParseInt(document.getElementById('optTargetSplit').value, 50),
-        min_split_size: safeParseInt(document.getElementById('optMinSplit').value, 30),
         temperature: Math.max(0, safeParseFloat(document.getElementById('optTemperature').value, 2)),
         top_k: Math.max(0, safeParseInt(document.getElementById('optTopK').value, 40)),
         top_p: Math.min(1, Math.max(0, safeParseFloat(document.getElementById('optTopP').value, 0.9))),
@@ -1040,6 +1359,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
         const minStddevInput = document.getElementById('optMinStddev');
         if (minStddevInput) minStddevInput.dataset.cpm = body.min_stddev_cpm;
         _cachedCpmThresholds = body.fixed_thresholds;
+        continuousMode = document.getElementById('optContinuousMode').checked;
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
         settingsPanel.classList.add('collapsed');
@@ -1147,6 +1467,14 @@ async function sendPrompt(prompt) {
     messageDiv.className = 'neutral';
 
     try {
+        try {
+            const sRes = await fetch('/api/settings');
+            if (sRes.ok) {
+                const s = await sRes.json();
+                continuousMode = s.continuous_mode;
+                document.getElementById('optContinuousMode').checked = s.continuous_mode;
+            }
+        } catch (_) {}
         const response = await fetch('/api/restart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1172,6 +1500,9 @@ async function sendPrompt(prompt) {
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);
+        if (isContinuousMode()) {
+            retryButton.disabled = false;
+        }
         updateTierChart(data.outcome_tier, data.tier_boundaries);
         autoScrollTextDisplay();
         retryAction = null;

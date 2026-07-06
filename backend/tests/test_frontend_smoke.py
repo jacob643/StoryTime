@@ -100,6 +100,10 @@ def test_full_game_loop(server, page):
             route.fulfill(status=200, content_type="application/json",
                           body=json.dumps({"first_visit": False, "ollama_running": True}))
             return
+        if route.request.url.endswith("/api/settings"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"continuous_mode": False, "scoring_mode": "split"}))
+            return
         call_count += 1
         if call_count == 1:
             body = json.dumps({

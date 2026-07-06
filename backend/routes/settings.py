@@ -20,7 +20,6 @@ class SettingsResponse(BaseModel):
     fixed_thresholds: list[float]
     paragraph_word_count: int
     target_split_size: int
-    min_split_size: int
     outcome_directions: dict[int, list[str]]
     temperature: float
     top_k: int
@@ -44,7 +43,6 @@ class SettingsPatch(BaseModel):
     fixed_thresholds: list[float] | None = None
     paragraph_word_count: int | None = None
     target_split_size: int | None = None
-    min_split_size: int | None = None
     outcome_directions: dict[int, list[str]] | None = None
     temperature: float | None = None
     top_k: int | None = None
@@ -77,7 +75,6 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         fixed_thresholds=_clamp_thresholds(gs.fixed_thresholds),
         paragraph_word_count=gs.paragraph_word_count,
         target_split_size=gs.target_split_size,
-        min_split_size=gs.min_split_size,
         outcome_directions=gs.outcome_directions,
         temperature=gs.temperature,
         top_k=gs.top_k,

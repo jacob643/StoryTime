@@ -9,47 +9,9 @@ from backend.game_logic import (
     compute_speed_stats,
     compute_weighted_avg,
     get_outcome_label,
-    split_text,
 )
 
 
-# ── split_text ──────────────────────────────────────────────────────────
-
-class TestSplitText:
-    def test_empty_text(self):
-        assert split_text("") == []
-
-    def test_shorter_than_target(self):
-        assert split_text("hello") == ["hello"]
-
-    def test_exactly_target(self):
-        assert split_text("a" * 50) == ["a" * 50]
-
-    def test_two_full_splits(self):
-        text = "a" * 100
-        result = split_text(text)
-        assert result == ["a" * 50, "a" * 50]
-
-    def test_merge_small_last_split_into_previous(self):
-        text = "a" * 120  # 50 + 50 + 20 → last 20 < 30 → merge
-        result = split_text(text)
-        assert len(result) == 2
-        assert result[-1] == "a" * 70
-
-    def test_keep_last_split_when_above_minimum(self):
-        text = "a" * 130  # 50 + 50 + 30
-        result = split_text(text)
-        assert len(result) == 3
-        assert result[-1] == "a" * 30
-
-    def test_complex_301_chars(self):
-        text = "a" * 301
-        result = split_text(text)
-        assert len(result) >= 6
-        assert all(len(s) >= 30 for s in result)
-
-    def test_single_char_text(self):
-        assert split_text("x") == ["x"]
 
 
 # ── compute_speed_stats ─────────────────────────────────────────────────

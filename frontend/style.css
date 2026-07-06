@@ -254,11 +254,13 @@ body
     min-height: 0;
     width: 100%;
     overflow-y: auto;
+    overflow-anchor: none;
 }
 
 #textDisplay
 {
     height: 100%;
+    padding-bottom: 50vh;
 }
 
 #message.success

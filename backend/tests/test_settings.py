@@ -46,7 +46,6 @@ def test_game_settings_defaults():
     assert gs.tier_3_max_sigma == 1.5
     assert gs.paragraph_word_count == 40
     assert gs.target_split_size == 50
-    assert gs.min_split_size == 30
     assert len(gs.outcome_directions) == 5
     assert gs.provider == "ollama"
     assert gs.custom_endpoint == ""
@@ -169,7 +168,6 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
         "outcome_directions": {"0": ["bad"], "1": ["worse"], "2": ["ok"], "3": ["good"], "4": ["great"]},
         "fixed_thresholds": [20, 40, 60, 80],
         "target_split_size": 40,
-        "min_split_size": 20,
         "min_stddev_cpm": 5.0,
         "tier_0_max_sigma": -2.0,
         "tier_1_max_sigma": -1.0,

@@ -99,7 +99,7 @@ Combine with `STORYTIME_DEV_MODE=true` to also use `/simulate` with mock respons
 | `tier_3_max_sigma` | float | 1.5 | Sigma upper bound for tier 3 |
 | `fixed_thresholds` | `[[float, float], ...]` | — | Low/high CPM pairs for each tier (fixed mode) |
 | `target_split_size` | int | 50 | Target characters per split |
-| `min_split_size` | int | 30 | Minimum characters per split |
+
 | `default_avg_cpm` | float | 300.0 | Default average CPM when no prior data |
 | `outcome_directions` | `{int: str, ...}` | — | Prompt direction text for each tier (0–4) |
 
@@ -123,7 +123,7 @@ Click the **⚙ Settings** toggle button to expand/collapse the settings panel. 
 - **Scoring mode**: dropdown (`split` / `fixed`)
 - **Sigma bounds**: number inputs for tier 0–3 max sigma
 - **Fixed thresholds**: low/high CPM pairs for each tier (shown when `fixed` mode selected)
-- **Split parameters**: target and minimum split sizes
+- **Split parameters**: target split size
 - **Default CPM**: default speed when no prior data
 - **Prompt directions**: text inputs for each tier's outcome direction
 

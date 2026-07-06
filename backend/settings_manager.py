@@ -32,7 +32,6 @@ class GameSettings:
     fixed_thresholds: list[float] = field(default_factory=_default_fixed_thresholds)
     paragraph_word_count: int = 40
     target_split_size: int = 50
-    min_split_size: int = 30
     outcome_directions: Dict[int, list[str]] = field(default_factory=_default_outcome_directions)
     temperature: float = 2.0
     top_k: int = 40

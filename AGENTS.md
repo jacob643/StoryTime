@@ -25,7 +25,7 @@ Instructions and quick reference for AI agents working on this codebase.
 ## Backend core
 | File | Key contents |
 |---|---|
-| `game_logic.py` | `ScoringParams:27`, `split_text:37`, `compute_speed_stats:58`, `compute_outcome_tier:69`, `compute_tier_boundaries:104`, `get_outcome_label:123`. Constants: `FIXED_THRESHOLDS`, `DEFAULT_AVG_CPM`, `DEFAULT_MIN_STDDEV_CPM`, `TARGET_SPLIT_SIZE`, `MIN_SPLIT_SIZE`, `OUTCOME_LABELS` |
+| `game_logic.py` | `ScoringParams:27`, `compute_speed_stats:58`, `compute_outcome_tier:69`, `compute_tier_boundaries:104`, `get_outcome_label:123`. Constants: `FIXED_THRESHOLDS`, `DEFAULT_AVG_CPM`, `DEFAULT_MIN_STDDEV_CPM`, `TARGET_SPLIT_SIZE`, `OUTCOME_LABELS` |
 | `settings_manager.py` | `GameSettings:24` (all config fields), `load_settings:68`, `save_settings:82`, `get_settings:104`, `update_settings:111`, `reset_settings:122`, `build_scoring_params:57`. Migrations: `_migrate_fixed_thresholds:57`. Fields: `ollama_model:44` default `"llama3.2"` |
 | `session.py` | `ParagraphRecord:16`, `GameSession:26` (has `rolling_splits`), `SessionStore:37` |
 | `prompt_engine.py` | `build_prompt:78`, `build_first_paragraph_prompt:116`, `sanitize_text:140`, `strip_thinking:149`, `validate_llm_response:173`, `parse_llm_response:184` |

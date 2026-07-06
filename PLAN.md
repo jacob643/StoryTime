@@ -43,8 +43,24 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 
 Goal: Eliminate paragraph-by-paragraph pauses by pre-fetching the next half while the player finishes the current one. Redesign split tracking from per-paragraph to per-split (length-weighted CPM, rolling character window instead of split count window).
 
-### 6.0 — Design clarification
-- [ ] Research and document the full continuous mode spec: half-paragraph overlap, split representation (CPM + char length), rolling char window, how stddev is length-weighted, when outcomes are computed, how the UI transitions between halves, and edge cases (first half, last half, restart, retry)
-- [ ] Clean up network messages: `speed_cpm` and `time_taken_ms`/`accuracy` are sent but never used. `split_speeds` alone is sufficient. Remove dead fields from `GenerateRequest` and the `append_paragraph` call site.
+### 6.0 — Design clarification & split overhaul
+- [x] Research and document the full continuous mode spec (AGENTS.md): half-paragraph overlap, Split dataclass, rolling char window, weighted stddev, outcome timing, first/last/restart/retry edge cases.
+- [x] Clean up network messages: removed `speed_cpm` from `GenerateRequest`, removed `time_taken_ms`/`accuracy` usage (hardcoded to 0/1.0).
+- [x] `Split` dataclass `(speed_cpm, char_count)` replacing flat `float` lists everywhere.
+- [x] `RollingWindow` with `deque[Split]` + running `total_chars` capped at 2500 chars.
+- [x] `compute_speed_stats` uses character-weighted mean and variance.
+- [x] `compute_weighted_avg` helper added.
 - [ ] Brainstorm a new project name ("StoryTime" is very common). Candidates: Write-a-story, typerLuck, interactiveTyper, QuickTypeFunTimes, Good Type Good Story.
 - [ ] Auto-pause: 5 seconds of inactivity pauses the speed capture (doesn't affect metrics). Button and/or keyboard shortcut for manual pause too. Needed for continuous mode.
+
+### 6.1 — Continuous mode frontend
+- [x] `GameSettings.continuous_mode: bool` + checkbox `#optContinuousMode` in Word Count section.
+- [x] Continuous mode state variables: `consumedChars`, `splitList`, `prefetchedText`, `prefetchSent`, `prefetchPending`.
+- [x] `updateSplitTimestampsContinuous()`: consume at split boundaries, compute CPM, trim input, update display.
+- [x] 75% prefetch trigger (by char count `consumedChars + inputBox.value.length`).
+- [x] `sendPrefetch()`: generates next paragraph, creates history entry, stores prefetched text.
+- [x] `advanceParagraph()`: swaps prefetched text into current, resets continuous state.
+- [x] `updateTextDisplay()`: offsets by `consumedChars`, shows prefetched text in gray.
+- [x] `CheckFinishedSentence()`: early-return in continuous mode (first paragraph still completes normally).
+- [x] `retryParagraph()` / `reset()`: clear continuous state.
+- [x] Smooth scroll: `scroll-behavior: smooth` on `#textDisplayContainer`.

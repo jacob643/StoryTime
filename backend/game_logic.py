@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from backend.logger import logger
 
 TARGET_SPLIT_SIZE = 50
-MIN_SPLIT_SIZE = 30
 ANCHOR_SPLIT_SIZE = 50
 ROLLING_MAX_CHARS = 2500
 
@@ -41,27 +40,6 @@ class ScoringParams:
     fixed_thresholds: list[float] | None = None
 
 
-def split_text(text: str, target: int = TARGET_SPLIT_SIZE, minimum: int = MIN_SPLIT_SIZE) -> list[str]:
-    if not text:
-        return []
-    if len(text) <= target:
-        return [text]
-
-    splits: list[str] = []
-    pos = 0
-    while len(text) - pos >= target + minimum:
-        splits.append(text[pos:pos + target])
-        pos += target
-    remaining = len(text) - pos
-    if remaining >= minimum:
-        splits.append(text[pos:])
-    else:
-        splits[-1] += text[pos:]
-    logger.debug("split_text: text_len=%d target=%d -> %d splits of lengths %s",
-                 len(text), target, len(splits), [len(s) for s in splits])
-    return splits
-
-
 def compute_speed_stats(splits: list[Split], min_stddev: float = DEFAULT_MIN_STDDEV_CPM) -> tuple[float, float]:
     if not splits:
         return (DEFAULT_AVG_CPM, min_stddev)
@@ -71,7 +49,7 @@ def compute_speed_stats(splits: list[Split], min_stddev: float = DEFAULT_MIN_STD
     mean = sum(s.speed_cpm * s.char_count for s in splits) / total_chars
     if len(splits) < 2:
         return (mean, min_stddev)
-    variance = sum(s.char_count * (s.speed_cpm - mean) ** 2 for s in splits) / (total_chars / ANCHOR_SPLIT_SIZE)
+    variance = sum(s.char_count * (s.speed_cpm - mean) ** 2 for s in splits) / total_chars
     stddev = max(math.sqrt(variance), min_stddev)
     return (mean, stddev)
 
