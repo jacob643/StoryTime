@@ -677,42 +677,29 @@ function updateTextDisplay() {
             html += `<span style="background-color:green;color:black">${escapeHtml(textContent.slice(0, consumedChars))}</span>`;
         }
 
-        html += '<span id="sA"></span>';
-
         const remainingText = textContent.slice(consumedChars);
 
         let firstError = -1;
-        for (let i = 0; i < remainingText.length; i++) {
-            const inputChar = inputText[i];
-            if (inputChar === undefined) break;
-            const char = remainingText[i];
+        for (let i = 0; i < remainingText.length && i < inputText.length; i++) {
             const match = ignoreCase
-                ? inputChar.toLowerCase() === char.toLowerCase()
-                : inputChar === char;
+                ? inputText[i].toLowerCase() === remainingText[i].toLowerCase()
+                : inputText[i] === remainingText[i];
             if (!match) {
                 firstError = i;
                 break;
             }
         }
 
-        for (let i = 0; i < remainingText.length; i++) {
-            const char = remainingText[i];
-            const inputChar = inputText[i];
-
-            if (inputChar === undefined) {
-                html += `<span>${char}</span>`;
-            } else if (firstError >= 0 && i >= firstError) {
-                html += `<span style="background-color: red; color: black;">${char}</span>`;
-            } else {
-                const match = ignoreCase
-                    ? inputChar.toLowerCase() === char.toLowerCase()
-                    : inputChar === char;
-                if (match) {
-                    html += `<span style="background-color: green; color: black;">${char}</span>`;
-                } else {
-                    html += `<span style="background-color: red; color: black;">${char}</span>`;
-                }
-            }
+        const correctEnd = firstError >= 0 ? firstError : inputText.length;
+        if (correctEnd > 0) {
+            html += `<span style="background-color:green;color:black">${escapeHtml(remainingText.slice(0, correctEnd))}</span>`;
+        }
+        html += '<span id="sA"></span>';
+        if (firstError >= 0) {
+            html += `<span style="background-color:red;color:black">${escapeHtml(remainingText.slice(firstError, inputText.length))}</span>`;
+        }
+        if (inputText.length < remainingText.length) {
+            html += `<span>${escapeHtml(remainingText.slice(inputText.length))}</span>`;
         }
 
         if (prefetchedText) {
