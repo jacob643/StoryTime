@@ -725,8 +725,10 @@ function updateTextDisplay() {
         const anchor = document.getElementById('sA');
         if (container && anchor) {
             const anchorY = anchor.getBoundingClientRect().top - container.getBoundingClientRect().top;
-            if (anchorY > container.clientHeight / 2) {
-                smoothScrollTo(container, container.scrollTop + anchorY, 5000);
+            const fraction = anchorY / container.clientHeight;
+            if (fraction < 0.45 || fraction > 0.55) {
+                const targetScroll = container.scrollTop + anchorY - container.clientHeight / 2;
+                smoothScrollTo(container, targetScroll, 5000);
             }
         }
         return;

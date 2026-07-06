@@ -255,7 +255,7 @@ body
     width: 100%;
     overflow-y: scroll;
     overflow-anchor: none;
-    padding-bottom: 50vh;
+    padding: 25vh 0;
 }
 
 #textDisplay
