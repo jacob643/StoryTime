@@ -253,14 +253,13 @@ body
     flex: 1;
     min-height: 0;
     width: 100%;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-anchor: none;
+    padding-bottom: 50vh;
 }
 
 #textDisplay
 {
-    height: 100%;
-    padding-bottom: 50vh;
 }
 
 #message.success

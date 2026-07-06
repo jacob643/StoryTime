@@ -724,11 +724,10 @@ function updateTextDisplay() {
         const container = document.getElementById('textDisplayContainer');
         const anchor = document.getElementById('sA');
         if (container && anchor) {
-            const ar = anchor.getBoundingClientRect();
-            const cr = container.getBoundingClientRect();
-            const offsetInContainer = ar.top - cr.top + container.scrollTop;
-            const target = Math.max(0, offsetInContainer - container.clientHeight / 3);
-            container.scrollTop = target;
+            const anchorY = anchor.getBoundingClientRect().top - container.getBoundingClientRect().top;
+            if (anchorY > container.clientHeight / 2) {
+                smoothScrollTo(container, container.scrollTop + anchorY, 5000);
+            }
         }
         return;
     }
