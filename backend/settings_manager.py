@@ -43,6 +43,7 @@ class GameSettings:
     ollama_model: str = "llama3.2:latest"
     ignore_case: bool = False
     continuous_mode: bool = False
+    prefetch_trigger_pct: float = 75
 
 
 def _settings_path() -> Path:

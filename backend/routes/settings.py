@@ -31,6 +31,7 @@ class SettingsResponse(BaseModel):
     ollama_model: str
     ignore_case: bool
     continuous_mode: bool
+    prefetch_trigger_pct: float
 
 
 class SettingsPatch(BaseModel):
@@ -54,6 +55,7 @@ class SettingsPatch(BaseModel):
     ollama_model: str | None = None
     ignore_case: bool | None = None
     continuous_mode: bool | None = None
+    prefetch_trigger_pct: float | None = None
 
 
 def _clamp_thresholds(
@@ -86,6 +88,7 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         ollama_model=gs.ollama_model,
         ignore_case=gs.ignore_case,
         continuous_mode=gs.continuous_mode,
+        prefetch_trigger_pct=gs.prefetch_trigger_pct,
     )
 
 

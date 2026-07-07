@@ -43,6 +43,7 @@ let paragraphJustCompleted = false;
 const historyData = [];
 let _cachedCpmThresholds = null;
 let continuousMode = false;
+let prefetchTriggerPct = 75;
 
 // Continuous mode state
 let consumedChars = 0;
@@ -69,6 +70,7 @@ const SETTINGS_DEFAULTS = {
     ollama_model: 'llama3.2:latest',
     ignore_case: false,
     continuous_mode: false,
+    prefetch_trigger_pct: 75,
 };
 
 const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
@@ -159,10 +161,10 @@ function getSpeedUnit() {
     return getActiveSpeedType() === 'wpm' ? 'WPM' : 'CPM';
 }
 
-function computeSplits(text) {
+function computeSplits(text, pct) {
     const target = 50;
     const boundaries = [];
-    const p75 = Math.ceil(text.length * 0.75);
+    const triggerBoundary = Math.ceil(text.length * pct);
 
     if (text.length <= target) {
         boundaries.push(text.length);
@@ -170,12 +172,12 @@ function computeSplits(text) {
     }
 
     let i = target;
-    while (i < p75) {
+    while (i < triggerBoundary) {
         boundaries.push(i);
         i += target;
     }
-    if (boundaries.length === 0 || boundaries[boundaries.length - 1] < p75) {
-        boundaries.push(p75);
+    if (boundaries.length === 0 || boundaries[boundaries.length - 1] < triggerBoundary) {
+        boundaries.push(triggerBoundary);
     }
 
     i = boundaries[boundaries.length - 1] + target;
@@ -199,11 +201,12 @@ function isContinuousMode() {
 }
 
 function initSplits(text) {
-    splitBoundaries = computeSplits(text);
-    const p75 = text.length * 0.75;
+    const pct = prefetchTriggerPct / 100;
+    splitBoundaries = computeSplits(text, pct);
+    const triggerPos = text.length * pct;
     prefetchTriggerIndex = -1;
     for (let i = 0; i < splitBoundaries.length; i++) {
-        if (splitBoundaries[i] >= p75) {
+        if (splitBoundaries[i] >= triggerPos) {
             prefetchTriggerIndex = i;
             break;
         }
@@ -443,6 +446,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Continuous mode from settings:', s.continuous_mode);
                 continuousMode = s.continuous_mode;
                 document.getElementById('optContinuousMode').checked = s.continuous_mode;
+                prefetchTriggerPct = s.prefetch_trigger_pct;
+                document.getElementById('optPrefetchPct').value = s.prefetch_trigger_pct;
             }
         } catch (_) {
             console.log('Settings fetch failed, continuousMode stays:', continuousMode);
@@ -1086,6 +1091,8 @@ async function loadSettings() {
         document.getElementById('optIgnoreCase').checked = s.ignore_case;
         document.getElementById('optContinuousMode').checked = s.continuous_mode;
         continuousMode = s.continuous_mode;
+        prefetchTriggerPct = s.prefetch_trigger_pct;
+        document.getElementById('optPrefetchPct').value = s.prefetch_trigger_pct;
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
     } catch (e) {
@@ -1139,6 +1146,7 @@ function collectSettings() {
         ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2:latest',
         ignore_case: document.getElementById('optIgnoreCase').checked,
         continuous_mode: document.getElementById('optContinuousMode').checked,
+        prefetch_trigger_pct: safeParseInt(document.getElementById('optPrefetchPct').value, 75),
     };
 }
 
@@ -1351,6 +1359,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
         if (minStddevInput) minStddevInput.dataset.cpm = body.min_stddev_cpm;
         _cachedCpmThresholds = body.fixed_thresholds;
         continuousMode = document.getElementById('optContinuousMode').checked;
+        prefetchTriggerPct = safeParseInt(document.getElementById('optPrefetchPct').value, 75);
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
         settingsPanel.classList.add('collapsed');
@@ -1464,6 +1473,8 @@ async function sendPrompt(prompt) {
                 const s = await sRes.json();
                 continuousMode = s.continuous_mode;
                 document.getElementById('optContinuousMode').checked = s.continuous_mode;
+                prefetchTriggerPct = s.prefetch_trigger_pct;
+                document.getElementById('optPrefetchPct').value = s.prefetch_trigger_pct;
             }
         } catch (_) {}
         const response = await fetch('/api/restart', {
