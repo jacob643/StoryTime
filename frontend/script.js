@@ -875,7 +875,7 @@ function CheckFinishedSentence() {
 }
 
 function startTypingTimer() {
-    if (startTime === null) {
+    if (startTime === null && inputBox.value.length > 0) {
         startTime = new Date();
     }
 }
@@ -912,10 +912,15 @@ let inputWasEmpty = true;
 inputBox.addEventListener('input', () => {
     const isEmpty = inputBox.value.length === 0;
     if (isEmpty) {
-        if (!isContinuousMode() && !inputWasEmpty) {
-            startTime = null;
-            paragraphJustCompleted = false;
-            resetSplitTracking();
+        if (!inputWasEmpty) {
+            if (isContinuousMode()) {
+                startTime = null;
+                splitTimestamps = [];
+            } else {
+                startTime = null;
+                paragraphJustCompleted = false;
+                resetSplitTracking();
+            }
             messageDiv.textContent = 'Input cleared, retype the paragraph below';
             messageDiv.className = 'neutral';
         }
@@ -1457,6 +1462,8 @@ window.simulate = function(cpm, deviation) {
 
 async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
+
+    reset();
 
     document.getElementById('storyContent').textContent = '';
 
