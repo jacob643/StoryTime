@@ -785,6 +785,14 @@ function GetSpeedDisplay() {
 async function fetchNextParagraph(completedText, speedCpm, splitData) {
     if (!sessionId) return;
 
+    inputWasEmpty = true;
+    inputBox.value = '';
+    startTime = null;
+    paragraphJustCompleted = true;
+    retryButton.disabled = true;
+    messageDiv.textContent = 'Loading next paragraph...';
+    messageDiv.className = 'neutral';
+
     const body = {
         prompt: completedText,
         session_id: sessionId,
