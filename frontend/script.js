@@ -770,6 +770,10 @@ inputBox.addEventListener('input', () => {
     updateTextDisplay();
 });
 
+// DOM element references
+const restartButton = document.getElementById('restartButton');
+const initialPromptInput = document.getElementById('initialPrompt');
+
 // settings panel
 
 const settingsToggle = document.getElementById('settingsToggle');
@@ -783,7 +787,7 @@ settingsToggle.addEventListener('click', () => {
     } else {
         hideWordCountPreview();
     }
-    resetPerfBtn.disabled = false;
+    if (resetPerfBtn) resetPerfBtn.disabled = false;
 });
 
 const BUG_REPORT_URL = 'https://github.com/jacob643/StoryTime/issues';
@@ -924,8 +928,11 @@ async function loadSettings() {
         renderTierPrompts();
         await buildModelSelector(s.ollama_model);
         document.getElementById('optIgnoreCase').checked = s.ignore_case;
-        fetchTriggerPct = s.fetch_trigger_pct;
-        document.getElementById('optFetchPct').value = s.fetch_trigger_pct;
+        const pctInput = document.getElementById('optFetchPct');
+        if (pctInput) {
+            fetchTriggerPct = s.fetch_trigger_pct;
+            pctInput.value = s.fetch_trigger_pct;
+        }
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
     } catch (e) {
@@ -1219,21 +1226,20 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
 });
 
 const resetPerfBtn = document.getElementById('resetPerformanceBtn');
-resetPerfBtn.addEventListener('click', async () => {
-    try {
-        const r = await fetch('/api/performance/reset', { method: 'POST' });
-        if (!r.ok) throw new Error('Failed to reset performance');
-        resetPerfBtn.disabled = true;
-    } catch (e) {
-        messageDiv.textContent = 'Reset error: ' + e.message;
-        messageDiv.className = 'error';
-    }
-});
+if (resetPerfBtn) {
+    resetPerfBtn.addEventListener('click', async () => {
+        try {
+            const r = await fetch('/api/performance/reset', { method: 'POST' });
+            if (!r.ok) throw new Error('Failed to reset performance');
+            resetPerfBtn.disabled = true;
+        } catch (e) {
+            messageDiv.textContent = 'Reset error: ' + e.message;
+            messageDiv.className = 'error';
+        }
+    });
+}
 
 // prompt and LLM side.
-
-const restartButton = document.getElementById('restartButton');
-const initialPromptInput = document.getElementById('initialPrompt');
 
 restartButton.addEventListener('click', () => {
     sendPrompt(initialPromptInput.value);
