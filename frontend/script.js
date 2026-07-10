@@ -365,6 +365,8 @@ function advanceParagraph() {
     initSplits(textContent);
 
     if (continuousMode) {
+        messageDiv.textContent = 'Paragraph ready — take a breather';
+        messageDiv.className = 'neutral';
         inputBox.focus();
         updateTextDisplay();
     } else {
@@ -932,7 +934,7 @@ inputBox.addEventListener('input', () => {
     }
     inputWasEmpty = isEmpty;
 
-    if (!isEmpty && (paragraphJustCompleted || messageDiv.textContent === 'Input cleared, retype the paragraph below')) {
+    if (!isEmpty && (paragraphJustCompleted || messageDiv.textContent === 'Paragraph ready — take a breather' || messageDiv.textContent === 'Input cleared, retype the paragraph below')) {
         paragraphJustCompleted = false;
         messageDiv.textContent = 'Typing away...';
         messageDiv.className = 'success';
