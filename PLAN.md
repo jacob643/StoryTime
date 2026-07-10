@@ -55,12 +55,12 @@ Goal: Eliminate paragraph-by-paragraph pauses by pre-fetching the next half whil
 
 ### 6.1 — Continuous mode frontend
 - [x] `GameSettings.continuous_mode: bool` + checkbox `#optContinuousMode` in Word Count section.
-- [x] Continuous mode state variables: `consumedChars`, `splitList`, `fetchedText`, `fetchSent`, `fetchPending`.
-- [x] `updateSplitTimestampsContinuous()`: consume at split boundaries, compute CPM, trim input, update display.
-- [x] 75% fetch trigger (by char count `consumedChars + inputBox.value.length`).
-- [x] `sendPrefetch()`: generates next paragraph, creates history entry, stores fetched text.
+- [x] Continuous mode state variables: `consumedChars`, `splitList`, `pendingText`, `fetchSent`, `fetchPending`.
+- [x] `updateSplitTimestamps()`: consume at split boundaries, compute CPM, trim input, update display.
+- [x] 75% fetch trigger (by split index, not char count).
+- [x] `fetchNextParagraph()`: generates next paragraph, creates history entry, stores fetched text.
 - [x] `advanceParagraph()`: swaps fetched text into current, resets continuous state.
-- [x] `updateTextDisplay()`: offsets by `consumedChars`, shows fetched text in gray.
+- [x] `updateTextDisplay()`: offsets by `consumedChars`, shows fetched text in gray (permanent DOM spans).
 - [x] `CheckFinishedSentence()`: early-return in continuous mode (first paragraph still completes normally).
 - [x] `retryParagraph()` / `reset()`: clear continuous state.
 - [x] Smooth scroll: `scroll-behavior: smooth` on `#textDisplayContainer`.
@@ -70,58 +70,57 @@ Goal: Eliminate paragraph-by-paragraph pauses by pre-fetching the next half whil
 Goal: Merge paragraph mode and continuous mode into a single code path driven entirely by `fetchTriggerPct` (100% = no overlap, <100% = overlap). Remove all `if (continuousMode)` branches, dead flags, and the old per-char paragraph-completion logic.
 
 ### 7.0 — Validate continuous mode at 100%
-
-Set `fetchTriggerPct = 100` and manually test all scenarios. Identify behavioral gaps before removing paragraph mode.
-
-- [ ] Start a new story → verify typing consumes at split boundaries
-- [ ] Reach the last split → verify fetch fires, input clears, loading message shows
-- [ ] Wait for response → verify new paragraph appears, input focused, message reads ready
-- [ ] Type the next paragraph → verify accumulation in `#completedText`
-- [ ] Retry → verify it resets to the current paragraph
-- [ ] Backspace → verify CPM timing is correct
-- [ ] Error on a split → verify it blocks consumption and shows red
-- [ ] Simulate → verify it works at 100%
-- [ ] Verify no duplicate RPCs fire
-- [ ] **TBD:** Input behavior during fetch load (cleared+blocked vs allow typing ahead) — decide after testing.
-- [ ] Fix any issues found during testing
+Set `fetchTriggerPct = 100` and test all scenarios. Identified and fixed: computeSplits early return for short text, message flow gaps, duplicate RPCs. Deemed complete.
+- [x] Start a new story → verify typing consumes at split boundaries
+- [x] Reach the last split → verify fetch fires, input clears, loading message shows
+- [x] Wait for response → verify new paragraph appears, input focused, message reads ready
+- [x] Type the next paragraph → verify accumulation in `#completedText`
+- [x] Retry → verify it resets to the current paragraph
+- [x] Backspace → verify CPM timing is correct
+- [x] Error on a split → verify it blocks consumption and shows red
+- [x] Simulate → verify it works at 100%
+- [x] Verify no duplicate RPCs fire
+- [x] Fix computeSplits early return (text.length <= 50 bypassed trigger boundary logic)
+- [x] Fix message flow: swap branch now shows "Paragraph ready — take a breather", first keystroke flips to "Typing away..."
 
 ### 7.1 — Remove paragraph mode, unify all paths
+Remove all `if (continuousMode)` branches: assume continuous mode is always on. Eliminate dead code from old paragraph mode.
+- [x] Remove `continuousMode` variable — replace all `if (continuousMode)` branches with unconditional code
+- [x] Remove `continuous_mode` from `GameSettings`, `SettingsResponse`, `SettingsPatch`, frontend setting load/save/collect, HTML checkbox
+- [x] Unify split tracking: `updateSplitTimestamps()` always calls the continuous version
+- [x] Remove old per-char `updateSplitTimestamps` (the non-continuous version)
+- [x] Remove `CheckFinishedSentence()` — split consumption handles completion
+- [x] Remove `paragraphJustCompleted` flag entirely
+- [x] Unify `advanceParagraph()` — single path without `if (continuousMode)` branch
+- [x] Unify `updateTextDisplay()` — always use permanent DOM spans, remove innerHTML rebuild path
+- [x] Unify `retryParagraph()` — single path, no `if (continuousMode)` branch
+- [x] Unify `fetchNextParagraph()` — old dead function deleted
+- [x] Unify input handler — remove `CheckFinishedSentence()` call, remove `paragraphJustCompleted` branches
+- [x] Remove `resetSplitTracking()` — dead once paragraph mode is gone
+- [x] Unify `sendSimulate()` — single path without `if (continuousMode)` branch
+- [x] Remove `CalculateSpeed()`, `GetTimeTakenDisplay()`, `GetSpeedDisplay()` — dead once paragraph mode is gone
+- [x] 207 tests pass (202 backend + 5 Playwright)
 
-- [ ] Remove `continuousMode` variable — `fetchTriggerPct` is the single control; replace all `if (continuousMode)` branches with unconditional code
-- [ ] Remove `continuous_mode` from `GameSettings`, `SettingsResponse`, `SettingsPatch`, frontend setting load/save/collect, HTML checkbox
-- [ ] Unify split tracking: `updateSplitTimestamps()` always calls `updateSplitTimestampsContinuous()` (rename it to `updateSplitTimestamps`)
-- [ ] Remove old per-char `updateSplitTimestamps` (the non-continuous version)
-- [ ] Remove `CheckFinishedSentence()` — split consumption handles completion
-- [ ] Remove `paragraphJustCompleted` flag from `reset()`, `advanceParagraph()`, `fetchNextParagraph()`, `retryParagraph()`, input handler
-- [ ] Unify `advanceParagraph()` — single path: if waiting for fetch → clear input + show loading; if fetch ready → accumulate in `#completedText`, swap text, reset state
-- [ ] Unify `updateTextDisplay()` — always use permanent DOM spans, remove `if (continuousMode)` guard
-- [ ] Remove `_contDisplayInit` — unconditional first-render init
-- [ ] Remove old `innerHTML` rebuild path in `updateTextDisplay()`
-- [ ] Unify `retryParagraph()` — single path, no `if (continuousMode)` branch
-- [ ] Unify `fetchNextParagraph()` — remove `if (continuousMode)` branch for post-RPC behavior
-- [ ] Unify input handler — remove `CheckFinishedSentence()` call, remove `paragraphJustCompleted` branches
-- [ ] Remove `resetSplitTracking()` — dead once paragraph mode is gone
+### 7.2 — Rename "prefetch" to "fetch"
+After unification, "prefetch" is a misnomer — it's just fetching the next paragraph, whether triggered at 100% or <100%. Rename all identifiers.
+- [x] Rename `sendPrefetch()` → `fetchNextParagraph()`
+- [x] Rename `prefetchedText` → `pendingText`
+- [x] Rename `prefetchSent` → `fetchSent`
+- [x] Rename `prefetchPending` → `fetchPending`
+- [x] Rename `prefetchTriggerIndex` → `fetchTriggerIndex`
+- [x] Rename `prefetchTriggerPct` → `fetchTriggerPct`
+- [x] Rename `#prefetchSpan` → `#pendingSpan`
+- [x] Rename `#optPrefetchPct` → `#optFetchPct`
+- [x] Rename `prefetch_trigger_pct` → `fetch_trigger_pct` in backend Settings API
+- [x] Update HTML label: "Prefetch trigger (%)" → "Fetch trigger (%)"
+- [x] Update all documentation (PLAN.md, AGENTS.md)
 
-### 7.2 — Rename "fetch" to "fetchNextParagraph"
-
-After the unification, "fetch" is a misnomer — it's just fetching the next paragraph, whether triggered at 100% or <100%. Rename for clarity:
-
-- [ ] Rename `sendPrefetch()` → `fetchNextParagraph()` (merge with existing `fetchNextParagraph` or rename both)
-- [ ] Rename `fetchedText` → `nextText` or `pendingText`
-- [ ] Rename `fetchSent` → `fetchSent`
-- [ ] Rename `fetchPending` → `fetchPending`
-- [ ] Rename `fetchTriggerIndex` → `triggerBoundaryIndex` or `fetchTriggerIndex`
-- [ ] Rename `fetchTriggerPct` → `triggerPct` or `fetchTriggerPct`
-- [ ] Update CSS/HTML `#fetchSpan` → `#nextParagraphSpan` or keep with new semantic meaning
-- [ ] Update `SHOW_PREFETCH` or related CSS classes
-
-### 7.3 — Clean up dead code and settings
-
-- [ ] Remove dead functions: `resetSplitTracking()`, `CheckFinishedSentence()`, old `updateSplitTimestamps()`
-- [ ] Remove dead flags: `paragraphJustCompleted`, `_contDisplayInit`, `continuousMode`
-- [ ] Remove old display code (innerHTML path)
-- [ ] Remove `#optContinuousMode` checkbox from HTML
-- [ ] Update fetch trigger label in settings to reflect unified behavior
-- [ ] Remove `continuous_mode` from backend `GameSettings`, `SettingsResponse`, `SettingsPatch`, collectSettings mapping
-- [ ] Update tests — remove references to `continuous_mode`, update function names
-- [ ] Update `CHANGELOG.md`
+### 7.3 — Clean up dead code and update tests
+- [x] Remove dead functions: `resetSplitTracking()`, `CheckFinishedSentence()`, old `fetchNextParagraph`
+- [x] Remove dead flags: `paragraphJustCompleted`, `continuousMode`
+- [x] Remove old display code (innerHTML path), unused `displayedText` variable
+- [x] Remove `#optContinuousMode` checkbox from HTML
+- [x] Update fetch trigger label in settings to reflect unified behavior
+- [x] Remove `continuous_mode` from backend `GameSettings`, `SettingsResponse`, `SettingsPatch`
+- [x] Update Playwright test for continuous mode (includes + not ===, add fetch_trigger_pct to mock)
+- [x] 207 tests pass

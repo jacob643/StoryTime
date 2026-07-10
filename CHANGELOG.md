@@ -6,9 +6,15 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### Added
 ### Changed
+- Unified split-consumption mode: continuous mode is now always on. Removed all `if (continuousMode)` branches and old paragraph-mode code paths.
+- Renamed all "prefetch" identifiers to "fetch" across the codebase (API field `fetch_trigger_pct`, variables, DOM ids).
 ### Deprecated
 ### Removed
+- Removed `continuous_mode` setting, `paragraphJustCompleted` flag, `CheckFinishedSentence()`, `resetSplitTracking()`, old per-char `updateSplitTimestamps`, old `fetchNextParagraph`.
+- Removed `#optContinuousMode` checkbox and innerHTML rebuild display path.
 ### Fixed
+- `computeSplits` no longer bypasses trigger-boundary logic for short text (≤50 chars).
+- Message flow now shows "Paragraph ready — take a breather" on swap and "Typing away..." on first keystroke.
 ### Security
 
 ## [0.3.0] - 2026-07-10
