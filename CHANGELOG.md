@@ -5,9 +5,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+### Security
+
+## [0.3.0] - 2026-07-10
+
+### Added
 - Continuous mode: prefetch next paragraph at 75% typing progress, smooth-scrolling text display, split consumption at boundaries without interrupting typing.
 - Continuous mode checkbox in settings (Word Count section).
-- `isContinuousMode()` helper, `updateSplitTimestampsContinuous()`, `sendPrefetch()`, `advanceParagraph()` in frontend.
+- `updateSplitTimestampsContinuous()`, `sendPrefetch()`, `advanceParagraph()` in frontend.
 - `consumedChars`, `splitList`, `prefetchedText`, `prefetchSent`, `prefetchPending` state variables for continuous mode.
 - Prefetched text shown in gray below current paragraph text.
 - `scroll-behavior: smooth` on text display container.
@@ -22,6 +31,7 @@ All notable changes to this project will be documented in this file.
 - `min_split_size` setting / `MIN_SPLIT_SIZE` constant — backend handles variable-sized splits, no minimum required.
 ### Fixed
 - Backend tests pass (203) with Split dataclass and rolling window.
+- multiple fetching at the end of paragraph in non-continuous mode prevention.
 ### Security
 
 ## [0.2.2] - 2026-06-26
