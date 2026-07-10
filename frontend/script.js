@@ -196,10 +196,6 @@ function resetSplitTracking() {
     splitTimestamps = [];
 }
 
-function isContinuousMode() {
-    return continuousMode;
-}
-
 function initSplits(text) {
     const pct = prefetchTriggerPct / 100;
     splitBoundaries = computeSplits(text, pct);
@@ -215,7 +211,7 @@ function initSplits(text) {
 }
 
 function updateSplitTimestamps() {
-    if (isContinuousMode()) {
+    if (continuousMode) {
         updateSplitTimestampsContinuous();
         return;
     }
@@ -368,7 +364,7 @@ function advanceParagraph() {
     splitTimestamps = [];
     initSplits(textContent);
 
-    if (isContinuousMode()) {
+    if (continuousMode) {
         inputBox.focus();
         updateTextDisplay();
     } else {
@@ -443,14 +439,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const r = await fetch('/api/settings');
             if (r.ok) {
                 const s = await r.json();
-                console.log('Continuous mode from settings:', s.continuous_mode);
                 continuousMode = s.continuous_mode;
                 document.getElementById('optContinuousMode').checked = s.continuous_mode;
                 prefetchTriggerPct = s.prefetch_trigger_pct;
                 document.getElementById('optPrefetchPct').value = s.prefetch_trigger_pct;
             }
         } catch (_) {
-            console.log('Settings fetch failed, continuousMode stays:', continuousMode);
         }
     })();
     document.querySelectorAll('input[name="speedType"]').forEach(el => {
@@ -681,7 +675,7 @@ function updateTextDisplay() {
     const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
     let displayedText = '';
 
-    if (isContinuousMode()) {
+    if (continuousMode) {
         if (!_contDisplayInit) {
             textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="prefetchSpan"></span>';
             _contDisplayInit = true;
@@ -831,7 +825,7 @@ async function fetchNextParagraph(completedText, speedCpm, splitData) {
         messageDiv.className = 'neutral';
         inputBox.focus();
         initSplits(textContent);
-        if (isContinuousMode()) {
+        if (continuousMode) {
             splitTimestamps = [];
             retryButton.disabled = false;
             const container = document.getElementById('textDisplayContainer');
@@ -869,7 +863,7 @@ function escapeHtml(text) {
 }
 
 function CheckFinishedSentence() {
-    if (isContinuousMode() && historyData.length > 0) return;
+    if (continuousMode && historyData.length > 0) return;
     const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
     const isComplete = ignoreCase
         ? inputBox.value.toLowerCase() === textContent.toLowerCase()
@@ -892,7 +886,7 @@ function retryParagraph() {
     inputBox.value = '';
     startTime = null;
     paragraphJustCompleted = false;
-    if (isContinuousMode()) {
+    if (continuousMode) {
         consumedChars = 0;
         splitList = [];
         splitTimestamps = [];
@@ -921,7 +915,7 @@ inputBox.addEventListener('input', () => {
     const isEmpty = inputBox.value.length === 0;
     if (isEmpty) {
         if (!inputWasEmpty) {
-            if (isContinuousMode()) {
+            if (continuousMode) {
                 startTime = null;
                 splitTimestamps = [];
             } else {
@@ -932,7 +926,7 @@ inputBox.addEventListener('input', () => {
             messageDiv.textContent = 'Input cleared, retype the paragraph below';
             messageDiv.className = 'neutral';
         }
-        retryButton.disabled = !isContinuousMode();
+        retryButton.disabled = !continuousMode;
     } else {
         retryButton.disabled = false;
     }
@@ -1466,7 +1460,7 @@ async function sendSimulate(cpm, deviation) {
     messageDiv.textContent = `[SIMULATION ${cpmToDisplay(cpm)}${range} ${getSpeedUnit()}]`;
     messageDiv.className = 'simulation';
 
-    if (isContinuousMode()) {
+    if (continuousMode) {
         if (!_contDisplayInit) {
             textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="prefetchSpan"></span>';
             _contDisplayInit = true;
@@ -1574,7 +1568,7 @@ async function sendPrompt(prompt) {
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);
-        if (isContinuousMode()) {
+        if (continuousMode) {
             retryButton.disabled = false;
         }
         updateTierChart(data.outcome_tier, data.tier_boundaries);
