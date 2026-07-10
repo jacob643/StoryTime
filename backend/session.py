@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from backend.game_logic import Split, ScoringParams, DEFAULT_AVG_CPM, ROLLING_MAX_CHARS, get_outcome_label
+from backend.performance_store import load_performance
 from backend.settings_manager import get_settings as _get_gs, build_scoring_params
 from backend.logger import logger
 
@@ -76,6 +77,11 @@ class SessionStore:
             initial_avg_cpm=initial_avg_cpm if initial_avg_cpm is not None else DEFAULT_AVG_CPM,
             scoring_params=params,
         )
+        persisted = load_performance()
+        if persisted:
+            session.rolling_window.add_many(persisted)
+            logger.info("SessionStore.create id=%s seeded rolling window with %d splits",
+                        session.id, len(persisted))
         self._sessions[session.id] = session
         logger.info("SessionStore.create id=%s initial_prompt=%s", session.id, initial_prompt)
         return session

@@ -954,6 +954,7 @@ settingsToggle.addEventListener('click', () => {
     } else {
         hideWordCountPreview();
     }
+    resetPerfBtn.disabled = false;
 });
 
 const BUG_REPORT_URL = 'https://github.com/jacob643/StoryTime/issues';
@@ -1392,6 +1393,18 @@ document.getElementById('resetSettings').addEventListener('click', async () => {
     }
 });
 
+const resetPerfBtn = document.getElementById('resetPerformanceBtn');
+resetPerfBtn.addEventListener('click', async () => {
+    try {
+        const r = await fetch('/api/performance/reset', { method: 'POST' });
+        if (!r.ok) throw new Error('Failed to reset performance');
+        resetPerfBtn.disabled = true;
+    } catch (e) {
+        messageDiv.textContent = 'Reset error: ' + e.message;
+        messageDiv.className = 'error';
+    }
+});
+
 // prompt and LLM side.
 
 const restartButton = document.getElementById('restartButton');
@@ -1444,6 +1457,50 @@ async function sendSimulate(cpm, deviation) {
 
     messageDiv.textContent = `[SIMULATION ${cpmToDisplay(cpm)}${range} ${getSpeedUnit()}]`;
     messageDiv.className = 'simulation';
+
+    if (isContinuousMode()) {
+        if (!_contDisplayInit) {
+            textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="prefetchSpan"></span>';
+            _contDisplayInit = true;
+        }
+        const splitSpeeds = computeSplitSpeeds();
+        const triggerIdx = prefetchTriggerIndex >= 0 ? prefetchTriggerIndex : splitBoundaries.length;
+        if (triggerIdx >= 0) {
+            splitList = [];
+            splitTimestamps = [];
+            let timeCursor = Date.now();
+            for (let i = 0; i <= triggerIdx && i < splitSpeeds.length; i++) {
+                splitList.push(splitSpeeds[i]);
+                const s = splitSpeeds[i];
+                timeCursor += (s.chars / s.cpm) * 60000;
+                splitTimestamps.push(new Date(timeCursor));
+            }
+            consumedChars = triggerIdx < splitBoundaries.length ? splitBoundaries[triggerIdx] : textContent.length;
+
+            const firstSplitTime = (splitSpeeds[0].chars / splitSpeeds[0].cpm) * 60000;
+            startTime = new Date(splitTimestamps[0].getTime() - firstSplitTime);
+
+            prefetchSent = true;
+            await sendPrefetch();
+
+            if (splitTimestamps.length > 0) {
+                splitTimestamps[splitTimestamps.length - 1] = Date.now();
+            }
+
+            if (consumedChars >= textContent.length) {
+                advanceParagraph();
+            } else {
+                inputBox.value = textContent.slice(consumedChars);
+                updateTextDisplay();
+            }
+            messageDiv.textContent = `[SIMULATION] Simulated ${consumedChars} chars at ${cpmToDisplay(cpm)} ${getSpeedUnit()}, prefetch sent.`;
+            messageDiv.className = 'simulation';
+        }
+        simulatedCpm = null;
+        simulatedDeviation = 0;
+        return;
+    }
+
     startTime = new Date();
     inputBox.value = textContent;
     const splitSpeeds = computeSplitSpeeds();

@@ -3,6 +3,7 @@ import math
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from backend.performance_store import save_performance
 from backend.providers.registry import registry
 from backend.session import session_store
 from backend.game_logic import (
@@ -132,6 +133,8 @@ async def generate(body: GenerateRequest):
             outcome_tier=outcome_tier,
             splits=splits,
         )
+
+        save_performance(session.rolling_window.to_list())
 
         history_texts = [r.text for r in session.history]
         assembled = build_prompt(

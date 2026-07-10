@@ -16,6 +16,23 @@ class TestCreateSession:
         assert session.initial_avg_cpm == 300.0
         assert session.scoring_params is not None
 
+    def test_create_seeds_from_performance(self, monkeypatch):
+        monkeypatch.setattr("backend.session.load_performance", lambda: [
+            Split(250.0, 50),
+            Split(350.0, 50),
+            Split(300.0, 50),
+        ])
+        store = SessionStore()
+        session = store.create()
+        assert len(session.rolling_window) == 3
+        assert session.rolling_window.total_chars == 150
+
+    def test_create_with_empty_performance(self, monkeypatch):
+        monkeypatch.setattr("backend.session.load_performance", lambda: [])
+        store = SessionStore()
+        session = store.create()
+        assert len(session.rolling_window) == 0
+
     def test_create_session_default_initial_prompt(self):
         store = SessionStore()
         session = store.create()

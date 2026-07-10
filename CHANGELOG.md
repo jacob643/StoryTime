@@ -12,7 +12,11 @@ All notable changes to this project will be documented in this file.
 - Prefetched text shown in gray below current paragraph text.
 - `scroll-behavior: smooth` on text display container.
 - Automatic retry-button enable in continuous mode.
+- Performance history persistence — splits stored in `~/.storytime/performance.json`, loaded on session start to seed rolling window.
+- `POST /api/performance/reset` endpoint to clear persisted performance data.
+- Reset player performance button in settings panel.
 ### Changed
+- "Scoring Mode" section renamed to "Scoring"; "Mode" label renamed to "scoring mode"; reset button added at top of section.
 ### Deprecated
 ### Removed
 - `min_split_size` setting / `MIN_SPLIT_SIZE` constant — backend handles variable-sized splits, no minimum required.
