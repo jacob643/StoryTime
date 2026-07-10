@@ -39,19 +39,17 @@ let simulatedDeviation = 0;
 let splitBoundaries = [];
 let splitTimestamps = [];
 let retryAction = null;
-let paragraphJustCompleted = false;
 const historyData = [];
 let _cachedCpmThresholds = null;
-let continuousMode = false;
-let prefetchTriggerPct = 75;
+let fetchTriggerPct = 75;
 
 // Continuous mode state
 let consumedChars = 0;
 let splitList = [];
-let prefetchedText = '';
-let prefetchSent = false;
-let prefetchPending = false;
-let prefetchTriggerIndex = -1;
+let pendingText = '';
+let fetchSent = false;
+let fetchPending = false;
+let fetchTriggerIndex = -1;
 let completedParagraphs = [];
 let _contDisplayInit = false;
 
@@ -69,8 +67,7 @@ const SETTINGS_DEFAULTS = {
     top_p: 0.9,
     ollama_model: 'llama3.2:latest',
     ignore_case: false,
-    continuous_mode: false,
-    prefetch_trigger_pct: 75,
+    fetch_trigger_pct: 75,
 };
 
 const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
@@ -166,11 +163,6 @@ function computeSplits(text, pct) {
     const boundaries = [];
     const triggerBoundary = Math.ceil(text.length * pct);
 
-    if (text.length <= target) {
-        boundaries.push(text.length);
-        return boundaries;
-    }
-
     let i = target;
     while (i < triggerBoundary) {
         boundaries.push(i);
@@ -192,18 +184,14 @@ function computeSplits(text, pct) {
     return boundaries;
 }
 
-function resetSplitTracking() {
-    splitTimestamps = [];
-}
-
 function initSplits(text) {
-    const pct = prefetchTriggerPct / 100;
+    const pct = fetchTriggerPct / 100;
     splitBoundaries = computeSplits(text, pct);
     const triggerPos = text.length * pct;
-    prefetchTriggerIndex = -1;
+    fetchTriggerIndex = -1;
     for (let i = 0; i < splitBoundaries.length; i++) {
         if (splitBoundaries[i] >= triggerPos) {
-            prefetchTriggerIndex = i;
+            fetchTriggerIndex = i;
             break;
         }
     }
@@ -211,19 +199,6 @@ function initSplits(text) {
 }
 
 function updateSplitTimestamps() {
-    if (continuousMode) {
-        updateSplitTimestampsContinuous();
-        return;
-    }
-    const pos = inputBox.value.length;
-    for (let i = 0; i < splitBoundaries.length; i++) {
-        if (pos >= splitBoundaries[i] && splitTimestamps.length <= i) {
-            splitTimestamps.push(new Date());
-        }
-    }
-}
-
-function updateSplitTimestampsContinuous() {
     const absolutePos = consumedChars + inputBox.value.length;
     const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
     let consumedAny = false;
@@ -255,9 +230,9 @@ function updateSplitTimestampsContinuous() {
         splitList.push({ cpm, chars: splitChars });
         consumedChars += splitChars;
 
-        if (!prefetchSent && !prefetchPending && i >= prefetchTriggerIndex) {
-            prefetchSent = true;
-            sendPrefetch();
+        if (!fetchSent && !fetchPending && i >= fetchTriggerIndex) {
+            fetchSent = true;
+            fetchNextParagraph();
         }
 
         consumedAny = true;
@@ -276,10 +251,10 @@ function updateSplitTimestampsContinuous() {
     }
 }
 
-async function sendPrefetch() {
+async function fetchNextParagraph() {
     if (!sessionId || !textContent) return;
 
-    prefetchPending = true;
+    fetchPending = true;
     const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0;
     const totalChars = splitList.reduce((sum, s) => sum + s.chars, 0);
     const totalWeightedCpm = splitList.reduce((sum, s) => sum + s.cpm * s.chars, 0);
@@ -313,12 +288,12 @@ async function sendPrefetch() {
         updateTierChart(data.outcome_tier, data.tier_boundaries);
         sessionId = data.session_id;
 
-        prefetchedText = ' ' + data.response;
+        pendingText = ' ' + data.response;
         splitList = [];
         const lastTs = splitTimestamps.length > 0 ? splitTimestamps[splitTimestamps.length - 1] : null;
         splitTimestamps = [];
         if (lastTs) splitTimestamps.push(lastTs);
-        prefetchPending = false;
+        fetchPending = false;
 
         if (consumedChars >= textContent.length) {
             advanceParagraph();
@@ -326,17 +301,17 @@ async function sendPrefetch() {
 
         updateTextDisplay();
     } catch (error) {
-        prefetchPending = false;
-        prefetchSent = false;
-        showError(error.message, () => sendPrefetch());
+        fetchPending = false;
+        fetchSent = false;
+        showError(error.message, () => fetchNextParagraph());
     }
 }
 
 function advanceParagraph() {
-    if (!prefetchedText) {
-        if (!prefetchPending) {
-            prefetchSent = true;
-            sendPrefetch();
+    if (!pendingText) {
+        if (!fetchPending) {
+            fetchSent = true;
+            fetchNextParagraph();
         }
         messageDiv.textContent = 'Loading next paragraph...';
         messageDiv.className = 'neutral';
@@ -353,10 +328,10 @@ function advanceParagraph() {
         completedText.appendChild(pSpan);
     }
 
-    textContent = prefetchedText;
-    prefetchedText = '';
+    textContent = pendingText;
+    pendingText = '';
     consumedChars = 0;
-    prefetchSent = false;
+    fetchSent = false;
     splitList = [];
     if (splitTimestamps.length > 0) {
         startTime = new Date(splitTimestamps[splitTimestamps.length - 1]);
@@ -364,24 +339,10 @@ function advanceParagraph() {
     splitTimestamps = [];
     initSplits(textContent);
 
-    if (continuousMode) {
-        messageDiv.textContent = 'Paragraph ready — take a breather';
-        messageDiv.className = 'neutral';
-        inputBox.focus();
-        updateTextDisplay();
-    } else {
-        startTime = null;
-        inputBox.value = '';
-        paragraphJustCompleted = true;
-        retryButton.disabled = false;
-        inputWasEmpty = true;
-        messageDiv.textContent = 'paragraph over! take a breather';
-        messageDiv.className = 'neutral';
-        const container = document.getElementById('textDisplayContainer');
-        if (container) container.scrollTop = 0;
-        inputBox.focus();
-        updateTextDisplay();
-    }
+    messageDiv.textContent = 'Paragraph ready — take a breather';
+    messageDiv.className = 'neutral';
+    inputBox.focus();
+    updateTextDisplay();
 }
 
 function computeSplitSpeeds() {
@@ -441,10 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const r = await fetch('/api/settings');
             if (r.ok) {
                 const s = await r.json();
-                continuousMode = s.continuous_mode;
-                document.getElementById('optContinuousMode').checked = s.continuous_mode;
-                prefetchTriggerPct = s.prefetch_trigger_pct;
-                document.getElementById('optPrefetchPct').value = s.prefetch_trigger_pct;
+                fetchTriggerPct = s.fetch_trigger_pct;
+                document.getElementById('optFetchPct').value = s.fetch_trigger_pct;
             }
         } catch (_) {
         }
@@ -515,7 +474,6 @@ function reset() {
     sessionId = null;
     simulatedCpm = null;
     simulatedDeviation = 0;
-    paragraphJustCompleted = false;
     textContent = '';
     textDisplay.innerText = '';
     textDisplay.className = '';
@@ -533,13 +491,12 @@ function reset() {
     document.getElementById('historyEntries').querySelectorAll('.history-item').forEach(el => el.remove());
     historyData.length = 0;
     document.getElementById('storyContent').textContent = '';
-    resetSplitTracking();
     consumedChars = 0;
     splitList = [];
-    prefetchedText = '';
-    prefetchSent = false;
-    prefetchPending = false;
-    prefetchTriggerIndex = -1;
+    pendingText = '';
+    fetchSent = false;
+    fetchPending = false;
+    fetchTriggerIndex = -1;
     completedParagraphs = [];
     _contDisplayInit = false;
 }
@@ -675,91 +632,50 @@ function smoothScrollTo(container, target, duration = 800) {
 function updateTextDisplay() {
     const inputText = inputBox.value;
     const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
-    let displayedText = '';
-
-    if (continuousMode) {
-        if (!_contDisplayInit) {
-            textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="prefetchSpan"></span>';
-            _contDisplayInit = true;
-        }
-
-        document.getElementById('consumedSpan').textContent = textContent.slice(0, consumedChars);
-
-        const remainingText = textContent.slice(consumedChars);
-
-        let firstError = -1;
-        for (let i = 0; i < remainingText.length && i < inputText.length; i++) {
-            const match = ignoreCase
-                ? inputText[i].toLowerCase() === remainingText[i].toLowerCase()
-                : inputText[i] === remainingText[i];
-            if (!match) {
-                firstError = i;
-                break;
-            }
-        }
-
-        const correctEnd = firstError >= 0 ? firstError : inputText.length;
-        document.getElementById('correctSpan').textContent = remainingText.slice(0, correctEnd);
-
-        const errorSpan = document.getElementById('errorSpan');
-        if (firstError >= 0) {
-            errorSpan.textContent = remainingText.slice(firstError, inputText.length);
-            errorSpan.style.display = '';
-        } else {
-            errorSpan.style.display = 'none';
-        }
-        document.getElementById('untypedSpan').textContent = remainingText.slice(inputText.length);
-
-        document.getElementById('prefetchSpan').textContent = prefetchedText;
-
-        const container = document.getElementById('textDisplayContainer');
-        const anchor = document.getElementById('sA');
-        if (container && anchor) {
-            const anchorY = anchor.getBoundingClientRect().top - container.getBoundingClientRect().top;
-            const fraction = anchorY / container.clientHeight;
-            if (fraction < 0.45 || fraction > 0.55) {
-                const targetScroll = container.scrollTop + anchorY - container.clientHeight / 2;
-                smoothScrollTo(container, targetScroll, 5000);
-            }
-        }
-        return;
+    if (!_contDisplayInit) {
+        textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="pendingSpan"></span>';
+        _contDisplayInit = true;
     }
 
+    document.getElementById('consumedSpan').textContent = textContent.slice(0, consumedChars);
+
+    const remainingText = textContent.slice(consumedChars);
+
     let firstError = -1;
-    for (let i = 0; i < textContent.length; i++) {
-        const inputChar = inputText[i];
-        if (inputChar === undefined) break;
-        const char = textContent[i];
+    for (let i = 0; i < remainingText.length && i < inputText.length; i++) {
         const match = ignoreCase
-            ? inputChar.toLowerCase() === char.toLowerCase()
-            : inputChar === char;
+            ? inputText[i].toLowerCase() === remainingText[i].toLowerCase()
+            : inputText[i] === remainingText[i];
         if (!match) {
             firstError = i;
             break;
         }
     }
 
-    for (let i = 0; i < textContent.length; i++) {
-        const char = textContent[i];
-        const inputChar = inputText[i];
+    const correctEnd = firstError >= 0 ? firstError : inputText.length;
+    document.getElementById('correctSpan').textContent = remainingText.slice(0, correctEnd);
 
-        if (inputChar === undefined) {
-            displayedText += `<span>${char}</span>`;
-        } else if (firstError >= 0 && i >= firstError) {
-            displayedText += `<span style="background-color: red; color: black;">${char}</span>`;
-        } else {
-            const match = ignoreCase
-                ? inputChar.toLowerCase() === char.toLowerCase()
-                : inputChar === char;
-            if (match) {
-                displayedText += `<span style="background-color: green; color: black;">${char}</span>`;
-            } else {
-                displayedText += `<span style="background-color: red; color: black;">${char}</span>`;
-            }
+    const errorSpan = document.getElementById('errorSpan');
+    if (firstError >= 0) {
+        errorSpan.textContent = remainingText.slice(firstError, inputText.length);
+        errorSpan.style.display = '';
+    } else {
+        errorSpan.style.display = 'none';
+    }
+    document.getElementById('untypedSpan').textContent = remainingText.slice(inputText.length);
+
+    document.getElementById('pendingSpan').textContent = pendingText;
+
+    const container = document.getElementById('textDisplayContainer');
+    const anchor = document.getElementById('sA');
+    if (container && anchor) {
+        const anchorY = anchor.getBoundingClientRect().top - container.getBoundingClientRect().top;
+        const fraction = anchorY / container.clientHeight;
+        if (fraction < 0.45 || fraction > 0.55) {
+            const targetScroll = container.scrollTop + anchorY - container.clientHeight / 2;
+            smoothScrollTo(container, targetScroll, 5000);
         }
     }
-
-    textDisplay.innerHTML = displayedText;
 }
 
 function GetTimeTakenDisplay() {
@@ -776,68 +692,6 @@ function CalculateSpeed() {
 
 function GetSpeedDisplay() {
     return `${cpmToDisplay(speed).toFixed(1)} ${getSpeedUnit()}`;
-}
-
-async function fetchNextParagraph(completedText, speedCpm, splitData) {
-    if (!sessionId) return;
-
-    inputWasEmpty = true;
-    inputBox.value = '';
-    startTime = null;
-    paragraphJustCompleted = true;
-    retryButton.disabled = true;
-    messageDiv.textContent = 'Loading next paragraph...';
-    messageDiv.className = 'neutral';
-
-    const body = {
-        prompt: completedText,
-        session_id: sessionId,
-    };
-    if (splitData && splitData.length > 0) {
-        body.splits = splitData.map(s => ({ speed_cpm: s.cpm, char_count: s.chars }));
-    }
-
-    retryAction = () => fetchNextParagraph(completedText, speedCpm, splitData);
-
-    try {
-        const response = await fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        addHistory(completedText, timeTakenSeconds, speedCpm, data.outcome_tier, data.outcome_label, splitData);
-        updateStoryContext(completedText);
-        updateTierChart(data.outcome_tier, data.tier_boundaries);
-        sessionId = data.session_id;
-        textContent = data.response;
-        textDisplay.innerText = textContent;
-        textDisplay.className = '';
-        inputBox.value = '';
-        startTime = null;
-        paragraphJustCompleted = true;
-        retryButton.disabled = true;
-        inputWasEmpty = true;
-        messageDiv.textContent = 'paragraph over! take a breather';
-        messageDiv.className = 'neutral';
-        inputBox.focus();
-        initSplits(textContent);
-        if (continuousMode) {
-            splitTimestamps = [];
-            retryButton.disabled = false;
-            const container = document.getElementById('textDisplayContainer');
-            if (container) container.scrollTop = 0;
-        } else {
-            autoScrollTextDisplay();
-        }
-    } catch (error) {
-        showError(error.message, retryAction);
-    }
 }
 
 function showError(message, retryFn) {
@@ -864,20 +718,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function CheckFinishedSentence() {
-    if (continuousMode && historyData.length > 0) return;
-    const ignoreCase = document.getElementById('optIgnoreCase')?.checked || false;
-    const isComplete = ignoreCase
-        ? inputBox.value.toLowerCase() === textContent.toLowerCase()
-        : inputBox.value === textContent;
-    if (isComplete) {
-        CalculateSpeed();
-        const splitSpeeds = computeSplitSpeeds();
-        const displaySpeed = simulatedCpm !== null ? simulatedCpm : speed;
-        fetchNextParagraph(textContent, displaySpeed, splitSpeeds);
-    }
-}
-
 function startTypingTimer() {
     if (startTime === null && inputBox.value.length > 0) {
         startTime = new Date();
@@ -887,22 +727,15 @@ function startTypingTimer() {
 function retryParagraph() {
     inputBox.value = '';
     startTime = null;
-    paragraphJustCompleted = false;
-    if (continuousMode) {
-        consumedChars = 0;
-        splitList = [];
-        splitTimestamps = [];
-        prefetchedText = '';
-        prefetchSent = false;
-        prefetchPending = false;
-        initSplits(textContent);
-        messageDiv.textContent = 'Input cleared, retype the paragraph below';
-        messageDiv.className = 'neutral';
-    } else {
-        resetSplitTracking();
-        messageDiv.textContent = 'Input cleared, retype the paragraph below';
-        messageDiv.className = 'neutral';
-    }
+    consumedChars = 0;
+    splitList = [];
+    splitTimestamps = [];
+    pendingText = '';
+    fetchSent = false;
+    fetchPending = false;
+    initSplits(textContent);
+    messageDiv.textContent = 'Input cleared, retype the paragraph below';
+    messageDiv.className = 'neutral';
     retryButton.disabled = true;
     inputBox.focus();
     updateTextDisplay();
@@ -917,31 +750,23 @@ inputBox.addEventListener('input', () => {
     const isEmpty = inputBox.value.length === 0;
     if (isEmpty) {
         if (!inputWasEmpty) {
-            if (continuousMode) {
-                startTime = null;
-                splitTimestamps = [];
-            } else {
-                startTime = null;
-                paragraphJustCompleted = false;
-                resetSplitTracking();
-            }
+            startTime = null;
+            splitTimestamps = [];
             messageDiv.textContent = 'Input cleared, retype the paragraph below';
             messageDiv.className = 'neutral';
         }
-        retryButton.disabled = !continuousMode;
+        retryButton.disabled = false;
     } else {
         retryButton.disabled = false;
     }
     inputWasEmpty = isEmpty;
 
-    if (!isEmpty && (paragraphJustCompleted || messageDiv.textContent === 'Paragraph ready — take a breather' || messageDiv.textContent === 'Input cleared, retype the paragraph below')) {
-        paragraphJustCompleted = false;
+    if (!isEmpty && (messageDiv.textContent === 'Paragraph ready — take a breather' || messageDiv.textContent === 'Input cleared, retype the paragraph below')) {
         messageDiv.textContent = 'Typing away...';
         messageDiv.className = 'success';
     }
     startTypingTimer();
     updateSplitTimestamps();
-    CheckFinishedSentence();
     updateTextDisplay();
 });
 
@@ -1099,10 +924,8 @@ async function loadSettings() {
         renderTierPrompts();
         await buildModelSelector(s.ollama_model);
         document.getElementById('optIgnoreCase').checked = s.ignore_case;
-        document.getElementById('optContinuousMode').checked = s.continuous_mode;
-        continuousMode = s.continuous_mode;
-        prefetchTriggerPct = s.prefetch_trigger_pct;
-        document.getElementById('optPrefetchPct').value = s.prefetch_trigger_pct;
+        fetchTriggerPct = s.fetch_trigger_pct;
+        document.getElementById('optFetchPct').value = s.fetch_trigger_pct;
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
     } catch (e) {
@@ -1155,8 +978,7 @@ function collectSettings() {
         outcome_directions: outcomeDirections,
         ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2:latest',
         ignore_case: document.getElementById('optIgnoreCase').checked,
-        continuous_mode: document.getElementById('optContinuousMode').checked,
-        prefetch_trigger_pct: safeParseInt(document.getElementById('optPrefetchPct').value, 75),
+        fetch_trigger_pct: safeParseInt(document.getElementById('optFetchPct').value, 75),
     };
 }
 
@@ -1368,8 +1190,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
         const minStddevInput = document.getElementById('optMinStddev');
         if (minStddevInput) minStddevInput.dataset.cpm = body.min_stddev_cpm;
         _cachedCpmThresholds = body.fixed_thresholds;
-        continuousMode = document.getElementById('optContinuousMode').checked;
-        prefetchTriggerPct = safeParseInt(document.getElementById('optPrefetchPct').value, 75);
+        fetchTriggerPct = safeParseInt(document.getElementById('optFetchPct').value, 75);
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
         settingsPanel.classList.add('collapsed');
@@ -1462,53 +1283,43 @@ async function sendSimulate(cpm, deviation) {
     messageDiv.textContent = `[SIMULATION ${cpmToDisplay(cpm)}${range} ${getSpeedUnit()}]`;
     messageDiv.className = 'simulation';
 
-    if (continuousMode) {
-        if (!_contDisplayInit) {
-            textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="prefetchSpan"></span>';
-            _contDisplayInit = true;
-        }
-        const splitSpeeds = computeSplitSpeeds();
-        const triggerIdx = prefetchTriggerIndex >= 0 ? prefetchTriggerIndex : splitBoundaries.length;
-        if (triggerIdx >= 0) {
-            splitList = [];
-            splitTimestamps = [];
-            let timeCursor = Date.now();
-            for (let i = 0; i <= triggerIdx && i < splitSpeeds.length; i++) {
-                splitList.push(splitSpeeds[i]);
-                const s = splitSpeeds[i];
-                timeCursor += (s.chars / s.cpm) * 60000;
-                splitTimestamps.push(new Date(timeCursor));
-            }
-            consumedChars = triggerIdx < splitBoundaries.length ? splitBoundaries[triggerIdx] : textContent.length;
-
-            const firstSplitTime = (splitSpeeds[0].chars / splitSpeeds[0].cpm) * 60000;
-            startTime = new Date(splitTimestamps[0].getTime() - firstSplitTime);
-
-            prefetchSent = true;
-            await sendPrefetch();
-
-            if (splitTimestamps.length > 0) {
-                splitTimestamps[splitTimestamps.length - 1] = Date.now();
-            }
-
-            if (consumedChars >= textContent.length) {
-                advanceParagraph();
-            } else {
-                inputBox.value = textContent.slice(consumedChars);
-                updateTextDisplay();
-            }
-            messageDiv.textContent = `[SIMULATION] Simulated ${consumedChars} chars at ${cpmToDisplay(cpm)} ${getSpeedUnit()}, prefetch sent.`;
-            messageDiv.className = 'simulation';
-        }
-        simulatedCpm = null;
-        simulatedDeviation = 0;
-        return;
+    if (!_contDisplayInit) {
+        textDisplay.innerHTML = '<div id="completedText"></div><span id="consumedSpan"></span><span id="correctSpan"></span><span id="sA"></span><span id="errorSpan" style="display:none"></span><span id="untypedSpan"></span><span id="pendingSpan"></span>';
+        _contDisplayInit = true;
     }
-
-    startTime = new Date();
-    inputBox.value = textContent;
     const splitSpeeds = computeSplitSpeeds();
-    await fetchNextParagraph(textContent, simulatedCpm, splitSpeeds);
+    const triggerIdx = fetchTriggerIndex >= 0 ? fetchTriggerIndex : splitBoundaries.length;
+    if (triggerIdx >= 0) {
+        splitList = [];
+        splitTimestamps = [];
+        let timeCursor = Date.now();
+        for (let i = 0; i <= triggerIdx && i < splitSpeeds.length; i++) {
+            splitList.push(splitSpeeds[i]);
+            const s = splitSpeeds[i];
+            timeCursor += (s.chars / s.cpm) * 60000;
+            splitTimestamps.push(new Date(timeCursor));
+        }
+        consumedChars = triggerIdx < splitBoundaries.length ? splitBoundaries[triggerIdx] : textContent.length;
+
+        const firstSplitTime = (splitSpeeds[0].chars / splitSpeeds[0].cpm) * 60000;
+        startTime = new Date(splitTimestamps[0].getTime() - firstSplitTime);
+
+        fetchSent = true;
+        await fetchNextParagraph();
+
+        if (splitTimestamps.length > 0) {
+            splitTimestamps[splitTimestamps.length - 1] = Date.now();
+        }
+
+        if (consumedChars >= textContent.length) {
+            advanceParagraph();
+        } else {
+            inputBox.value = textContent.slice(consumedChars);
+            updateTextDisplay();
+        }
+        messageDiv.textContent = `[SIMULATION] Simulated ${consumedChars} chars at ${cpmToDisplay(cpm)} ${getSpeedUnit()}, fetch sent.`;
+        messageDiv.className = 'simulation';
+    }
     simulatedCpm = null;
     simulatedDeviation = 0;
 }
@@ -1539,10 +1350,8 @@ async function sendPrompt(prompt) {
             const sRes = await fetch('/api/settings');
             if (sRes.ok) {
                 const s = await sRes.json();
-                continuousMode = s.continuous_mode;
-                document.getElementById('optContinuousMode').checked = s.continuous_mode;
-                prefetchTriggerPct = s.prefetch_trigger_pct;
-                document.getElementById('optPrefetchPct').value = s.prefetch_trigger_pct;
+                fetchTriggerPct = s.fetch_trigger_pct;
+                document.getElementById('optFetchPct').value = s.fetch_trigger_pct;
             }
         } catch (_) {}
         const response = await fetch('/api/restart', {
@@ -1562,7 +1371,6 @@ async function sendPrompt(prompt) {
         textDisplay.className = '';
         inputBox.value = '';
         startTime = null;
-        paragraphJustCompleted = true;
         retryButton.disabled = true;
         inputWasEmpty = true;
         messageDiv.textContent = 'Story ready, start typing the first paragraph.';
@@ -1570,9 +1378,7 @@ async function sendPrompt(prompt) {
         inputBox.disabled = false;
         inputBox.focus();
         initSplits(textContent);
-        if (continuousMode) {
-            retryButton.disabled = false;
-        }
+        retryButton.disabled = false;
         updateTierChart(data.outcome_tier, data.tier_boundaries);
         autoScrollTextDisplay();
         retryAction = null;

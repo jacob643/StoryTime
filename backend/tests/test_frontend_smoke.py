@@ -102,7 +102,7 @@ def test_full_game_loop(server, page):
             return
         if route.request.url.endswith("/api/settings"):
             route.fulfill(status=200, content_type="application/json",
-                          body=json.dumps({"continuous_mode": False, "scoring_mode": "split"}))
+                          body=json.dumps({"scoring_mode": "split", "fetch_trigger_pct": 75}))
             return
         call_count += 1
         if call_count == 1:
@@ -141,7 +141,7 @@ def test_full_game_loop(server, page):
     page.type("#inputBox", first_paragraph, delay=5)
 
     page.wait_for_function(
-        f'document.getElementById("textDisplay").textContent === "{second_paragraph}"',
+        f'document.getElementById("textDisplay").textContent.includes("{second_paragraph}")',
         timeout=5000,
     )
 
