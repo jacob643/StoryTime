@@ -64,3 +64,64 @@ Goal: Eliminate paragraph-by-paragraph pauses by pre-fetching the next half whil
 - [x] `CheckFinishedSentence()`: early-return in continuous mode (first paragraph still completes normally).
 - [x] `retryParagraph()` / `reset()`: clear continuous state.
 - [x] Smooth scroll: `scroll-behavior: smooth` on `#textDisplayContainer`.
+
+## Milestone 7: Unified Split-Consumption Mode
+
+Goal: Merge paragraph mode and continuous mode into a single code path driven entirely by `prefetchTriggerPct` (100% = no overlap, <100% = overlap). Remove all `if (continuousMode)` branches, dead flags, and the old per-char paragraph-completion logic.
+
+### 7.0 — Validate continuous mode at 100%
+
+Set `prefetchTriggerPct = 100` and manually test all scenarios. Identify behavioral gaps before removing paragraph mode.
+
+- [ ] Start a new story → verify typing consumes at split boundaries
+- [ ] Reach the last split → verify prefetch fires, input clears, loading message shows
+- [ ] Wait for response → verify new paragraph appears, input focused, message reads ready
+- [ ] Type the next paragraph → verify accumulation in `#completedText`
+- [ ] Retry → verify it resets to the current paragraph
+- [ ] Backspace → verify CPM timing is correct
+- [ ] Error on a split → verify it blocks consumption and shows red
+- [ ] Simulate → verify it works at 100%
+- [ ] Verify no duplicate RPCs fire
+- [ ] **TBD:** Input behavior during prefetch load (cleared+blocked vs allow typing ahead) — decide after testing.
+- [ ] Fix any issues found during testing
+
+### 7.1 — Remove paragraph mode, unify all paths
+
+- [ ] Remove `continuousMode` variable — `prefetchTriggerPct` is the single control; replace all `if (continuousMode)` branches with unconditional code
+- [ ] Remove `continuous_mode` from `GameSettings`, `SettingsResponse`, `SettingsPatch`, frontend setting load/save/collect, HTML checkbox
+- [ ] Unify split tracking: `updateSplitTimestamps()` always calls `updateSplitTimestampsContinuous()` (rename it to `updateSplitTimestamps`)
+- [ ] Remove old per-char `updateSplitTimestamps` (the non-continuous version)
+- [ ] Remove `CheckFinishedSentence()` — split consumption handles completion
+- [ ] Remove `paragraphJustCompleted` flag from `reset()`, `advanceParagraph()`, `fetchNextParagraph()`, `retryParagraph()`, input handler
+- [ ] Unify `advanceParagraph()` — single path: if waiting for prefetch → clear input + show loading; if prefetch ready → accumulate in `#completedText`, swap text, reset state
+- [ ] Unify `updateTextDisplay()` — always use permanent DOM spans, remove `if (continuousMode)` guard
+- [ ] Remove `_contDisplayInit` — unconditional first-render init
+- [ ] Remove old `innerHTML` rebuild path in `updateTextDisplay()`
+- [ ] Unify `retryParagraph()` — single path, no `if (continuousMode)` branch
+- [ ] Unify `fetchNextParagraph()` — remove `if (continuousMode)` branch for post-RPC behavior
+- [ ] Unify input handler — remove `CheckFinishedSentence()` call, remove `paragraphJustCompleted` branches
+- [ ] Remove `resetSplitTracking()` — dead once paragraph mode is gone
+
+### 7.2 — Rename "prefetch" to "fetchNextParagraph"
+
+After the unification, "prefetch" is a misnomer — it's just fetching the next paragraph, whether triggered at 100% or <100%. Rename for clarity:
+
+- [ ] Rename `sendPrefetch()` → `fetchNextParagraph()` (merge with existing `fetchNextParagraph` or rename both)
+- [ ] Rename `prefetchedText` → `nextText` or `pendingText`
+- [ ] Rename `prefetchSent` → `fetchSent`
+- [ ] Rename `prefetchPending` → `fetchPending`
+- [ ] Rename `prefetchTriggerIndex` → `triggerBoundaryIndex` or `fetchTriggerIndex`
+- [ ] Rename `prefetchTriggerPct` → `triggerPct` or `fetchTriggerPct`
+- [ ] Update CSS/HTML `#prefetchSpan` → `#nextParagraphSpan` or keep with new semantic meaning
+- [ ] Update `SHOW_PREFETCH` or related CSS classes
+
+### 7.3 — Clean up dead code and settings
+
+- [ ] Remove dead functions: `resetSplitTracking()`, `CheckFinishedSentence()`, old `updateSplitTimestamps()`
+- [ ] Remove dead flags: `paragraphJustCompleted`, `_contDisplayInit`, `continuousMode`
+- [ ] Remove old display code (innerHTML path)
+- [ ] Remove `#optContinuousMode` checkbox from HTML
+- [ ] Update prefetch trigger label in settings to reflect unified behavior
+- [ ] Remove `continuous_mode` from backend `GameSettings`, `SettingsResponse`, `SettingsPatch`, collectSettings mapping
+- [ ] Update tests — remove references to `continuous_mode`, update function names
+- [ ] Update `CHANGELOG.md`
