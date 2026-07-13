@@ -31,6 +31,8 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 - [ ] Animate tier chart transitions so repeated tiers are distinguishable (no sudden jumps — e.g. slide/fade between states)
 
 ### 5.3 — User profiles
+- [x] Store rolling split history (not per story/session)
+- [x] flush the split history
 - [ ] Store rolling split history per user (not per story/session)
 - [ ] Create new user (name input)
 - [ ] Select active user from a list
