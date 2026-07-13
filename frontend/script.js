@@ -333,9 +333,7 @@ function advanceParagraph() {
     consumedChars = 0;
     fetchSent = false;
     splitList = [];
-    if (splitTimestamps.length > 0) {
-        startTime = new Date(splitTimestamps[splitTimestamps.length - 1]);
-    }
+    startTime = null;
     splitTimestamps = [];
     initSplits(textContent);
 
