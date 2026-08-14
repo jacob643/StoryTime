@@ -7,14 +7,11 @@
 ## Backlog
 Tasks that don't belong to a milestone yet. Assign to a milestone when ready to work on them.
 - [ ] Brainstorm a new project name ("StoryTime" is very common). Candidates: Write-a-story, typerLuck, interactiveTyper, QuickTypeFunTimes, Good Type Good Story.
-- [ ] Auto-pause: 5 seconds of inactivity pauses the speed capture (doesn't affect metrics). Button and/or keyboard shortcut for manual pause too. Needed for continuous mode.
 
 
 ## Bugs
-- [x] scoring mode default button shows "(splits)" when it should show "adaptive"
-- [x] scoring mode adaptive shouldn't also have "(splits)" in the name
-- [x] scoring mode clicking on default button to set to adaptive doesn't change the settings from fixed thresholds to the adaptive std-dev settings like when we manually click the dropdown.
 
+- [ ] Split CPM uses character count, not character intervals. `updateSplitTimestamps()` computes `cpm = splitChars / minutes`, but the elapsed time spans `splitChars - 1` inter-key intervals on the first split of a paragraph (first keystroke → boundary keystroke), and each pause gap removes another measurable interval, while the formula always counts `splitChars`. This inflates speed by C/(C−1) (~2% at 50 chars) on each paragraph's first split, and more once pause exclusion lands. No compensation exists in the backend — `compute_speed_stats`/`compute_weighted_avg` in `game_logic.py` use `speed_cpm` as-is. Fix: measure intervals — `cpm = (splitChars - (freshStart ? 1 : 0) - pauseGapCount) / activeMinutes` — while keeping `char_count` = real chars (rate-only correction). Confirm behavior for: first split in non-continuous mode (fetch_trigger_pct=100), subsequent paragraphs, first split in continuous mode, split junction in continuous mode (carried-over timestamp after fetch), single-split paragraphs, mid-paragraph input-clear / retry resets, and pause handling (auto-idle ≥5s + manual).
 
 ## Milestone 5: Juice & User Profiles
 
@@ -30,15 +27,9 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 - [ ] Settings: enable/disable animations, optional intensity preference
 - [ ] Animate tier chart transitions so repeated tiers are distinguishable (no sudden jumps — e.g. slide/fade between states)
 
-### 5.3 — User profiles
+### 5.3 — Split history
 - [x] Store rolling split history (not per story/session)
-- [x] flush the split history
-- [ ] Store rolling split history per user (not per story/session)
-- [ ] Create new user (name input)
-- [ ] Select active user from a list
-- [ ] Delete user (with confirmation)
-- [ ] Flush split history for current user (without deleting the user)
-- [ ] User management UI in settings panel or topbar
+- [x] Flush the split history
 
 ### 5.4 — Branding & UI polish
 - [ ] Game title in the topbar as a link to `/` (acts as a refresh button)
@@ -51,5 +42,30 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 
 ### 5.6 — Settings UX improvements
 - [x] Word count preview: show a Lorem Ipsum sample that updates live as the word count slider/input changes
+
+
+## Milestone 8: Auto-Pause
+
+Goal: Stop idle/break time from inflating split CPM measurements. After 5 seconds of inactivity the speed capture pauses (idle time excluded, metrics unaffected) with a visible "Paused" indicator; manual pause via button and/or keyboard shortcut for immediate control. Input stays enabled — typing auto-resumes. Note: the interval-based CPM correction (character count vs. inter-key intervals) is a separate bug, tracked in the Bugs section, not part of this milestone.
+
+### 8.1 — Pause tracking
+- [ ] Add `AUTO_PAUSE_MS = 5000` constant and pause state: `lastInputMs`, `accumulatedPauseMs`, `manuallyPaused`, `manualPauseStartMs`
+- [ ] Input handler: on resume keystroke, detect idle gap ≥ 5s and add it to `accumulatedPauseMs`; reset `lastInputMs`/`accumulatedPauseMs` when the input box is cleared
+- [ ] Manual pause toggle (`toggleManualPause()`): pause button + Esc keyboard shortcut; typing auto-resumes (input stays enabled)
+
+### 8.2 — UI: paused indicator via timeout callback
+- [ ] On each input event, clear and reschedule `setTimeout(showPaused, AUTO_PAUSE_MS)`; when it fires (5s idle) show a "Paused" indicator that the speed capture is paused
+- [ ] Hide the indicator on the next keystroke / resume; the manual-pause state uses the same indicator
+
+### 8.3 — Speed capture adjustment
+- [ ] `updateSplitTimestamps()`: compute split CPM from active time only — `activeMs = max(0, (now - prevTimestamp) - accumulatedPauseMs)`
+- [ ] Reset pause state in `reset()`, `advanceParagraph()`, `retryParagraph()`, and on input clear
+- [ ] Confirm the split junction in continuous mode: timing when a pause or fetch overlaps the carried-over split timestamp
+
+### 8.4 — Tests & docs
+- [ ] Playwright: auto-pause excludes idle time from split CPM (fast-forward > 5s via `page.clock`)
+- [ ] Playwright: manual pause via button and Esc shortcut; typing auto-resumes
+- [ ] Playwright: "Paused" indicator shows after 5s idle and hides on resume
+- [ ] Update `docs/technical-design/02-frontend-design.md` and `CHANGELOG.md`
 
 
