@@ -341,3 +341,89 @@ def test_pause_excluded_from_cpm(server, page):
         f"Pause time should be excluded from CPM, got {splits[0]['speed_cpm']}"
     )
     assert len(errors) == 0, f"Console errors: {errors}"
+
+
+def test_split_cpm_interval_correction(server, page):
+    first_paragraph = "A lone keeper watched the waves every morning from the lighthouse, noting each wave in aged journal."
+    assert len(first_paragraph) == 100
+    second_paragraph = "The dragon appeared before him."
+
+    captured = {"body": None}
+    call_count = 0
+
+    def handle_route(route):
+        nonlocal call_count
+        if route.request.url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
+        if route.request.url.endswith("/api/settings"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"scoring_mode": "split", "fetch_trigger_pct": 75}))
+            return
+        call_count += 1
+        if call_count == 1:
+            body = json.dumps({
+                "response": first_paragraph,
+                "session_id": "test-session",
+                "outcome_tier": 2,
+                "outcome_label": "neutral",
+                "tier_boundaries": [30, 50, 75, 100],
+            })
+        else:
+            captured["body"] = json.loads(route.request.post_data)
+            body = json.dumps({
+                "response": second_paragraph,
+                "session_id": "test-session",
+                "outcome_tier": 2,
+                "outcome_label": "neutral",
+                "tier_boundaries": [30, 50, 75, 100],
+            })
+        route.fulfill(status=200, content_type="application/json", body=body)
+
+    page.route("**/api/*", handle_route)
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+    page.clock.install()
+    page.goto(URL)
+    page.fill("#initialPrompt", "Tell me a story")
+    page.click("#restartButton")
+
+    deadline = time.time() + 5
+    while time.time() < deadline:
+        if page.evaluate('document.getElementById("textDisplay").textContent') == first_paragraph:
+            break
+        time.sleep(0.1)
+    else:
+        raise AssertionError("Story did not load in time")
+
+    page.clock.pause_at(page.evaluate("Date.now()"))
+
+    type_char = """() => {
+        const text = textContent;
+        const pos = consumedChars + inputBox.value.length;
+        inputBox.value += text.charAt(pos);
+        inputBox.dispatchEvent(new Event('input'));
+    }"""
+
+    for _ in range(75):
+        page.evaluate(type_char)
+        page.clock.run_for(100)
+
+    deadline = time.time() + 5
+    while captured["body"] is None and time.time() < deadline:
+        time.sleep(0.1)
+    assert captured["body"] is not None, "Fetch for the next paragraph never fired"
+
+    splits = captured["body"]["splits"]
+    assert len(splits) == 2, f"Expected two splits, got {splits}"
+    assert splits[0]["char_count"] == 50
+    assert 590 < splits[0]["speed_cpm"] < 610, (
+        f"First split should be interval-corrected to ~600 CPM, got {splits[0]['speed_cpm']}"
+    )
+    assert splits[1]["char_count"] == 25
+    assert 590 < splits[1]["speed_cpm"] < 610, (
+        f"Second split should not be over-corrected, got {splits[1]['speed_cpm']}"
+    )
+    assert len(errors) == 0, f"Console errors: {errors}"

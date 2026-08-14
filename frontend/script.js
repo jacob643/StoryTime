@@ -57,6 +57,8 @@ let _contDisplayInit = false;
 const AUTO_PAUSE_MS = 5000;
 let lastInputMs = null;
 let accumulatedPauseMs = 0;
+let pauseGapCount = 0;
+let _gapErased = false;
 let manuallyPaused = false;
 let autoIdlePaused = false;
 let manualPauseStartMs = 0;
@@ -238,13 +240,16 @@ function updateSplitTimestamps() {
         const prevTimestamp = splitTimestamps.length > 0 ? splitTimestamps[splitTimestamps.length - 1] : startTime;
         const activeMs = prevTimestamp ? Math.max(0, (now - prevTimestamp) - accumulatedPauseMs) : 0;
         const minutes = activeMs / 60000;
-        const cpm = minutes > 0 ? splitChars / minutes : 0;
+        const isFreshStart = prevTimestamp === startTime;
+        const measuredChars = Math.max(0, splitChars - (isFreshStart ? 1 : 0) - pauseGapCount);
+        const cpm = minutes > 0 ? measuredChars / minutes : 0;
 
         splitTimestamps.push(new Date(now));
         inputBox.value = inputBox.value.slice(splitChars);
         splitList.push({ cpm, chars: splitChars });
         consumedChars += splitChars;
         accumulatedPauseMs = 0;
+        pauseGapCount = 0;
 
         if (!fetchSent && !fetchPending && i >= fetchTriggerIndex) {
             fetchSent = true;
@@ -353,6 +358,8 @@ function advanceParagraph() {
     splitTimestamps = [];
     lastInputMs = null;
     accumulatedPauseMs = 0;
+    pauseGapCount = 0;
+    _gapErased = false;
     autoIdlePaused = false;
     clearIdlePauseTimer();
     updatePauseUI();
@@ -524,6 +531,8 @@ function reset() {
     _contDisplayInit = false;
     lastInputMs = null;
     accumulatedPauseMs = 0;
+    pauseGapCount = 0;
+    _gapErased = false;
     manuallyPaused = false;
     autoIdlePaused = false;
     clearIdlePauseTimer();
@@ -780,17 +789,27 @@ function scheduleIdlePause() {
     }, AUTO_PAUSE_MS);
 }
 
-function handleTypingResume(now) {
+function handleTypingResume(now, isKeystroke = true) {
+    let pauseAccumulated = false;
     if (manuallyPaused) {
-        accumulatedPauseMs += now - manualPauseStartMs;
+        if (lastInputMs !== null) {
+            accumulatedPauseMs += now - manualPauseStartMs;
+            pauseAccumulated = true;
+        }
         manuallyPaused = false;
     } else if (lastInputMs !== null) {
         const idle = now - lastInputMs;
         if (idle >= AUTO_PAUSE_MS) {
             accumulatedPauseMs += idle;
+            pauseAccumulated = true;
         }
     }
+    if (pauseAccumulated && !_gapErased) {
+        pauseGapCount++;
+        _gapErased = true;
+    }
     lastInputMs = now;
+    if (isKeystroke) _gapErased = false;
     autoIdlePaused = false;
     clearIdlePauseTimer();
     updatePauseUI();
@@ -802,6 +821,10 @@ function engageManualPause() {
         const idle = now - lastInputMs;
         if (idle >= AUTO_PAUSE_MS) {
             accumulatedPauseMs += idle;
+            if (!_gapErased) {
+                pauseGapCount++;
+                _gapErased = true;
+            }
         }
     }
     manuallyPaused = true;
@@ -812,7 +835,7 @@ function engageManualPause() {
 }
 
 function resumeFromPause() {
-    handleTypingResume(Date.now());
+    handleTypingResume(Date.now(), false);
 }
 
 function toggleManualPause() {
@@ -835,6 +858,8 @@ function retryParagraph() {
     fetchPending = false;
     lastInputMs = null;
     accumulatedPauseMs = 0;
+    pauseGapCount = 0;
+    _gapErased = false;
     autoIdlePaused = false;
     clearIdlePauseTimer();
     updatePauseUI();
@@ -873,6 +898,8 @@ inputBox.addEventListener('input', () => {
             splitTimestamps = [];
             lastInputMs = null;
             accumulatedPauseMs = 0;
+            pauseGapCount = 0;
+            _gapErased = false;
             messageDiv.textContent = 'Input cleared, retype the paragraph below';
             messageDiv.className = 'neutral';
         }

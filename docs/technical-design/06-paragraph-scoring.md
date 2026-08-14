@@ -13,6 +13,20 @@
 - Rolling stats: mean and stddev of per-split speeds (with σ ≥ 10 floor).
 - Tier thresholds are z-score boundaries: |z| < 0.5 → tier 2 (neutral), 0.5–1.5 → tier 1/3, >1.5 → tier 0/4.
 
+## Frontend CPM measurement
+
+Per-split CPM is computed on the frontend from measured inter-key intervals:
+
+```
+activeMs = max(0, (now - prevTimestamp) - accumulatedPauseMs)
+measuredChars = splitChars - (freshStart ? 1 : 0) - pauseGapCount
+cpm = measuredChars / (activeMs / 60000)
+```
+
+- `freshStart` is true when the split's elapsed time starts from `startTime` (the first keystroke after a reset/paragraph swap) rather than a previous split's timestamp. Such a split spans only `splitChars - 1` inter-key intervals.
+- Each pause gap (auto-idle ≥ 5s or manual) erases one interval, tracked as `pauseGapCount`.
+- `char_count` sent to the backend stays the real character count — the correction is rate-only. Backend scoring uses `speed_cpm` as-is.
+
 ---
 
 ## Proposal A — Paragraph-average (original, pre-3.6.10)

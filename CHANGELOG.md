@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - `computeSplits` no longer bypasses trigger-boundary logic for short text (≤50 chars).
 - Message flow now shows "Paragraph ready — take a breather" on swap and "Typing away..." on first keystroke.
+- Split CPM now counts measured inter-key intervals instead of characters: first-split and pause-gap intervals no longer inflate speed (~C/(C−1) off-by-one on each paragraph's first split). `char_count` still reports real characters.
 ### Security
 
 ## [0.3.0] - 2026-07-10
