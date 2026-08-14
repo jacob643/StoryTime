@@ -53,6 +53,15 @@ let fetchTriggerIndex = -1;
 let completedParagraphs = [];
 let _contDisplayInit = false;
 
+// Auto-pause state
+const AUTO_PAUSE_MS = 5000;
+let lastInputMs = null;
+let accumulatedPauseMs = 0;
+let manuallyPaused = false;
+let autoIdlePaused = false;
+let manualPauseStartMs = 0;
+let _idlePauseTimer = null;
+
 const SETTINGS_DEFAULTS = {
     paragraph_word_count: 40,
     scoring_mode: 'split',
@@ -227,13 +236,15 @@ function updateSplitTimestamps() {
 
         const now = Date.now();
         const prevTimestamp = splitTimestamps.length > 0 ? splitTimestamps[splitTimestamps.length - 1] : startTime;
-        const minutes = prevTimestamp ? (now - prevTimestamp) / 60000 : 0;
+        const activeMs = prevTimestamp ? Math.max(0, (now - prevTimestamp) - accumulatedPauseMs) : 0;
+        const minutes = activeMs / 60000;
         const cpm = minutes > 0 ? splitChars / minutes : 0;
 
         splitTimestamps.push(new Date(now));
         inputBox.value = inputBox.value.slice(splitChars);
         splitList.push({ cpm, chars: splitChars });
         consumedChars += splitChars;
+        accumulatedPauseMs = 0;
 
         if (!fetchSent && !fetchPending && i >= fetchTriggerIndex) {
             fetchSent = true;
@@ -340,6 +351,11 @@ function advanceParagraph() {
     splitList = [];
     startTime = null;
     splitTimestamps = [];
+    lastInputMs = null;
+    accumulatedPauseMs = 0;
+    autoIdlePaused = false;
+    clearIdlePauseTimer();
+    updatePauseUI();
     initSplits(textContent);
 
     messageDiv.textContent = 'Paragraph ready — take a breather';
@@ -486,6 +502,7 @@ function reset() {
     inputBox.value = '';
     inputBox.disabled = true;
     retryButton.disabled = true;
+    pauseButton.disabled = true;
     inputWasEmpty = true;
     initialPromptInput.value = '';
     initialPromptInput.focus();
@@ -505,6 +522,12 @@ function reset() {
     fetchTriggerIndex = -1;
     completedParagraphs = [];
     _contDisplayInit = false;
+    lastInputMs = null;
+    accumulatedPauseMs = 0;
+    manuallyPaused = false;
+    autoIdlePaused = false;
+    clearIdlePauseTimer();
+    updatePauseUI();
 }
 
 function buildHistoryItem(data, prevSpeedCpm) {
@@ -730,6 +753,77 @@ function startTypingTimer() {
     }
 }
 
+function updatePauseUI() {
+    const paused = manuallyPaused || autoIdlePaused;
+    const pauseButton = document.getElementById('pauseButton');
+    if (pauseButton) {
+        pauseButton.textContent = paused ? '▶ Resume' : '⏸ Pause';
+        pauseButton.classList.toggle('paused', paused);
+    }
+    const badge = document.getElementById('pauseBadge');
+    if (badge) badge.classList.toggle('visible', paused);
+}
+
+function clearIdlePauseTimer() {
+    if (_idlePauseTimer) {
+        clearTimeout(_idlePauseTimer);
+        _idlePauseTimer = null;
+    }
+}
+
+function scheduleIdlePause() {
+    if (manuallyPaused || inputBox.value.length === 0) return;
+    clearIdlePauseTimer();
+    _idlePauseTimer = setTimeout(() => {
+        autoIdlePaused = true;
+        updatePauseUI();
+    }, AUTO_PAUSE_MS);
+}
+
+function handleTypingResume(now) {
+    if (manuallyPaused) {
+        accumulatedPauseMs += now - manualPauseStartMs;
+        manuallyPaused = false;
+    } else if (lastInputMs !== null) {
+        const idle = now - lastInputMs;
+        if (idle >= AUTO_PAUSE_MS) {
+            accumulatedPauseMs += idle;
+        }
+    }
+    lastInputMs = now;
+    autoIdlePaused = false;
+    clearIdlePauseTimer();
+    updatePauseUI();
+}
+
+function engageManualPause() {
+    const now = Date.now();
+    if (lastInputMs !== null) {
+        const idle = now - lastInputMs;
+        if (idle >= AUTO_PAUSE_MS) {
+            accumulatedPauseMs += idle;
+        }
+    }
+    manuallyPaused = true;
+    manualPauseStartMs = now;
+    autoIdlePaused = false;
+    clearIdlePauseTimer();
+    updatePauseUI();
+}
+
+function resumeFromPause() {
+    handleTypingResume(Date.now());
+}
+
+function toggleManualPause() {
+    if (!textContent || inputBox.disabled) return;
+    if (manuallyPaused || autoIdlePaused) {
+        resumeFromPause();
+    } else {
+        engageManualPause();
+    }
+}
+
 function retryParagraph() {
     inputBox.value = '';
     startTime = null;
@@ -739,6 +833,11 @@ function retryParagraph() {
     pendingText = '';
     fetchSent = false;
     fetchPending = false;
+    lastInputMs = null;
+    accumulatedPauseMs = 0;
+    autoIdlePaused = false;
+    clearIdlePauseTimer();
+    updatePauseUI();
     initSplits(textContent);
     messageDiv.textContent = 'Input cleared, retype the paragraph below';
     messageDiv.className = 'neutral';
@@ -750,14 +849,30 @@ function retryParagraph() {
 const retryButton = document.getElementById('retryButton');
 retryButton.addEventListener('click', retryParagraph);
 
+const pauseButton = document.getElementById('pauseButton');
+if (pauseButton) {
+    pauseButton.addEventListener('click', toggleManualPause);
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        e.preventDefault();
+        toggleManualPause();
+    }
+});
+
 let inputWasEmpty = true;
 
 inputBox.addEventListener('input', () => {
+    handleTypingResume(Date.now());
+
     const isEmpty = inputBox.value.length === 0;
     if (isEmpty) {
         if (!inputWasEmpty) {
             startTime = null;
             splitTimestamps = [];
+            lastInputMs = null;
+            accumulatedPauseMs = 0;
             messageDiv.textContent = 'Input cleared, retype the paragraph below';
             messageDiv.className = 'neutral';
         }
@@ -774,6 +889,7 @@ inputBox.addEventListener('input', () => {
     startTypingTimer();
     updateSplitTimestamps();
     updateTextDisplay();
+    if (!isEmpty) scheduleIdlePause();
 });
 
 // DOM element references
@@ -1391,6 +1507,7 @@ async function sendPrompt(prompt) {
         inputBox.focus();
         initSplits(textContent);
         retryButton.disabled = false;
+        pauseButton.disabled = false;
         updateTierChart(data.outcome_tier, data.tier_boundaries);
         autoScrollTextDisplay();
         retryAction = null;

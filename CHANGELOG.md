@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- Auto-pause: typing pauses (5s idle threshold) are excluded from speed calculations.
+- Pause button (and `Esc` shortcut) for manual pause; typing automatically resumes.
+- "Paused" indicator badge shown while idle/paused, hidden on resume.
 ### Changed
 - Unified split-consumption mode: continuous mode is now always on. Removed all `if (continuousMode)` branches and old paragraph-mode code paths.
 - Renamed all "prefetch" identifiers to "fetch" across the codebase (API field `fetch_trigger_pct`, variables, DOM ids).

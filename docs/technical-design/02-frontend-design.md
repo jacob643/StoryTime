@@ -150,6 +150,32 @@ The existing character-matching logic is solid and should be preserved:
 - **Backspace handling** — currently raw comparison; should track forward progress rather than punishing corrections
 - **Multi-line support** — paragraphs can be long; textarea input or scrollable display
 
+## Auto-Pause
+
+Pause time (idle or manual) is excluded from typing-speed measurements so a break doesn't tank the score.
+
+### Mechanism
+
+- **Idle detection**: an idle timer (`AUTO_PAUSE_MS = 5000`) starts after each keystroke and is cleared on the next one. When it fires, the "Paused" badge shows.
+- **Manual pause**: `#pauseButton` or the `Esc` shortcut toggles a manual pause. Manual and idle pauses share one indicator; any keystroke resumes and hides it.
+- **Time tracking**: `lastInputMs` tracks the last keystroke. On resume, gaps ≥ `AUTO_PAUSE_MS` are added to `accumulatedPauseMs`; a manual pause adds the manual-pause duration.
+- **Split CPM**: `updateSplitTimestamps` computes per-split CPM as `splitChars / activeMs` where `activeMs = (now - prevTimestamp) - accumulatedPauseMs` (clamped at 0). `accumulatedPauseMs` is reset after each split so pause time is never double-counted.
+
+### State variables
+
+- `AUTO_PAUSE_MS` — idle threshold in ms (fixed, not configurable)
+- `lastInputMs`, `accumulatedPauseMs`
+- `manuallyPaused`, `manualPauseStartMs`
+- `autoIdlePaused`, `_idlePauseTimer`
+
+Pause state is reset in `reset()`, `advanceParagraph()`, and `retryParagraph()`. The pause button is disabled until a story is loaded.
+
+### UI
+
+- `#pauseButton` toggles between "⏸ Pause" / "▶ Resume".
+- `#pauseBadge` shows "⏸ Paused" while paused (`display: none` by default, `.visible` class shows it).
+- Pause measurement is entirely frontend-side; the backend only sees the resulting per-split `{speed_cpm, char_count}` values.
+
 ## Settings Panel (new)
 
 A collapsible settings panel to replace/adjust the existing settings bar:

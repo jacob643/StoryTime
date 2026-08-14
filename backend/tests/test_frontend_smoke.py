@@ -219,3 +219,125 @@ def test_ollama_down_503_retry(server, page):
     assert "Cannot reach the AI model" in msg, f"Expected getting-started hint, got: {msg}"
     assert call_count >= 1
     # Browser logs the 503 as a console error, which is expected — skip error check
+
+
+def _start_story(page, first_paragraph, second_paragraph=None):
+    call_count = 0
+    captured = {"body": None}
+
+    def handle_route(route):
+        nonlocal call_count
+        if route.request.url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
+        if route.request.url.endswith("/api/settings"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"scoring_mode": "split", "fetch_trigger_pct": 75}))
+            return
+        call_count += 1
+        if call_count == 1:
+            body = json.dumps({
+                "response": first_paragraph,
+                "session_id": "test-session",
+                "outcome_tier": 2,
+                "outcome_label": "neutral",
+                "tier_boundaries": [30, 50, 75, 100],
+            })
+        else:
+            if captured["body"] is None:
+                captured["body"] = json.loads(route.request.post_data)
+            body = json.dumps({
+                "response": second_paragraph or "The dragon appeared before him.",
+                "session_id": "test-session",
+                "outcome_tier": 2,
+                "outcome_label": "neutral",
+                "tier_boundaries": [30, 50, 75, 100],
+            })
+        route.fulfill(status=200, content_type="application/json", body=body)
+
+    page.route("**/api/*", handle_route)
+    page.goto(URL)
+    page.fill("#initialPrompt", "Tell me a story")
+    page.click("#restartButton")
+    page.wait_for_function(
+        f'document.getElementById("textDisplay").textContent === "{first_paragraph}"',
+        timeout=5000,
+    )
+    return captured
+
+
+def test_auto_pause_badge_after_idle(server, page):
+    first_paragraph = "A brave warrior set out on a journey..."
+
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+    _start_story(page, first_paragraph)
+
+    page.type("#inputBox", "A brave warrior", delay=1)
+    assert not page.locator("#pauseBadge.visible").is_visible()
+
+    page.wait_for_selector("#pauseBadge.visible", timeout=7000)
+    assert page.locator("#pauseButton").text_content().strip() == "▶ Resume"
+
+    page.type("#inputBox", " set", delay=1)
+    assert not page.locator("#pauseBadge.visible").is_visible()
+    assert page.locator("#pauseButton").text_content().strip() == "⏸ Pause"
+    assert len(errors) == 0, f"Console errors: {errors}"
+
+
+def test_manual_pause_toggle(server, page):
+    first_paragraph = "A brave warrior set out on a journey..."
+
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+    _start_story(page, first_paragraph)
+
+    assert not page.locator("#pauseButton").is_disabled()
+
+    page.type("#inputBox", "A brave warrior", delay=1)
+
+    page.click("#pauseButton")
+    assert page.locator("#pauseButton").text_content().strip() == "▶ Resume"
+    assert page.locator("#pauseBadge.visible").is_visible()
+
+    page.keyboard.press("Escape")
+    assert page.locator("#pauseButton").text_content().strip() == "⏸ Pause"
+    assert not page.locator("#pauseBadge.visible").is_visible()
+
+    page.keyboard.press("Escape")
+    assert page.locator("#pauseButton").text_content().strip() == "▶ Resume"
+    assert page.locator("#pauseBadge.visible").is_visible()
+
+    page.keyboard.press("Escape")
+    page.type("#inputBox", " set", delay=1)
+    assert page.locator("#pauseButton").text_content().strip() == "⏸ Pause"
+    assert len(errors) == 0, f"Console errors: {errors}"
+
+
+def test_pause_excluded_from_cpm(server, page):
+    first_paragraph = "A brave warrior set out on a journey..."
+
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+    captured = _start_story(page, first_paragraph)
+
+    page.type("#inputBox", "A brave ", delay=1)
+    page.wait_for_timeout(6500)
+    page.type("#inputBox", "warrior set out on a journey...", delay=1)
+
+    deadline = time.time() + 5
+    while captured["body"] is None and time.time() < deadline:
+        time.sleep(0.1)
+    assert captured["body"] is not None, "Fetch for the next paragraph never fired"
+
+    splits = captured["body"]["splits"]
+    assert len(splits) == 1, f"Expected one split covering the pause, got {splits}"
+    assert splits[0]["char_count"] == 30
+    assert splits[0]["speed_cpm"] > 1000, (
+        f"Pause time should be excluded from CPM, got {splits[0]['speed_cpm']}"
+    )
+    assert len(errors) == 0, f"Console errors: {errors}"
