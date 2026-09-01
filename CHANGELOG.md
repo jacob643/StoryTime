@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Pause button and `Esc` now only pause — they no longer resume; typing is the sole resume mechanism and the button is disabled while paused.
 - Manual pause now starts at the last typed character (not the moment the button is pressed), matching auto-pause idle behavior.
+- History panel "Time" now derives from per-split pause-integrated `activeMs` instead of raw wall-clock, so the displayed time excludes pauses consistently with the speed.
 - Unified split-consumption mode: continuous mode is now always on. Removed all `if (continuousMode)` branches and old paragraph-mode code paths.
 - Renamed all "prefetch" identifiers to "fetch" across the codebase (API field `fetch_trigger_pct`, variables, DOM ids).
 ### Deprecated

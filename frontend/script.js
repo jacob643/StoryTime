@@ -246,7 +246,7 @@ function updateSplitTimestamps() {
 
         splitTimestamps.push(new Date(now));
         inputBox.value = inputBox.value.slice(splitChars);
-        splitList.push({ cpm, chars: splitChars });
+        splitList.push({ cpm, chars: splitChars, activeMs });
         consumedChars += splitChars;
         accumulatedPauseMs = 0;
         pauseGapCount = 0;
@@ -276,7 +276,8 @@ async function fetchNextParagraph() {
     if (!sessionId || !textContent) return;
 
     fetchPending = true;
-    const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0;
+    const activeMsTotal = splitList.reduce((sum, s) => sum + (s.activeMs || 0), 0);
+    const elapsed = activeMsTotal > 0 ? activeMsTotal / 1000 : (startTime ? (Date.now() - startTime) / 1000 : 0);
     const totalChars = splitList.reduce((sum, s) => sum + s.chars, 0);
     const totalWeightedCpm = splitList.reduce((sum, s) => sum + s.cpm * s.chars, 0);
     const avgSpeedCpm = totalChars > 0 ? totalWeightedCpm / totalChars : 0;

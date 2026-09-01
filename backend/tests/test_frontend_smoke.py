@@ -380,6 +380,37 @@ def test_pause_excluded_from_cpm(server, page):
     assert len(errors) == 0, f"Console errors: {errors}"
 
 
+def test_history_time_excludes_idle_pause(server, page):
+    first_paragraph = "A brave warrior set out on a journey..."
+
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+    _start_story(page, first_paragraph)
+
+    page.type("#inputBox", "A brave ", delay=1)
+    page.wait_for_timeout(6500)
+
+    type_char = """() => {
+        const text = textContent;
+        const pos = consumedChars + inputBox.value.length;
+        inputBox.value += text.charAt(pos);
+        inputBox.dispatchEvent(new Event('input'));
+    }"""
+    for _ in range(len("warrior set out on a journey...")):
+        page.evaluate(type_char)
+
+    page.wait_for_selector(".history-item", timeout=5000)
+    speed_text = page.locator(".history-item .history-speed").first.text_content()
+    m = re.search(r"Time: ([\d.]+)s", speed_text)
+    assert m, f"Could not parse time from: {speed_text}"
+    time_taken = float(m.group(1))
+    assert time_taken < 3.0, (
+        f"History time should exclude the idle pause (split time used), got {time_taken}s"
+    )
+    assert len(errors) == 0, f"Console errors: {errors}"
+
+
 def test_split_cpm_interval_correction(server, page):
     first_paragraph = "A lone keeper watched the waves every morning from the lighthouse, noting each wave in aged journal."
     assert len(first_paragraph) == 100
