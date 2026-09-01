@@ -817,19 +817,8 @@ function handleTypingResume(now, isKeystroke = true) {
 }
 
 function engageManualPause() {
-    const now = Date.now();
-    if (lastInputMs !== null) {
-        const idle = now - lastInputMs;
-        if (idle >= AUTO_PAUSE_MS) {
-            accumulatedPauseMs += idle;
-            if (!_gapErased) {
-                pauseGapCount++;
-                _gapErased = true;
-            }
-        }
-    }
     manuallyPaused = true;
-    manualPauseStartMs = now;
+    manualPauseStartMs = lastInputMs !== null ? lastInputMs : Date.now();
     autoIdlePaused = false;
     clearIdlePauseTimer();
     updatePauseUI();

@@ -158,7 +158,7 @@ Pause time (idle or manual) is excluded from typing-speed measurements so a brea
 
 - **Idle detection**: an idle timer (`AUTO_PAUSE_MS = 5000`) starts after each keystroke and is cleared on the next one. When it fires, the "Paused" badge shows.
 - **Manual pause**: `#pauseButton` or the `Esc` shortcut pauses without resuming — typing is the sole resume mechanism. Manual and idle pauses share one indicator; any keystroke resumes and hides it.
-- **Time tracking**: `lastInputMs` tracks the last keystroke. On resume, gaps ≥ `AUTO_PAUSE_MS` are added to `accumulatedPauseMs`; a manual pause adds the manual-pause duration.
+- **Time tracking**: `lastInputMs` tracks the last keystroke. On resume, gaps ≥ `AUTO_PAUSE_MS` are added to `accumulatedPauseMs`; a manual pause adds `now - lastInputMs` (the pause start is the last keystroke, not the button press, matching auto-pause).
 - **Split CPM**: `updateSplitTimestamps` computes per-split CPM from measured inter-key intervals — `activeMs = max(0, (now - prevTimestamp) - accumulatedPauseMs)` and `measuredChars = splitChars - (freshStart ? 1 : 0) - pauseGapCount`, where `freshStart = prevTimestamp === startTime` (a first-keystroke split spans `splitChars - 1` intervals) and `pauseGapCount` counts erased intervals from pauses since the last split. `accumulatedPauseMs`/`pauseGapCount` are reset after each split so pause time is never double-counted. `char_count` submitted to the backend stays the real character count (rate-only correction).
 
 ### State variables

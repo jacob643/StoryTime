@@ -71,6 +71,6 @@ Goal: Stop idle/break time from inflating split CPM measurements. After 5 second
 ### 8.5 — Pause refinements
 - [x] Remove resume toggle from the pause button — it only pauses; typing is the sole resume mechanism; disable/hide the button while paused
 - [ ] Integrate pause time into split time: when a split is consumed, fold `accumulatedPauseMs` and `pauseGapCount` into the split record so the history panel displays the already-adjusted split time (no separate pause exclusion needed downstream)
-- [ ] Manual pause uses last-character timestamp as pause start: when the pause button is pressed, set `manualPauseStartMs` to `lastInputMs` (matching auto-pause behavior where idle starts from last keystroke, not from when the 5s timer fires)
+- [x] Manual pause uses last-character timestamp as pause start: when the pause button is pressed, set `manualPauseStartMs` to `lastInputMs` (matching auto-pause behavior where idle starts from last keystroke, not from when the 5s timer fires)
 
 

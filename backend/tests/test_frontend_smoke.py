@@ -318,6 +318,42 @@ def test_manual_pause_only_pauses_button_disabled(server, page):
     assert len(errors) == 0, f"Console errors: {errors}"
 
 
+def test_manual_pause_counts_from_last_keystroke(server, page):
+    first_paragraph = "A brave warrior set out on a journey..."
+
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+    captured = _start_story(page, first_paragraph)
+
+    page.type("#inputBox", "A brave ", delay=1)
+    page.wait_for_timeout(2000)
+    page.click("#pauseButton")
+    page.wait_for_timeout(3000)
+
+    type_char = """() => {
+        const text = textContent;
+        const pos = consumedChars + inputBox.value.length;
+        inputBox.value += text.charAt(pos);
+        inputBox.dispatchEvent(new Event('input'));
+    }"""
+    for _ in range(len("warrior set out on a journey...")):
+        page.evaluate(type_char)
+
+    deadline = time.time() + 5
+    while captured["body"] is None and time.time() < deadline:
+        time.sleep(0.1)
+    assert captured["body"] is not None, "Fetch for the next paragraph never fired"
+
+    splits = captured["body"]["splits"]
+    assert len(splits) == 1, f"Expected one split covering the pause, got {splits}"
+    assert splits[0]["char_count"] == 30
+    assert splits[0]["speed_cpm"] > 1000, (
+        f"Manual pause should count from the last keystroke, got {splits[0]['speed_cpm']}"
+    )
+    assert len(errors) == 0, f"Console errors: {errors}"
+
+
 def test_pause_excluded_from_cpm(server, page):
     first_paragraph = "A brave warrior set out on a journey..."
 
