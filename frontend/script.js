@@ -766,8 +766,9 @@ function updatePauseUI() {
     const paused = manuallyPaused || autoIdlePaused;
     const pauseButton = document.getElementById('pauseButton');
     if (pauseButton) {
-        pauseButton.textContent = paused ? '▶ Resume' : '⏸ Pause';
+        pauseButton.textContent = '⏸ Pause';
         pauseButton.classList.toggle('paused', paused);
+        pauseButton.disabled = paused;
     }
     const badge = document.getElementById('pauseBadge');
     if (badge) badge.classList.toggle('visible', paused);
@@ -834,17 +835,10 @@ function engageManualPause() {
     updatePauseUI();
 }
 
-function resumeFromPause() {
-    handleTypingResume(Date.now(), false);
-}
-
 function toggleManualPause() {
     if (!textContent || inputBox.disabled) return;
-    if (manuallyPaused || autoIdlePaused) {
-        resumeFromPause();
-    } else {
-        engageManualPause();
-    }
+    if (manuallyPaused || autoIdlePaused) return;
+    engageManualPause();
 }
 
 function retryParagraph() {

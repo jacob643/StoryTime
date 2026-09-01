@@ -279,15 +279,16 @@ def test_auto_pause_badge_after_idle(server, page):
     assert not page.locator("#pauseBadge.visible").is_visible()
 
     page.wait_for_selector("#pauseBadge.visible", timeout=7000)
-    assert page.locator("#pauseButton").text_content().strip() == "▶ Resume"
+    assert page.locator("#pauseButton").text_content().strip() == "⏸ Pause"
+    assert page.locator("#pauseButton").is_disabled()
 
     page.type("#inputBox", " set", delay=1)
     assert not page.locator("#pauseBadge.visible").is_visible()
-    assert page.locator("#pauseButton").text_content().strip() == "⏸ Pause"
+    assert not page.locator("#pauseButton").is_disabled()
     assert len(errors) == 0, f"Console errors: {errors}"
 
 
-def test_manual_pause_toggle(server, page):
+def test_manual_pause_only_pauses_button_disabled(server, page):
     first_paragraph = "A brave warrior set out on a journey..."
 
     errors = []
@@ -300,20 +301,20 @@ def test_manual_pause_toggle(server, page):
     page.type("#inputBox", "A brave warrior", delay=1)
 
     page.click("#pauseButton")
-    assert page.locator("#pauseButton").text_content().strip() == "▶ Resume"
-    assert page.locator("#pauseBadge.visible").is_visible()
-
-    page.keyboard.press("Escape")
     assert page.locator("#pauseButton").text_content().strip() == "⏸ Pause"
-    assert not page.locator("#pauseBadge.visible").is_visible()
+    assert page.locator("#pauseButton").is_disabled()
+    assert page.locator("#pauseBadge.visible").is_visible()
 
-    page.keyboard.press("Escape")
-    assert page.locator("#pauseButton").text_content().strip() == "▶ Resume"
+    page.click("#pauseButton", force=True)
     assert page.locator("#pauseBadge.visible").is_visible()
 
     page.keyboard.press("Escape")
+    assert page.locator("#pauseButton").is_disabled()
+    assert page.locator("#pauseBadge.visible").is_visible()
+
     page.type("#inputBox", " set", delay=1)
-    assert page.locator("#pauseButton").text_content().strip() == "⏸ Pause"
+    assert not page.locator("#pauseButton").is_disabled()
+    assert not page.locator("#pauseBadge.visible").is_visible()
     assert len(errors) == 0, f"Console errors: {errors}"
 
 
