@@ -71,7 +71,11 @@ async def generate(body: GenerateRequest):
         if body.session_id is None:
             session = session_store.create(initial_prompt=body.prompt)
             gs = get_settings()
-            wrapped = build_first_paragraph_prompt(body.prompt, max_words=gs.paragraph_word_count)
+            wrapped = build_first_paragraph_prompt(
+                body.prompt,
+                max_words=gs.paragraph_word_count,
+                template=gs.initial_prompt_template,
+            )
             logger.debug("First paragraph prompt:\n%s", wrapped)
             raw_llm = await registry.generate(wrapped, body.model)
             text = sanitize_text(parse_llm_response(strip_thinking(raw_llm)))
@@ -143,6 +147,7 @@ async def generate(body: GenerateRequest):
             outcome_tier=outcome_tier,
             outcome_directions=gs.outcome_directions,
             max_words=gs.paragraph_word_count,
+            template=gs.continuation_prompt_template,
         )
         logger.debug("LLM prompt:\n%s", assembled)
         raw = await registry.generate(assembled, body.model)

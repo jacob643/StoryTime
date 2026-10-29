@@ -35,6 +35,23 @@ def test_restart_creates_new_session_and_returns_paragraph(client):
     assert data["outcome_label"] == "neutral"
 
 
+def test_restart_uses_custom_initial_template(client, monkeypatch):
+    import backend.settings_manager as sm
+    monkeypatch.setattr(
+        sm,
+        "_game_settings",
+        sm.GameSettings(initial_prompt_template="OPEN {premise} W={max_words}"),
+    )
+    mock_resp = _mock_ollama_response(200, {"response": "A new story begins..."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
+        response = client.post("/api/restart", json={"initial_prompt": "Write a tale"})
+
+    assert response.status_code == 200
+    prompt = mock_post.call_args.kwargs["json"]["prompt"]
+    assert prompt == "OPEN Write a tale W=40"
+
+
 def test_restart_returns_422_without_initial_prompt(client):
     response = client.post("/api/restart", json={})
     assert response.status_code == 422

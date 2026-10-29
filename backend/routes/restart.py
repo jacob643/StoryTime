@@ -40,7 +40,11 @@ async def restart(body: RestartRequest):
             fixed_thresholds=gs.fixed_thresholds,
         )
         bounds = compute_tier_boundaries(params=params)
-        prompt = build_first_paragraph_prompt(body.initial_prompt, max_words=max_words)
+        prompt = build_first_paragraph_prompt(
+            body.initial_prompt,
+            max_words=max_words,
+            template=gs.initial_prompt_template,
+        )
         logger.debug("Restart prompt:\n%s", prompt)
         raw = await registry.generate(prompt)
         text = sanitize_text(parse_llm_response(strip_thinking(raw)))

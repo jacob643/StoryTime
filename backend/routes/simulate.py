@@ -59,6 +59,7 @@ async def simulate(body: SimulateRequest):
                 outcome_tier=outcome_tier,
                 outcome_directions=gs.outcome_directions,
                 max_words=gs.paragraph_word_count,
+                template=gs.continuation_prompt_template,
             )
             logger.debug("Simulate adaptive: rolling=%s avg=%.1f stddev=%.1f -> tier=%d",
                          session.rolling_window.total_chars, avg, stddev, outcome_tier)
@@ -73,6 +74,7 @@ async def simulate(body: SimulateRequest):
                 outcome_tier=outcome_tier,
                 outcome_directions=gs.outcome_directions,
                 max_words=gs.paragraph_word_count,
+                template=gs.continuation_prompt_template,
             )
             logger.debug("Simulate fixed: speed=%.1f -> tier=%d", body.simulated_speed_cpm, outcome_tier)
 

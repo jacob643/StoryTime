@@ -11,6 +11,10 @@ from backend.prompt_engine import NEUTRAL_FALLBACK
 @pytest.fixture
 def client(monkeypatch, tmp_path):
     monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+    monkeypatch.setattr(
+        "backend.performance_store.PERFORMANCE_PATH",
+        tmp_path / "performance.json",
+    )
     app.dependency_overrides.clear()
     with TestClient(app) as c:
         yield c
@@ -36,6 +40,61 @@ def test_generate_first_call_creates_session_and_returns_paragraph(client):
     assert data["session_id"] is not None
     assert data["outcome_tier"] == 2
     assert data["outcome_label"] == "neutral"
+
+
+def test_generate_first_call_uses_custom_initial_template(client, monkeypatch):
+    import backend.settings_manager as sm
+    monkeypatch.setattr(
+        sm,
+        "_game_settings",
+        sm.GameSettings(initial_prompt_template="OPEN {premise} W={max_words}"),
+    )
+    mock_resp = _mock_ollama_response(200, {"response": "A brave warrior..."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
+        response = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    assert response.status_code == 200
+    prompt = mock_post.call_args.kwargs["json"]["prompt"]
+    assert prompt == "OPEN Tell a story W=40"
+
+
+def test_generate_subsequent_call_uses_custom_continuation_template(client, monkeypatch):
+    import backend.settings_manager as sm
+    monkeypatch.setattr(
+        sm,
+        "_game_settings",
+        sm.GameSettings(
+            initial_prompt_template="OPEN {premise}",
+            continuation_prompt_template=(
+                "CONT {premise}\n{history}D={direction} T={tier} W={max_words}"
+            ),
+        ),
+    )
+    mock_resp = _mock_ollama_response(200, {"response": "A brave warrior entered the cave."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+        first = client.post("/api/generate", json={"prompt": "Tell a story"})
+
+    session_id = first.json()["session_id"]
+
+    mock_resp2 = _mock_ollama_response(200, {"response": "The dragon approached..."})
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp2) as mock_post:
+        second = client.post("/api/generate", json={
+            "prompt": "A brave warrior entered the cave.",
+            "session_id": session_id,
+            "splits": [{"speed_cpm": 425.0, "char_count": 50}],
+        })
+
+    assert second.status_code == 200
+    prompt = mock_post.call_args.kwargs["json"]["prompt"]
+    assert prompt.startswith(
+        "CONT Tell a story\n"
+        "So far the story has unfolded as follows:\n"
+        "- A brave warrior entered the cave.\n\n"
+    )
+    assert "T=" in prompt
+    assert "W=40" in prompt
 
 
 def test_generate_returns_503_on_llm_timeout(client):

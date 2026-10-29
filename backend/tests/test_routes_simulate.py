@@ -21,6 +21,10 @@ def enable_dev_mode():
 @pytest.fixture
 def client(monkeypatch, tmp_path):
     monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+    monkeypatch.setattr(
+        "backend.performance_store.PERFORMANCE_PATH",
+        tmp_path / "performance.json",
+    )
     from backend.settings_manager import GameSettings, load_settings as real_load
     monkeypatch.setattr("backend.settings_manager.load_settings", lambda: GameSettings())
     import backend.settings_manager
@@ -57,6 +61,23 @@ def test_simulate_without_session_uses_fixed_thresholds(client):
     assert data["response"] == "Simulated paragraph..."
     assert data["outcome_tier"] == 3
     assert data["outcome_label"] == "positive"
+
+
+def test_simulate_uses_custom_continuation_template(client, monkeypatch):
+    import backend.settings_manager as sm
+    monkeypatch.setattr(
+        sm,
+        "_game_settings",
+        sm.GameSettings(continuation_prompt_template="SIM {premise} T={tier} W={max_words}"),
+    )
+    mock_resp = _mock_ollama_response(200, {"response": "Simulated paragraph..."})
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
+        response = client.post("/api/simulate", json={"simulated_speed_cpm": 420.0})
+
+    assert response.status_code == 200
+    prompt = mock_post.call_args.kwargs["json"]["prompt"]
+    assert prompt == "SIM  T=3 W=40"
 
 
 def test_simulate_with_session_uses_adaptive_scoring(client):
