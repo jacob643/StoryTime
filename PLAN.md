@@ -35,6 +35,7 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 ### 5.4 — Branding & UI polish
 - [x] Text viewer renders each paragraph as its own block with vertical spacing instead of one continuous run of text.
 - [x] Removed the artificial leading space prepended to fetched paragraphs; paragraph separation is visual only.
+- [x] Leading whitespace typed at the start of a paragraph is ignored while typing.
 - [ ] Game title in the topbar as a link to `/` (acts as a refresh button)
 - [ ] Design a game logo (SVG)
 - [ ] Redesign the favicon (SVG)

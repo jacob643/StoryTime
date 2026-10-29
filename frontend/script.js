@@ -890,7 +890,25 @@ document.addEventListener('keydown', (e) => {
 
 let inputWasEmpty = true;
 
+function ignoreLeadingWhitespaceInput() {
+    if (!inputBox.value || !/^\s/.test(inputBox.value)) return false;
+    const expected = textContent[consumedChars];
+    if (expected !== undefined && /\s/.test(expected)) return false;
+
+    const removed = inputBox.value.match(/^\s+/)[0].length;
+    const caret = inputBox.selectionStart ?? removed;
+    inputBox.value = inputBox.value.slice(removed);
+    const newCaret = Math.max(0, caret - removed);
+    inputBox.setSelectionRange(newCaret, newCaret);
+    return true;
+}
+
 inputBox.addEventListener('input', () => {
+    if (ignoreLeadingWhitespaceInput() && inputBox.value.length === 0 && inputWasEmpty) {
+        updateTextDisplay();
+        return;
+    }
+
     handleTypingResume(Date.now());
 
     const isEmpty = inputBox.value.length === 0;

@@ -335,6 +335,11 @@ def test_paragraphs_render_as_separate_blocks(server, page):
     second_paragraph = "The dragon appeared before him."
 
     _start_story(page, first_paragraph, second_paragraph)
+
+    page.type("#inputBox", "   ", delay=5)
+    assert page.locator("#inputBox").input_value() == ""
+    assert page.evaluate("consumedChars") == 0
+
     page.type("#inputBox", first_paragraph, delay=5)
 
     page.wait_for_function(

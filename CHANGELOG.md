@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Renamed all "prefetch" identifiers to "fetch" across the codebase (API field `fetch_trigger_pct`, variables, DOM ids).
 - Text viewer now renders completed, active, and pending paragraphs as separate blocks with vertical spacing instead of one continuous run of text.
 - Removed the artificial leading space that was prepended to fetched paragraphs; paragraph separation is now purely visual.
+- Leading whitespace typed at the start of a paragraph is now ignored, so a habitual space after finishing the previous paragraph is accepted.
 ### Deprecated
 ### Removed
 - Removed `continuous_mode` setting, `paragraphJustCompleted` flag, `CheckFinishedSentence()`, `resetSplitTracking()`, old per-char `updateSplitTimestamps`, old `fetchNextParagraph`.
