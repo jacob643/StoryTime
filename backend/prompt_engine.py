@@ -111,7 +111,7 @@ def render_prompt_template(
     return text
 
 
-def _format_history(history: list[str]) -> str:
+def format_history(history: list[str]) -> str:
     if not history:
         return ""
     return "So far the story has unfolded as follows:\n" + "\n".join(
@@ -136,7 +136,7 @@ def build_prompt(
         template,
         {
             "premise": initial_context,
-            "history": _format_history(history),
+            "history": format_history(history),
             "direction": direction,
             "tier": resolved_tier,
             "max_words": max_words,

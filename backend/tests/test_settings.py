@@ -8,6 +8,7 @@ from backend.main import app
 from backend.prompt_engine import (
     DEFAULT_CONTINUATION_PROMPT_TEMPLATE,
     DEFAULT_INITIAL_PROMPT_TEMPLATE,
+    OUTCOME_DIRECTIONS,
 )
 from backend.settings_manager import (
     FETCH_TRIGGER_MAX_PCT,
@@ -295,6 +296,71 @@ def test_post_prompt_template_too_long(monkeypatch, tmp_path, client):
     _patch_path(monkeypatch, tmp_path)
     r = client.post("/api/settings", json={"continuation_prompt_template": "x" * 8001})
     assert r.status_code == 422
+
+
+def test_preview_initial_default(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings/preview", json={"kind": "initial"})
+    assert r.status_code == 200
+    preview = r.json()["preview"]
+    assert "a lighthouse keeper who finds a message in a bottle" in preview
+    assert "exactly 40 words long" in preview
+    assert "So far" not in preview
+
+
+def test_preview_continuation_uses_sample_values(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    template = (
+        "P={premise}\n"
+        "H={history}"
+        "D={direction}\n"
+        "T={tier}\n"
+        "W={max_words}"
+    )
+    r = client.post("/api/settings/preview", json={
+        "kind": "continuation",
+        "template": template,
+        "max_words": 25,
+    })
+    assert r.status_code == 200
+    preview = r.json()["preview"]
+    assert "P=a lighthouse keeper who finds a message in a bottle" in preview
+    assert "- The keeper climbs the stairs every night.\n- A storm rolls in from the sea." in preview
+    assert f"D={OUTCOME_DIRECTIONS[3][0]}" in preview
+    assert "T=3" in preview
+    assert "W=25" in preview
+
+
+def test_preview_initial_history_is_empty(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings/preview", json={
+        "kind": "initial",
+        "template": "H=[{history}] T={tier}",
+    })
+    assert r.status_code == 200
+    assert r.json()["preview"] == "H=[] T=2"
+
+
+def test_preview_preserves_unknown_tokens(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings/preview", json={
+        "kind": "initial",
+        "template": "{premise} {style}",
+    })
+    assert r.status_code == 200
+    assert r.json()["preview"] == (
+        "a lighthouse keeper who finds a message in a bottle {style}"
+    )
+
+
+def test_preview_blank_template_falls_back_to_default(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings/preview", json={
+        "kind": "continuation",
+        "template": "   ",
+    })
+    assert r.status_code == 200
+    assert "You are writing an interactive story." in r.json()["preview"]
 
 
 def test_post_partial_update(monkeypatch, tmp_path, client):

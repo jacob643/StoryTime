@@ -1,8 +1,17 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from backend.prompt_engine import _normalize_directions
+from backend.prompt_engine import (
+    DEFAULT_CONTINUATION_PROMPT_TEMPLATE,
+    DEFAULT_INITIAL_PROMPT_TEMPLATE,
+    OUTCOME_DIRECTIONS,
+    _normalize_directions,
+    format_history,
+    render_prompt_template,
+)
 from backend.game_logic import compute_tier_boundaries
 from backend.settings_manager import (
     FETCH_TRIGGER_MAX_PCT,
@@ -72,6 +81,23 @@ class SettingsPatch(BaseModel):
     )
 
 
+PREVIEW_PREMISE = "a lighthouse keeper who finds a message in a bottle"
+PREVIEW_HISTORY = [
+    "The keeper climbs the stairs every night.",
+    "A storm rolls in from the sea.",
+]
+
+
+class PromptPreviewRequest(BaseModel):
+    kind: Literal["initial", "continuation"] = "continuation"
+    template: str | None = Field(default=None, max_length=8000)
+    max_words: int = Field(default=40, ge=1, le=10000)
+
+
+class PromptPreviewResponse(BaseModel):
+    preview: str
+
+
 def _clamp_thresholds(
     thresholds: list[float],
     min_val: float = 0,
@@ -113,6 +139,36 @@ async def get_settings_boundaries():
     params = build_scoring_params(gs)
     boundaries = compute_tier_boundaries(params=params)
     return {"boundaries": boundaries}
+
+
+@router.post("/api/settings/preview", response_model=PromptPreviewResponse)
+async def preview_prompt_endpoint(body: PromptPreviewRequest):
+    if body.kind == "initial":
+        values = {
+            "premise": PREVIEW_PREMISE,
+            "history": "",
+            "direction": OUTCOME_DIRECTIONS[2][0],
+            "tier": 2,
+            "max_words": body.max_words,
+        }
+        default_template = DEFAULT_INITIAL_PROMPT_TEMPLATE
+    else:
+        values = {
+            "premise": PREVIEW_PREMISE,
+            "history": format_history(PREVIEW_HISTORY),
+            "direction": OUTCOME_DIRECTIONS[3][0],
+            "tier": 3,
+            "max_words": body.max_words,
+        }
+        default_template = DEFAULT_CONTINUATION_PROMPT_TEMPLATE
+
+    return PromptPreviewResponse(
+        preview=render_prompt_template(
+            body.template,
+            values,
+            default_template=default_template,
+        )
+    )
 
 
 @router.get("/api/settings", response_model=SettingsResponse)
