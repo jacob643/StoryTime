@@ -265,9 +265,9 @@ body
 #consumedSpan,
 #correctSpan { background-color: green; color: black; }
 #errorSpan { background-color: red; color: black; }
-.completed-p { background-color: green; color: black; }
-
-#completedText { display: inline; }
+#completedText { display: block; }
+.completed-p { display: block; background-color: green; color: black; margin-bottom: 1em; }
+#pendingSpan { display: block; margin-top: 1em; }
 
 #message.success
 {

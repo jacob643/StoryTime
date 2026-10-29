@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - History panel "Time" now derives from per-split pause-integrated `activeMs` instead of raw wall-clock, so the displayed time excludes pauses consistently with the speed.
 - Unified split-consumption mode: continuous mode is now always on. Removed all `if (continuousMode)` branches and old paragraph-mode code paths.
 - Renamed all "prefetch" identifiers to "fetch" across the codebase (API field `fetch_trigger_pct`, variables, DOM ids).
+- Text viewer now renders completed, active, and pending paragraphs as separate blocks with vertical spacing instead of one continuous run of text.
 ### Deprecated
 ### Removed
 - Removed `continuous_mode` setting, `paragraphJustCompleted` flag, `CheckFinishedSentence()`, `resetSplitTracking()`, old per-char `updateSplitTimestamps`, old `fetchNextParagraph`.

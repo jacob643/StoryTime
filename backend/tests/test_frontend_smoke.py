@@ -330,6 +330,37 @@ def _start_story(page, first_paragraph, second_paragraph=None):
     return captured
 
 
+def test_paragraphs_render_as_separate_blocks(server, page):
+    first_paragraph = "A brave warrior set out on a journey..."
+    second_paragraph = "The dragon appeared before him."
+
+    _start_story(page, first_paragraph, second_paragraph)
+    page.type("#inputBox", first_paragraph, delay=5)
+
+    page.wait_for_function(
+        f'document.getElementById("textDisplay").textContent.includes("{second_paragraph}")',
+        timeout=5000,
+    )
+    page.wait_for_function(
+        'document.querySelectorAll("#completedText .completed-p").length === 1',
+        timeout=5000,
+    )
+
+    completed = page.locator("#completedText .completed-p").first
+    assert completed.text_content() == first_paragraph
+    assert completed.evaluate("el => getComputedStyle(el).display") == "block"
+    assert page.evaluate(
+        "getComputedStyle(document.getElementById('completedText')).display"
+    ) == "block"
+    assert page.evaluate(
+        "getComputedStyle(document.getElementById('pendingSpan')).display"
+    ) == "block"
+
+    completed_box = completed.bounding_box()
+    current_box = page.locator("#untypedSpan").bounding_box()
+    assert current_box["y"] > completed_box["y"] + completed_box["height"]
+
+
 def test_auto_pause_badge_after_idle(server, page):
     first_paragraph = "A brave warrior set out on a journey..."
 
