@@ -27,6 +27,8 @@ class SettingsResponse(BaseModel):
     tier_3_max_sigma: float
     fixed_thresholds: list[float]
     paragraph_word_count: int
+    initial_prompt_template: str
+    continuation_prompt_template: str
     target_split_size: int
     outcome_directions: dict[int, list[str]]
     temperature: float
@@ -50,6 +52,8 @@ class SettingsPatch(BaseModel):
     tier_3_max_sigma: float | None = None
     fixed_thresholds: list[float] | None = None
     paragraph_word_count: int | None = None
+    initial_prompt_template: str | None = Field(default=None, max_length=8000)
+    continuation_prompt_template: str | None = Field(default=None, max_length=8000)
     target_split_size: int | None = None
     outcome_directions: dict[int, list[str]] | None = None
     temperature: float | None = None
@@ -86,6 +90,8 @@ def _settings_to_response(gs: GameSettings) -> SettingsResponse:
         tier_3_max_sigma=gs.tier_3_max_sigma,
         fixed_thresholds=_clamp_thresholds(gs.fixed_thresholds),
         paragraph_word_count=gs.paragraph_word_count,
+        initial_prompt_template=gs.initial_prompt_template,
+        continuation_prompt_template=gs.continuation_prompt_template,
         target_split_size=gs.target_split_size,
         outcome_directions=gs.outcome_directions,
         temperature=gs.temperature,

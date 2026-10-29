@@ -5,6 +5,10 @@ import pytest
 from starlette.testclient import TestClient
 
 from backend.main import app
+from backend.prompt_engine import (
+    DEFAULT_CONTINUATION_PROMPT_TEMPLATE,
+    DEFAULT_INITIAL_PROMPT_TEMPLATE,
+)
 from backend.settings_manager import (
     FETCH_TRIGGER_MAX_PCT,
     FETCH_TRIGGER_MIN_PCT,
@@ -48,6 +52,8 @@ def test_game_settings_defaults():
     assert gs.tier_2_max_sigma == 0.5
     assert gs.tier_3_max_sigma == 1.5
     assert gs.paragraph_word_count == 40
+    assert gs.initial_prompt_template == DEFAULT_INITIAL_PROMPT_TEMPLATE
+    assert gs.continuation_prompt_template == DEFAULT_CONTINUATION_PROMPT_TEMPLATE
     assert gs.target_split_size == 50
     assert len(gs.outcome_directions) == 5
     assert gs.provider == "ollama"
@@ -179,6 +185,51 @@ def test_outcome_directions_migrates_old_string_format(monkeypatch, tmp_path):
     assert loaded.outcome_directions[0] == ["old bad"]
 
 
+def test_prompt_templates_roundtrip(monkeypatch, tmp_path):
+    _patch_path(monkeypatch, tmp_path)
+    update_settings(
+        initial_prompt_template="Opening {premise}",
+        continuation_prompt_template="Continue {premise} with {direction}",
+    )
+    loaded = load_settings()
+    assert loaded.initial_prompt_template == "Opening {premise}"
+    assert loaded.continuation_prompt_template == "Continue {premise} with {direction}"
+
+
+def test_load_legacy_config_uses_default_prompt_templates(monkeypatch, tmp_path):
+    _patch_path(monkeypatch, tmp_path)
+    import backend.settings_manager as sm
+    sm._settings_path().parent.mkdir(parents=True, exist_ok=True)
+    sm._settings_path().write_text(
+        json.dumps({"scoring_mode": "fixed"}), encoding="utf-8"
+    )
+    loaded = load_settings()
+    assert loaded.initial_prompt_template == DEFAULT_INITIAL_PROMPT_TEMPLATE
+    assert loaded.continuation_prompt_template == DEFAULT_CONTINUATION_PROMPT_TEMPLATE
+
+
+def test_load_blank_prompt_templates_falls_back_to_defaults(monkeypatch, tmp_path):
+    _patch_path(monkeypatch, tmp_path)
+    import backend.settings_manager as sm
+    sm._settings_path().parent.mkdir(parents=True, exist_ok=True)
+    sm._settings_path().write_text(
+        json.dumps({
+            "initial_prompt_template": "   ",
+            "continuation_prompt_template": "",
+        }),
+        encoding="utf-8",
+    )
+    loaded = load_settings()
+    assert loaded.initial_prompt_template == DEFAULT_INITIAL_PROMPT_TEMPLATE
+    assert loaded.continuation_prompt_template == DEFAULT_CONTINUATION_PROMPT_TEMPLATE
+
+
+def test_update_blank_prompt_template_stores_default(monkeypatch, tmp_path):
+    _patch_path(monkeypatch, tmp_path)
+    updated = update_settings(initial_prompt_template="   ")
+    assert updated.initial_prompt_template == DEFAULT_INITIAL_PROMPT_TEMPLATE
+
+
 # --- API tests ---
 
 def test_get_settings_returns_defaults(monkeypatch, tmp_path, client):
@@ -190,6 +241,8 @@ def test_get_settings_returns_defaults(monkeypatch, tmp_path, client):
     assert len(data["outcome_directions"]) == 5
     assert all(isinstance(v, list) for v in data["outcome_directions"].values())
     assert len(data["fixed_thresholds"]) == 4
+    assert data["initial_prompt_template"] == DEFAULT_INITIAL_PROMPT_TEMPLATE
+    assert data["continuation_prompt_template"] == DEFAULT_CONTINUATION_PROMPT_TEMPLATE
 
 
 def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
@@ -212,6 +265,36 @@ def test_post_settings_updates_and_returns(monkeypatch, tmp_path, client):
     assert data["outcome_directions"]["0"] == ["bad"]
     assert data["fixed_thresholds"][0] == 20
     assert data["target_split_size"] == 40
+
+
+def test_post_settings_prompt_templates(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    body = {
+        "initial_prompt_template": "Open {premise} {style}",
+        "continuation_prompt_template": "Continue {premise} {history} {direction}",
+    }
+    r = client.post("/api/settings", json=body)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["initial_prompt_template"] == body["initial_prompt_template"]
+    assert data["continuation_prompt_template"] == body["continuation_prompt_template"]
+
+    r = client.get("/api/settings")
+    assert r.json()["initial_prompt_template"] == body["initial_prompt_template"]
+    assert r.json()["continuation_prompt_template"] == body["continuation_prompt_template"]
+
+
+def test_post_blank_prompt_template_returns_default(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings", json={"initial_prompt_template": "   "})
+    assert r.status_code == 200
+    assert r.json()["initial_prompt_template"] == DEFAULT_INITIAL_PROMPT_TEMPLATE
+
+
+def test_post_prompt_template_too_long(monkeypatch, tmp_path, client):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings", json={"continuation_prompt_template": "x" * 8001})
+    assert r.status_code == 422
 
 
 def test_post_partial_update(monkeypatch, tmp_path, client):

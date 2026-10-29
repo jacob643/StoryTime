@@ -10,7 +10,12 @@ from backend.game_logic import (
     FIXED_THRESHOLDS,
     ScoringParams,
 )
-from backend.prompt_engine import OUTCOME_DIRECTIONS, _normalize_directions
+from backend.prompt_engine import (
+    DEFAULT_CONTINUATION_PROMPT_TEMPLATE,
+    DEFAULT_INITIAL_PROMPT_TEMPLATE,
+    OUTCOME_DIRECTIONS,
+    _normalize_directions,
+)
 
 
 FETCH_TRIGGER_MIN_PCT = 10.0
@@ -39,6 +44,8 @@ class GameSettings:
     tier_3_max_sigma: float = 1.5
     fixed_thresholds: list[float] = field(default_factory=_default_fixed_thresholds)
     paragraph_word_count: int = 40
+    initial_prompt_template: str = DEFAULT_INITIAL_PROMPT_TEMPLATE
+    continuation_prompt_template: str = DEFAULT_CONTINUATION_PROMPT_TEMPLATE
     target_split_size: int = 50
     outcome_directions: Dict[int, list[str]] = field(default_factory=_default_outcome_directions)
     temperature: float = 2.0
@@ -59,6 +66,13 @@ def _settings_path() -> Path:
 
 def _coerce_keys(d: dict) -> dict[int, Union[str, list[str]]]:
     return {int(k): v for k, v in d.items()}
+
+
+def normalize_prompt_template(value: object, default: str) -> str:
+    """Return a usable template, falling back to the default for blank values."""
+    if not isinstance(value, str) or not value.strip():
+        return default
+    return value
 
 
 def build_scoring_params(gs: GameSettings) -> ScoringParams:
@@ -94,6 +108,12 @@ def load_settings() -> GameSettings:
         gs.outcome_directions = _normalize_directions(_coerce_keys(gs.outcome_directions))
         gs.fixed_thresholds = _migrate_fixed_thresholds(gs.fixed_thresholds)
         gs.fetch_trigger_pct = clamp_fetch_trigger_pct(gs.fetch_trigger_pct)
+        gs.initial_prompt_template = normalize_prompt_template(
+            gs.initial_prompt_template, DEFAULT_INITIAL_PROMPT_TEMPLATE
+        )
+        gs.continuation_prompt_template = normalize_prompt_template(
+            gs.continuation_prompt_template, DEFAULT_CONTINUATION_PROMPT_TEMPLATE
+        )
         return gs
     except (json.JSONDecodeError, TypeError, KeyError, ValueError):
         return GameSettings()
@@ -135,6 +155,10 @@ def update_settings(**kwargs) -> GameSettings:
         if hasattr(settings, key) and value is not None:
             if key == "fetch_trigger_pct":
                 value = clamp_fetch_trigger_pct(value)
+            elif key == "initial_prompt_template":
+                value = normalize_prompt_template(value, DEFAULT_INITIAL_PROMPT_TEMPLATE)
+            elif key == "continuation_prompt_template":
+                value = normalize_prompt_template(value, DEFAULT_CONTINUATION_PROMPT_TEMPLATE)
             setattr(settings, key, value)
     save_settings(settings)
     _game_settings = settings
