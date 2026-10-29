@@ -6,7 +6,10 @@ from starlette.testclient import TestClient
 
 from backend.main import app
 from backend.settings_manager import (
+    FETCH_TRIGGER_MAX_PCT,
+    FETCH_TRIGGER_MIN_PCT,
     GameSettings,
+    clamp_fetch_trigger_pct,
     load_settings,
     save_settings,
     get_settings,
@@ -53,6 +56,34 @@ def test_game_settings_defaults():
     assert gs.custom_model == ""
     assert gs.ollama_model == "llama3.2:latest"
     assert gs.ignore_case is False
+    assert gs.fetch_trigger_pct == 75
+
+
+def test_clamp_fetch_trigger_pct():
+    assert clamp_fetch_trigger_pct(-5) == FETCH_TRIGGER_MIN_PCT
+    assert clamp_fetch_trigger_pct(9.9) == FETCH_TRIGGER_MIN_PCT
+    assert clamp_fetch_trigger_pct(10) == 10
+    assert clamp_fetch_trigger_pct(75) == 75
+    assert clamp_fetch_trigger_pct(100) == 100
+    assert clamp_fetch_trigger_pct(100.1) == FETCH_TRIGGER_MAX_PCT
+    assert clamp_fetch_trigger_pct(250) == FETCH_TRIGGER_MAX_PCT
+
+
+@pytest.mark.parametrize("stored,expected", [(250, 100), (-5, 10)])
+def test_load_clamps_legacy_fetch_trigger(monkeypatch, tmp_path, stored, expected):
+    _patch_path(monkeypatch, tmp_path)
+    import backend.settings_manager as sm
+    sm._settings_path().parent.mkdir(parents=True, exist_ok=True)
+    sm._settings_path().write_text(
+        json.dumps({"fetch_trigger_pct": stored}), encoding="utf-8"
+    )
+    assert load_settings().fetch_trigger_pct == expected
+
+
+def test_update_settings_clamps_fetch_trigger(monkeypatch, tmp_path):
+    _patch_path(monkeypatch, tmp_path)
+    assert update_settings(fetch_trigger_pct=250).fetch_trigger_pct == 100
+    assert update_settings(fetch_trigger_pct=0).fetch_trigger_pct == 10
 
 
 def test_default_fixed_thresholds_values():
@@ -243,3 +274,20 @@ def test_post_settings_ignore_case(monkeypatch, tmp_path, client):
     assert r.status_code == 200
     data = r.json()
     assert data["ignore_case"] is True
+
+
+@pytest.mark.parametrize("value", [9.9, 100.1, -5, 250])
+def test_post_settings_rejects_out_of_range_fetch_trigger(monkeypatch, tmp_path, client, value):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings", json={"fetch_trigger_pct": value})
+    assert r.status_code == 422
+    assert get_settings().fetch_trigger_pct == 75
+
+
+@pytest.mark.parametrize("value", [10, 100])
+def test_post_settings_accepts_fetch_trigger_bounds(monkeypatch, tmp_path, client, value):
+    _patch_path(monkeypatch, tmp_path)
+    r = client.post("/api/settings", json={"fetch_trigger_pct": value})
+    assert r.status_code == 200
+    assert r.json()["fetch_trigger_pct"] == value
+    assert get_settings().fetch_trigger_pct == value

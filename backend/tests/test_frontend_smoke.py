@@ -50,6 +50,69 @@ def test_page_loads_without_errors(server, page):
     assert len(errors) == 0, f"Console errors: {errors}"
 
 
+def test_fetch_trigger_pct_clamped_on_load(server, page):
+    def handle_route(route):
+        if route.request.url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
+        if route.request.url.endswith("/api/settings"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"fetch_trigger_pct": 250}))
+            return
+        if route.request.url.endswith("/api/settings/boundaries"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"boundaries": [30, 50, 75, 100]}))
+            return
+
+    page.route("**/api/*", handle_route)
+    page.goto(URL)
+
+    page.wait_for_function(
+        'document.getElementById("optFetchPct").value === "100"',
+        timeout=5000,
+    )
+    assert page.evaluate("fetchTriggerPct") == 100
+
+
+def test_fetch_trigger_pct_clamped_on_save(server, page):
+    def handle_route(route):
+        if route.request.url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
+        if route.request.url.endswith("/api/settings/boundaries"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"boundaries": [30, 50, 75, 100]}))
+            return
+        if route.request.url.endswith("/api/settings"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"fetch_trigger_pct": 75}))
+            return
+
+    page.route("**/api/*", handle_route)
+    page.goto(URL)
+
+    for typed, expected in (("250", 100), ("-5", 10)):
+        with page.expect_request(
+            lambda req: req.method == "POST" and req.url.endswith("/api/settings")
+        ) as request_info:
+            page.evaluate(
+                """(value) => {
+                    document.getElementById('optFetchPct').value = value;
+                    document.getElementById('saveSettings').click();
+                }""",
+                typed,
+            )
+        body = json.loads(request_info.value.post_data)
+        assert body["fetch_trigger_pct"] == expected
+        page.wait_for_function(
+            f'document.getElementById("optFetchPct").value === "{expected}"',
+            timeout=5000,
+        )
+        assert page.locator("#optFetchPct").input_value() == str(expected)
+
+
 def test_send_prompt_displays_response(server, page):
     fake_text = "A brave warrior set out on a journey..."
 

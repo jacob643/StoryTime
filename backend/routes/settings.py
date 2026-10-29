@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from backend.prompt_engine import _normalize_directions
 from backend.game_logic import compute_tier_boundaries
-from backend.settings_manager import GameSettings, get_settings, reset_settings, update_settings, build_scoring_params
+from backend.settings_manager import (
+    FETCH_TRIGGER_MAX_PCT,
+    FETCH_TRIGGER_MIN_PCT,
+    GameSettings,
+    get_settings,
+    reset_settings,
+    update_settings,
+    build_scoring_params,
+)
 from backend.logger import logger
 
 router = APIRouter()
@@ -53,7 +61,11 @@ class SettingsPatch(BaseModel):
     custom_model: str | None = None
     ollama_model: str | None = None
     ignore_case: bool | None = None
-    fetch_trigger_pct: float | None = None
+    fetch_trigger_pct: float | None = Field(
+        default=None,
+        ge=FETCH_TRIGGER_MIN_PCT,
+        le=FETCH_TRIGGER_MAX_PCT,
+    )
 
 
 def _clamp_thresholds(

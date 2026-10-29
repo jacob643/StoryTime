@@ -195,6 +195,8 @@ A collapsible settings panel to replace/adjust the existing settings bar:
 +---------------------------------------------+
 ```
 
+Fetch trigger (%) is bounded to 10–100. The UI clamps the value before saving and after loading settings, mirroring the backend's validation range.
+
 ## Error States
 
 | State | UI Reaction |

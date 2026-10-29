@@ -83,6 +83,25 @@ const SETTINGS_DEFAULTS = {
 
 const DEFAULT_FIXED_THRESHOLDS_CPM = [300, 350, 400, 450];
 
+// Mirrors FETCH_TRIGGER_MIN_PCT / FETCH_TRIGGER_MAX_PCT in backend/settings_manager.py (SSOT).
+const FETCH_TRIGGER_MIN_PCT = 10;
+const FETCH_TRIGGER_MAX_PCT = 100;
+
+function clampFetchTriggerPct(value) {
+    if (value === null || value === undefined || String(value).trim() === '') {
+        return SETTINGS_DEFAULTS.fetch_trigger_pct;
+    }
+    const n = Number(value);
+    if (!Number.isFinite(n)) return SETTINGS_DEFAULTS.fetch_trigger_pct;
+    return Math.min(FETCH_TRIGGER_MAX_PCT, Math.max(FETCH_TRIGGER_MIN_PCT, n));
+}
+
+function applyFetchTriggerPct(value) {
+    fetchTriggerPct = clampFetchTriggerPct(value);
+    const pctInput = document.getElementById('optFetchPct');
+    if (pctInput) pctInput.value = fetchTriggerPct;
+}
+
 function refreshDefaultButtons() {
     document.querySelectorAll('.default-btn').forEach(btn => {
         const field = btn.dataset.field;
@@ -429,8 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const r = await fetch('/api/settings');
             if (r.ok) {
                 const s = await r.json();
-                fetchTriggerPct = s.fetch_trigger_pct;
-                document.getElementById('optFetchPct').value = s.fetch_trigger_pct;
+                applyFetchTriggerPct(s.fetch_trigger_pct);
             }
         } catch (_) {
         }
@@ -1063,8 +1081,7 @@ async function loadSettings() {
         document.getElementById('optIgnoreCase').checked = s.ignore_case;
         const pctInput = document.getElementById('optFetchPct');
         if (pctInput) {
-            fetchTriggerPct = s.fetch_trigger_pct;
-            pctInput.value = s.fetch_trigger_pct;
+            applyFetchTriggerPct(s.fetch_trigger_pct);
         }
         updateScoringSectionVisibility(mode);
         refreshDefaultButtons();
@@ -1118,7 +1135,7 @@ function collectSettings() {
         outcome_directions: outcomeDirections,
         ollama_model: (document.getElementById('optModel') || {}).value || 'llama3.2:latest',
         ignore_case: document.getElementById('optIgnoreCase').checked,
-        fetch_trigger_pct: safeParseInt(document.getElementById('optFetchPct').value, 75),
+        fetch_trigger_pct: clampFetchTriggerPct(document.getElementById('optFetchPct').value),
     };
 }
 
@@ -1330,7 +1347,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
         const minStddevInput = document.getElementById('optMinStddev');
         if (minStddevInput) minStddevInput.dataset.cpm = body.min_stddev_cpm;
         _cachedCpmThresholds = body.fixed_thresholds;
-        fetchTriggerPct = safeParseInt(document.getElementById('optFetchPct').value, 75);
+        applyFetchTriggerPct(document.getElementById('optFetchPct').value);
         messageDiv.textContent = 'Settings saved.';
         messageDiv.className = 'success';
         settingsPanel.classList.add('collapsed');
@@ -1489,8 +1506,7 @@ async function sendPrompt(prompt) {
             const sRes = await fetch('/api/settings');
             if (sRes.ok) {
                 const s = await sRes.json();
-                fetchTriggerPct = s.fetch_trigger_pct;
-                document.getElementById('optFetchPct').value = s.fetch_trigger_pct;
+                applyFetchTriggerPct(s.fetch_trigger_pct);
             }
         } catch (_) {}
         const response = await fetch('/api/restart', {

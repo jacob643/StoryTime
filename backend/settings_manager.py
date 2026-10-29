@@ -13,6 +13,14 @@ from backend.game_logic import (
 from backend.prompt_engine import OUTCOME_DIRECTIONS, _normalize_directions
 
 
+FETCH_TRIGGER_MIN_PCT = 10.0
+FETCH_TRIGGER_MAX_PCT = 100.0
+
+
+def clamp_fetch_trigger_pct(value: float) -> float:
+    return max(FETCH_TRIGGER_MIN_PCT, min(float(value), FETCH_TRIGGER_MAX_PCT))
+
+
 def _default_fixed_thresholds() -> list[float]:
     return list(FIXED_THRESHOLDS)
 
@@ -85,6 +93,7 @@ def load_settings() -> GameSettings:
         gs = GameSettings(**_filter_known_keys(raw))
         gs.outcome_directions = _normalize_directions(_coerce_keys(gs.outcome_directions))
         gs.fixed_thresholds = _migrate_fixed_thresholds(gs.fixed_thresholds)
+        gs.fetch_trigger_pct = clamp_fetch_trigger_pct(gs.fetch_trigger_pct)
         return gs
     except (json.JSONDecodeError, TypeError, KeyError, ValueError):
         return GameSettings()
@@ -124,6 +133,8 @@ def update_settings(**kwargs) -> GameSettings:
     settings = get_settings()
     for key, value in kwargs.items():
         if hasattr(settings, key) and value is not None:
+            if key == "fetch_trigger_pct":
+                value = clamp_fetch_trigger_pct(value)
             setattr(settings, key, value)
     save_settings(settings)
     _game_settings = settings

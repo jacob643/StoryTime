@@ -174,11 +174,14 @@ Returns complete story log with all metadata for the sidebar.
   "model": "llama3.2:3b",
   "custom_endpoint": "",
   "api_key": "",
-  "paragraph_length": 20
+  "paragraph_length": 20,
+  "fetch_trigger_pct": 75
 }
 ```
 
 Persisted to a JSON file (`~/.storytime/config.json`) for reuse across sessions.
+
+`fetch_trigger_pct` is bounded to 10–100 inclusive. Out-of-range values are rejected with `422`; values read from older config files are clamped to that range.
 
 ## Game Logic (`game_logic.py`)
 

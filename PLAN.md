@@ -12,6 +12,7 @@ Tasks that don't belong to a milestone yet. Assign to a milestone when ready to 
 ## Bugs
 
 - [x] Split CPM uses character count, not character intervals. `updateSplitTimestamps()` computes `cpm = splitChars / minutes`, but the elapsed time spans `splitChars - 1` inter-key intervals on the first split of a paragraph (first keystroke → boundary keystroke), and each pause gap removes another measurable interval, while the formula always counts `splitChars`. This inflates speed by C/(C−1) (~2% at 50 chars) on each paragraph's first split, and more once pause exclusion lands. No compensation exists in the backend — `compute_speed_stats`/`compute_weighted_avg` in `game_logic.py` use `speed_cpm` as-is. Fix: measure intervals — `cpm = (splitChars - (freshStart ? 1 : 0) - pauseGapCount) / activeMinutes` — while keeping `char_count` = real chars (rate-only correction). Confirm behavior for: first split in non-continuous mode (fetch_trigger_pct=100), subsequent paragraphs, first split in continuous mode, split junction in continuous mode (carried-over timestamp after fetch), single-split paragraphs, mid-paragraph input-clear / retry resets, and pause handling (auto-idle ≥5s + manual).
+- [x] Fetch trigger (%) was only bounded by HTML `min`/`max` attributes, so values outside 10–100 could be typed, saved, and loaded. Now the UI clamps saved/loaded values, the settings API rejects out-of-range values with 422, and legacy config values are clamped on load.
 
 ## Milestone 5: Juice & User Profiles
 
