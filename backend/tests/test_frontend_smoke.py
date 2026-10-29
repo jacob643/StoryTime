@@ -76,6 +76,88 @@ def test_fetch_trigger_pct_clamped_on_load(server, page):
     assert page.evaluate("fetchTriggerPct") == 100
 
 
+def test_prompt_templates_load_restore_and_save(server, page):
+    settings_payload = {
+        "scoring_mode": "split",
+        "min_stddev_cpm": 10,
+        "tier_0_max_sigma": -1.5,
+        "tier_1_max_sigma": -0.5,
+        "tier_2_max_sigma": 0.5,
+        "tier_3_max_sigma": 1.5,
+        "paragraph_word_count": 40,
+        "initial_prompt_template": "CUSTOM OPEN {premise}",
+        "continuation_prompt_template": "CUSTOM CONT {history}",
+        "target_split_size": 50,
+        "temperature": 2,
+        "top_k": 40,
+        "top_p": 0.9,
+        "fixed_thresholds": [30, 50, 75, 100],
+        "outcome_directions": {
+            "0": ["bad"], "1": ["worse"], "2": ["neutral"],
+            "3": ["good"], "4": ["great"],
+        },
+        "ollama_model": "llama3.2:latest",
+        "ignore_case": False,
+        "fetch_trigger_pct": 75,
+    }
+    captured = {}
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
+        if url.endswith("/api/settings/boundaries"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"boundaries": [30, 50, 75, 100]}))
+            return
+        if url.endswith("/api/models"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"ollama_running": False, "models": []}))
+            return
+        if url.endswith("/api/settings") and route.request.method == "POST":
+            captured["body"] = json.loads(route.request.post_data)
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps(settings_payload))
+            return
+        if url.endswith("/api/settings"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps(settings_payload))
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/*", handle_route)
+    page.goto(URL)
+    page.click("#settingsToggle")
+    page.wait_for_function(
+        'document.getElementById("optInitialPromptTemplate").value === "CUSTOM OPEN {premise}"',
+        timeout=5000,
+    )
+    assert page.locator("#optContinuationPromptTemplate").input_value() == "CUSTOM CONT {history}"
+
+    page.click("#resetInitialPromptTemplate")
+    assert page.evaluate(
+        "document.getElementById('optInitialPromptTemplate').value === DEFAULT_INITIAL_PROMPT_TEMPLATE"
+    )
+    page.click("#resetContinuationPromptTemplate")
+    assert page.evaluate(
+        "document.getElementById('optContinuationPromptTemplate').value === DEFAULT_CONTINUATION_PROMPT_TEMPLATE"
+    )
+
+    page.fill("#optInitialPromptTemplate", "SAVE OPEN {premise} {style}")
+    page.fill("#optContinuationPromptTemplate", "SAVE CONT {premise} {history} {direction}")
+    with page.expect_request(
+        lambda req: req.method == "POST" and req.url.endswith("/api/settings")
+    ) as request_info:
+        page.click("#saveSettings")
+
+    body = json.loads(request_info.value.post_data)
+    assert body["initial_prompt_template"] == "SAVE OPEN {premise} {style}"
+    assert body["continuation_prompt_template"] == "SAVE CONT {premise} {history} {direction}"
+    assert captured["body"]["initial_prompt_template"] == "SAVE OPEN {premise} {style}"
+
+
 def test_fetch_trigger_pct_clamped_on_save(server, page):
     def handle_route(route):
         if route.request.url.endswith("/api/health"):

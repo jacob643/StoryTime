@@ -64,8 +64,20 @@ let autoIdlePaused = false;
 let manualPauseStartMs = 0;
 let _idlePauseTimer = null;
 
+// Mirrors backend/prompt_engine.py (SSOT).
+const DEFAULT_INITIAL_PROMPT_TEMPLATE =
+    'Write the first paragraph of a story about: {premise}\n\n' +
+    'The paragraph should be exactly {max_words} words long. Write only the paragraph, nothing else.';
+
+const DEFAULT_CONTINUATION_PROMPT_TEMPLATE =
+    'You are writing an interactive story. The premise is: {premise}\n\n' +
+    '{history}Continue the story with {direction}. ' +
+    'The paragraph should be exactly {max_words} words long, nothing else.';
+
 const SETTINGS_DEFAULTS = {
     paragraph_word_count: 40,
+    initial_prompt_template: DEFAULT_INITIAL_PROMPT_TEMPLATE,
+    continuation_prompt_template: DEFAULT_CONTINUATION_PROMPT_TEMPLATE,
     scoring_mode: 'split',
     min_stddev_cpm: 10,
     tier_3_max_sigma: 1.5,
@@ -1070,6 +1082,10 @@ async function loadSettings() {
         document.getElementById('optTier0Sigma').value = s.tier_0_max_sigma;
         document.getElementById('wordCountInput').value = s.paragraph_word_count;
         updateWordCountPreview(s.paragraph_word_count);
+        document.getElementById('optInitialPromptTemplate').value =
+            s.initial_prompt_template || DEFAULT_INITIAL_PROMPT_TEMPLATE;
+        document.getElementById('optContinuationPromptTemplate').value =
+            s.continuation_prompt_template || DEFAULT_CONTINUATION_PROMPT_TEMPLATE;
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optTemperature').value = s.temperature;
         document.getElementById('optTopK').value = s.top_k;
@@ -1126,9 +1142,18 @@ function collectSettings() {
     for (let t = 0; t <= 4; t++) {
         outcomeDirections[t] = outcomeDirectionsData[t] || [''];
     }
+    const initialTemplateEl = document.getElementById('optInitialPromptTemplate');
+    const continuationTemplateEl = document.getElementById('optContinuationPromptTemplate');
+    const initialTemplate = initialTemplateEl ? initialTemplateEl.value : DEFAULT_INITIAL_PROMPT_TEMPLATE;
+    const continuationTemplate = continuationTemplateEl ? continuationTemplateEl.value : DEFAULT_CONTINUATION_PROMPT_TEMPLATE;
+    if (initialTemplate.length > 8000 || continuationTemplate.length > 8000) {
+        throw new Error('Prompt templates must be 8,000 characters or fewer.');
+    }
     return {
         scoring_mode: document.getElementById('optScoringMode').value,
         paragraph_word_count: safeParseInt(document.getElementById('wordCountInput').value, 40),
+        initial_prompt_template: initialTemplate,
+        continuation_prompt_template: continuationTemplate,
         min_stddev_cpm: displayToCpm(safeParseFloat(document.getElementById('optMinStddev').value, 10)),
         tier_0_max_sigma: safeParseFloat(document.getElementById('optTier0Sigma').value, -1.5),
         tier_1_max_sigma: safeParseFloat(document.getElementById('optTier1Sigma').value, -0.5),
@@ -1342,6 +1367,37 @@ document.addEventListener('DOMContentLoaded', function initTierPrompts() {
     }
 });
 
+function restorePromptTemplate(inputId, defaultTemplate) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.value = defaultTemplate;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+document.getElementById('resetInitialPromptTemplate').addEventListener('click', () => {
+    restorePromptTemplate('optInitialPromptTemplate', DEFAULT_INITIAL_PROMPT_TEMPLATE);
+});
+
+document.getElementById('resetContinuationPromptTemplate').addEventListener('click', () => {
+    restorePromptTemplate('optContinuationPromptTemplate', DEFAULT_CONTINUATION_PROMPT_TEMPLATE);
+});
+
+async function readApiError(response, fallback) {
+    try {
+        const data = await response.json();
+        if (data && data.detail) {
+            if (typeof data.detail === 'string') return data.detail;
+            if (Array.isArray(data.detail)) {
+                return data.detail
+                    .map((item) => (item && item.msg) ? item.msg : JSON.stringify(item))
+                    .join('; ');
+            }
+            return JSON.stringify(data.detail);
+        }
+    } catch (_) {}
+    return fallback;
+}
+
 document.getElementById('saveSettings').addEventListener('click', async () => {
     try {
         const body = collectSettings();
@@ -1350,7 +1406,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
         });
-        if (!r.ok) throw new Error('Failed to save settings');
+        if (!r.ok) throw new Error(await readApiError(r, 'Failed to save settings'));
         const minStddevInput = document.getElementById('optMinStddev');
         if (minStddevInput) minStddevInput.dataset.cpm = body.min_stddev_cpm;
         _cachedCpmThresholds = body.fixed_thresholds;
