@@ -346,6 +346,8 @@ def test_paragraphs_render_as_separate_blocks(server, page):
         timeout=5000,
     )
 
+    assert page.evaluate("textContent") == second_paragraph
+
     completed = page.locator("#completedText .completed-p").first
     assert completed.text_content() == first_paragraph
     assert completed.evaluate("el => getComputedStyle(el).display") == "block"

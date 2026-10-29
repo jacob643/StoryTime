@@ -329,7 +329,7 @@ async function fetchNextParagraph() {
         updateTierChart(data.outcome_tier, data.tier_boundaries);
         sessionId = data.session_id;
 
-        pendingText = ' ' + data.response;
+        pendingText = data.response;
         splitList = [];
         const lastTs = splitTimestamps.length > 0 ? splitTimestamps[splitTimestamps.length - 1] : null;
         splitTimestamps = [];

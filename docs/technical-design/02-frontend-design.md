@@ -49,7 +49,7 @@ The frontend is a single-page web application served by the FastAPI backend. It 
 - **Status indicator** — shows "Generating...", "Ready", "Error" states
 
 ### 3. Typing Area
-- **Text display** — shows the current paragraph with character-by-character highlighting (green correct, red incorrect, untyped neutral). Each paragraph is rendered as its own block with vertical spacing; completed paragraphs, the active paragraph, and the upcoming pending paragraph never run together.
+- **Text display** — shows the current paragraph with character-by-character highlighting (green correct, red incorrect, untyped neutral). Each paragraph is rendered as its own block with vertical spacing; completed paragraphs, the active paragraph, and the upcoming pending paragraph never run together. Paragraph breaks are visual only — no separator characters are inserted into the text the player types.
 - **Input box** — single-line or multi-line text input for typing
 - **Auto-advance** — when input matches the target text exactly, the paragraph is submitted automatically
 
