@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- User-editable opening and continuation prompt templates with optional `{premise}`, `{history}`, `{direction}`, `{tier}`, and `{max_words}` placeholders, per-template restore buttons, and live previews of the exact LLM-facing text.
+- `POST /api/settings/preview` for rendering prompt templates with sample values using the production prompt renderer.
 - Auto-pause: typing pauses (5s idle threshold) are excluded from speed calculations.
 - Pause button (and `Esc` shortcut) for manual pause; typing automatically resumes.
 - "Paused" indicator badge shown while idle/paused, hidden on resume.

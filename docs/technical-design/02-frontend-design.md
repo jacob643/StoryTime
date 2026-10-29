@@ -194,6 +194,17 @@ A collapsible settings panel to replace/adjust the existing settings bar:
 
 Fetch trigger (%) is bounded to 10–100. The UI clamps the value before saving and after loading settings, mirroring the backend's validation range.
 
+### Prompt Template Editor
+
+The **Story Prompt Templates** section sits between Word Count and Scoring. It exposes the opening and continuation prompt templates as textareas, with a legend for the optional `{premise}`, `{max_words}`, `{tier}`, `{direction}`, and `{history}` placeholders.
+
+- Each textarea has a **Restore default** button that restores the built-in template string.
+- Defaults are mirrored in `script.js` for offline fallback, but `backend/prompt_engine.py` remains the single source of truth.
+- An inline scrollable monospace preview under each textarea shows the exact LLM-facing prompt using sample premise, history, direction, and tier values.
+- Previews call `POST /api/settings/preview` with a ~200 ms debounce while typing and refresh when the paragraph word count changes.
+- Unknown placeholders are preserved verbatim in the preview, confirming they reach the LLM unchanged.
+- Settings save errors surface the backend's `detail` message instead of a generic failure string.
+
 ## Error States
 
 | State | UI Reaction |

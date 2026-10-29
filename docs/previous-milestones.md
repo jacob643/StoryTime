@@ -294,3 +294,17 @@ Goal: Stop idle/break time from inflating split CPM measurements. After 5 second
 - [x] Remove resume toggle from the pause button — it only pauses; typing is the sole resume mechanism; disable/hide the button while paused
 - [x] Integrate pause time into split time: when a split is consumed, fold `accumulatedPauseMs` and `pauseGapCount` into the split record so the history panel displays the already-adjusted split time (no separate pause exclusion needed downstream)
 - [x] Manual pause uses last-character timestamp as pause start: when the pause button is pressed, set `manualPauseStartMs` to `lastInputMs` (matching auto-pause behavior where idle starts from last keystroke, not from when the 5s timer fires)
+
+---
+
+## Milestone 5.7: Custom prompt templates
+
+Goal: let players replace the opening and continuation prompt wrappers so the generated story can follow any structure, not just the default interactive-story framing. Full design: [`technical-design/07-prompt-templates.md`](technical-design/07-prompt-templates.md).
+
+- [x] **5.7.1** Add template defaults and rendering to `backend/prompt_engine.py`: `DEFAULT_INITIAL_PROMPT_TEMPLATE`, `DEFAULT_CONTINUATION_PROMPT_TEMPLATE`, `render_prompt_template()` (replace known `{premise}`, `{history}`, `{direction}`, `{tier}`, `{max_words}` only; preserve unknown tokens verbatim; blank template falls back to default), and optional `template=` args on both prompt builders. Add unit tests for default parity, custom templates, unknown-token preservation, and blank fallback.
+- [x] **5.7.2** Persist both templates through settings: add `initial_prompt_template` and `continuation_prompt_template` to `GameSettings`, normalize non-string/blank values on load, and add both fields to `SettingsResponse` / `SettingsPatch` (max 8000 chars). Add tests for defaults, save/load roundtrip, and legacy configs missing the fields.
+- [x] **5.7.3** Add `POST /api/settings/preview` returning the fully rendered prompt for either template kind using the production renderer and sample premise/history/direction/tier/word count. Add API tests for opening, continuation, and preserved unknown tokens.
+- [x] **5.7.4** Wire stored templates into `routes/generate.py` (opening + continuation), `routes/restart.py` (opening), and both `routes/simulate.py` branches (continuation). Add route tests asserting the custom template text reaches the provider.
+- [x] **5.7.5** Add the frontend settings section: two textareas, placeholder legends, per-template "Restore default" buttons, mirrored defaults in `SETTINGS_DEFAULTS`, `loadSettings()` / `collectSettings()` wiring, length-only client validation, and API error-detail surfacing. Add Playwright coverage for loading, saving, and resetting both templates.
+- [x] **5.7.6** Add live previews under each textarea using debounced `POST /api/settings/preview` (refresh when `paragraph_word_count` changes) so the user sees the exact LLM-facing text, including literal unknown placeholders. Add Playwright coverage for live updates and token preservation.
+- [x] **5.7.7** Update `docs/technical-design/03-backend-design.md`, `docs/technical-design/02-frontend-design.md`, `docs/development-process/runbook.md`, and `CHANGELOG.md`; run the full backend and frontend suites.

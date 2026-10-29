@@ -1,6 +1,6 @@
 # Custom Prompt Templates
 
-Status: planned (Milestone 5.7)
+Status: implemented (Milestone 5.7)
 
 ## Goal
 
@@ -63,7 +63,7 @@ Add to `backend/prompt_engine.py`:
 - `DEFAULT_INITIAL_PROMPT_TEMPLATE`
 - `DEFAULT_CONTINUATION_PROMPT_TEMPLATE`
 - `KNOWN_PROMPT_PLACEHOLDERS`
-- `render_prompt_template(template, values)` — plain string replacement for each known placeholder, leaving every other character and token untouched.
+- `render_prompt_template(template, values, default_template="")` — plain string replacement for each known placeholder, leaving every other character and token untouched.
 - Optional `template` argument on `build_first_paragraph_prompt()` and `build_prompt()`.
 
 Do not use `str.format()` / `format_map()`, because that would remove or reinterpret unknown braces. Use explicit replacement of the five known tokens.
@@ -108,7 +108,7 @@ Sample values:
 
 - Premise: `a lighthouse keeper who finds a message in a bottle`
 - History: two short sample paragraphs
-- Direction: `a small discovery proves useful`
+- Direction: the first configured phrasing for tier `2` (opening) or tier `3` (continuation)
 - Tier: `2` for the opening template, `3` for the continuation template
 - Max words: the requested value
 

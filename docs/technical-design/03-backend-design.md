@@ -272,27 +272,31 @@ The existing prompts from `script.js` map directly to these tiers:
 
 ### Prompt Assembly (`prompt_engine.py`)
 
+Opening and continuation prompts are rendered from user-editable templates stored in settings. The built-in defaults reproduce the original prompt text exactly.
+
 ```python
-def build_prompt(history: list, outcome_tier: int, initial_context: str) -> str:
-    """
-    Build a complete prompt for the LLM.
+DEFAULT_INITIAL_PROMPT_TEMPLATE = (...)
+DEFAULT_CONTINUATION_PROMPT_TEMPLATE = (...)
 
-    Structure:
-    1. System context (story premise, output format rules)
-    2. Story history (previous paragraphs)
-    3. Outcome direction (the tier-based instruction)
-    4. Output constraint ("Write only a single paragraph, nothing else")
-    """
-
-def parse_llm_response(raw: str) -> str:
-    """
-    Clean up LLM output:
-    - Strip quotes if present
-    - Remove "Here's the next paragraph:" prefixes
-    - Ensure it ends with sentence-ending punctuation
-    - Truncate to max paragraph length if needed
-    """
+def render_prompt_template(template, values, default_template="") -> str: ...
+def build_first_paragraph_prompt(user_input, max_words=80, template=None) -> str: ...
+def build_prompt(initial_context, history, outcome_tier, outcome_directions=None, max_words=80, template=None) -> str: ...
 ```
+
+Known placeholders are `{premise}`, `{history}`, `{direction}`, `{tier}`, and `{max_words}`. All are optional. Rendering replaces each known token literally and leaves every other token untouched, so unknown placeholders such as `{style}` reach the LLM verbatim. A blank or whitespace-only template falls back to its built-in default.
+
+`{history}` expands to a bulleted block:
+
+```text
+So far the story has unfolded as follows:
+- First paragraph.
+- Second paragraph.
+
+```
+
+or to an empty string when there is no history.
+
+Opening prompts use the player's premise, empty history, a random tier-2 direction, tier `2`, and the configured paragraph word count. Continuation prompts use the scored tier (falling back to tier `2` for out-of-range values), its direction, and formatted history. `POST /api/settings/preview` calls the same renderer with sample values so the settings UI can show exactly what the LLM will receive.
 
 ## Session Management
 

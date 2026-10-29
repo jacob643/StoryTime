@@ -99,9 +99,14 @@ Combine with `STORYTIME_DEV_MODE=true` to also use `/simulate` with mock respons
 | `tier_3_max_sigma` | float | 1.5 | Sigma upper bound for tier 3 |
 | `fixed_thresholds` | `[[float, float], ...]` | — | Low/high CPM pairs for each tier (fixed mode) |
 | `target_split_size` | int | 50 | Target characters per split |
+| `paragraph_word_count` | int | 40 | Target words per generated paragraph |
+| `initial_prompt_template` | str | built-in | Opening prompt template (max 8000 chars; blank falls back to default) |
+| `continuation_prompt_template` | str | built-in | Continuation prompt template (max 8000 chars; blank falls back to default) |
 
 | `default_avg_cpm` | float | 300.0 | Default average CPM when no prior data |
 | `outcome_directions` | `{int: str, ...}` | — | Prompt direction text for each tier (0–4) |
+
+Prompt templates support optional `{premise}`, `{history}`, `{direction}`, `{tier}`, and `{max_words}` placeholders. Unknown placeholders are preserved verbatim.
 
 Example:
 ```bash
@@ -112,7 +117,14 @@ curl -X POST http://127.0.0.1:8000/api/settings \
 
 # Read current settings
 curl http://127.0.0.1:8000/api/settings
+
+# Preview a template exactly as the LLM will receive it
+curl -X POST http://127.0.0.1:8000/api/settings/preview \
+  -H "Content-Type: application/json" \
+  -d '{"kind": "continuation", "template": "Continue {premise}\\n{history}", "max_words": 40}'
 ```
+
+`kind` is `initial` or `continuation`. The preview endpoint uses the same renderer as generation with sample premise, history, direction, and tier values.
 
 Settings persist in `~/.storytime/config.json` and affect **new sessions only** (existing sessions retain their own `ScoringParams`).
 
@@ -126,8 +138,9 @@ Click the **⚙ Settings** toggle button to expand/collapse the settings panel. 
 - **Split parameters**: target split size
 - **Default CPM**: default speed when no prior data
 - **Prompt directions**: text inputs for each tier's outcome direction
+- **Story Prompt Templates**: opening and continuation prompt textareas with placeholder legends, per-template **Restore default** buttons, and live previews of the exact LLM-facing prompt
 
-Click **Save** to persist changes via `POST /api/settings`, or **Reset to Defaults** to restore factory values.
+Click **Save** to persist changes via `POST /api/settings`, or **Reset to Defaults** to restore factory values. Prompt previews refresh automatically while typing and when the paragraph word count changes.
 
 ## Provider System
 
