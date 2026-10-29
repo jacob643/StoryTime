@@ -93,31 +93,6 @@ body
     padding: 1vw;
 }
 
-#storyContext
-{
-    width: 20vw;
-    background: var(--bg-panel);
-    border: 1px solid var(--border-color);
-    border-radius: 0.5vw;
-    padding: 1vw;
-    overflow-y: auto;
-}
-
-#storyContext h3
-{
-    margin: 0 0 0.5vw 0;
-    font-size: 0.9em;
-    color: var(--text-secondary);
-}
-
-#storyContent
-{
-    font-size: 0.9em;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
 .container
 {
     display: flex;
@@ -129,7 +104,6 @@ body
     border-radius: 0.5vw;
     box-shadow: 0 0.5vw 1vw var(--shadow);
     flex: 1;
-    max-width: 60vw;
     min-width: 0;
 }
 

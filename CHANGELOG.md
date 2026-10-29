@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Leading whitespace typed at the start of a paragraph is now ignored, so a habitual space after finishing the previous paragraph is accepted.
 ### Deprecated
 ### Removed
+- Removed the "Story Context" left pane; the main text viewer now keeps the full story visible and scrollable, and the freed space expands the typing area.
 - Removed `continuous_mode` setting, `paragraphJustCompleted` flag, `CheckFinishedSentence()`, `resetSplitTracking()`, old per-char `updateSplitTimestamps`, old `fetchNextParagraph`.
 - Removed `#optContinuousMode` checkbox and innerHTML rebuild display path.
 ### Fixed

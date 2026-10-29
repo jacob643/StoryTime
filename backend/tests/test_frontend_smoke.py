@@ -47,6 +47,7 @@ def test_page_loads_without_errors(server, page):
     assert page.locator("#initialPrompt").is_visible()
     assert page.locator("#restartButton").is_visible()
     assert page.locator("#message").is_visible()
+    assert page.locator("#storyContext").count() == 0
     assert len(errors) == 0, f"Console errors: {errors}"
 
 

@@ -325,7 +325,6 @@ async function fetchNextParagraph() {
         const data = await response.json();
 
         addHistory(textContent, elapsed, avgSpeedCpm, data.outcome_tier, data.outcome_label, savedSplitList);
-        updateStoryContext(textContent);
         updateTierChart(data.outcome_tier, data.tier_boundaries);
         sessionId = data.session_id;
 
@@ -539,7 +538,6 @@ function reset() {
     startTime = null;
     document.getElementById('historyEntries').querySelectorAll('.history-item').forEach(el => el.remove());
     historyData.length = 0;
-    document.getElementById('storyContent').textContent = '';
     consumedChars = 0;
     splitList = [];
     pendingText = '';
@@ -620,15 +618,6 @@ function addHistory(text, timeTaken, speedCpm, outcomeTier, outcomeLabel, splitS
     const container = document.getElementById('historyEntries');
     container.prepend(item);
     container.scrollTop = 0;
-}
-
-function updateStoryContext(text) {
-    const el = document.getElementById('storyContent');
-    if (el.textContent.length > 0) {
-        el.textContent += '\n\n';
-    }
-    el.textContent += text;
-    document.getElementById('storyContext').scrollTop = document.getElementById('storyContext').scrollHeight;
 }
 
 function updateTierChart(tier, boundaries) {
@@ -1510,8 +1499,6 @@ async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
 
     reset();
-
-    document.getElementById('storyContent').textContent = '';
 
     sessionId = null;
     const promptText = prompt;
