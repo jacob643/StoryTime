@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -10,8 +11,42 @@ import httpx
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-PORT = 9876
+
+
+def _free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+PORT = _free_port()
 URL = f"http://127.0.0.1:{PORT}"
+
+
+def _settings_payload(initial_prompt_template, continuation_prompt_template):
+    return {
+        "scoring_mode": "split",
+        "min_stddev_cpm": 10,
+        "tier_0_max_sigma": -1.5,
+        "tier_1_max_sigma": -0.5,
+        "tier_2_max_sigma": 0.5,
+        "tier_3_max_sigma": 1.5,
+        "paragraph_word_count": 40,
+        "initial_prompt_template": initial_prompt_template,
+        "continuation_prompt_template": continuation_prompt_template,
+        "target_split_size": 50,
+        "temperature": 2,
+        "top_k": 40,
+        "top_p": 0.9,
+        "fixed_thresholds": [30, 50, 75, 100],
+        "outcome_directions": {
+            "0": ["bad"], "1": ["worse"], "2": ["neutral"],
+            "3": ["good"], "4": ["great"],
+        },
+        "ollama_model": "llama3.2:latest",
+        "ignore_case": False,
+        "fetch_trigger_pct": 75,
+    }
 
 
 @pytest.fixture(scope="module")
@@ -77,29 +112,10 @@ def test_fetch_trigger_pct_clamped_on_load(server, page):
 
 
 def test_prompt_templates_load_restore_and_save(server, page):
-    settings_payload = {
-        "scoring_mode": "split",
-        "min_stddev_cpm": 10,
-        "tier_0_max_sigma": -1.5,
-        "tier_1_max_sigma": -0.5,
-        "tier_2_max_sigma": 0.5,
-        "tier_3_max_sigma": 1.5,
-        "paragraph_word_count": 40,
-        "initial_prompt_template": "CUSTOM OPEN {premise}",
-        "continuation_prompt_template": "CUSTOM CONT {history}",
-        "target_split_size": 50,
-        "temperature": 2,
-        "top_k": 40,
-        "top_p": 0.9,
-        "fixed_thresholds": [30, 50, 75, 100],
-        "outcome_directions": {
-            "0": ["bad"], "1": ["worse"], "2": ["neutral"],
-            "3": ["good"], "4": ["great"],
-        },
-        "ollama_model": "llama3.2:latest",
-        "ignore_case": False,
-        "fetch_trigger_pct": 75,
-    }
+    settings_payload = _settings_payload(
+        "CUSTOM OPEN {premise}",
+        "CUSTOM CONT {history}",
+    )
     captured = {}
 
     def handle_route(route):
@@ -156,6 +172,92 @@ def test_prompt_templates_load_restore_and_save(server, page):
     assert body["initial_prompt_template"] == "SAVE OPEN {premise} {style}"
     assert body["continuation_prompt_template"] == "SAVE CONT {premise} {history} {direction}"
     assert captured["body"]["initial_prompt_template"] == "SAVE OPEN {premise} {style}"
+
+
+def test_prompt_previews_update_and_preserve_unknown_tokens(server, page):
+    settings_payload = _settings_payload(
+        "Open {premise} words={max_words} tier={tier}",
+        "Cont {premise}\n{history}words={max_words} tier={tier}",
+    )
+    preview_calls = []
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
+        if url.endswith("/api/settings/boundaries"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"boundaries": [30, 50, 75, 100]}))
+            return
+        if url.endswith("/api/models"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"ollama_running": False, "models": []}))
+            return
+        if url.endswith("/api/settings/preview"):
+            data = json.loads(route.request.post_data)
+            preview_calls.append(data)
+            tier = "3" if data["kind"] == "continuation" else "2"
+            rendered = (
+                data["template"]
+                .replace("{premise}", "PREVIEW_PREMISE")
+                .replace("{history}", "HISTORY BLOCK\n\n")
+                .replace("{direction}", "PREVIEW_DIRECTION")
+                .replace("{tier}", tier)
+                .replace("{max_words}", str(data["max_words"]))
+            )
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"preview": rendered}))
+            return
+        if url.endswith("/api/settings"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps(settings_payload))
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.click("#settingsToggle")
+    page.wait_for_function(
+        'document.getElementById("initialPromptPreview").textContent.includes("PREVIEW_PREMISE")',
+        timeout=5000,
+    )
+    page.wait_for_function(
+        'document.getElementById("continuationPromptPreview").textContent.includes("HISTORY BLOCK")',
+        timeout=5000,
+    )
+    initial_text = page.locator("#initialPromptPreview").text_content()
+    continuation_text = page.locator("#continuationPromptPreview").text_content()
+    assert "words=40" in initial_text
+    assert "tier=2" in initial_text
+    assert "tier=3" in continuation_text
+
+    preview_calls.clear()
+    page.fill(
+        "#optInitialPromptTemplate",
+        "Live {premise} words={max_words} {style} tier={tier}",
+    )
+    page.wait_for_function(
+        'document.getElementById("initialPromptPreview").textContent.includes("{style}")',
+        timeout=5000,
+    )
+    initial_text = page.locator("#initialPromptPreview").text_content()
+    assert "PREVIEW_PREMISE" in initial_text
+    assert "{style}" in initial_text
+    assert any(
+        call["kind"] == "initial"
+        and call["template"] == "Live {premise} words={max_words} {style} tier={tier}"
+        for call in preview_calls
+    )
+
+    preview_calls.clear()
+    page.fill("#wordCountInput", "55")
+    page.wait_for_function(
+        'document.getElementById("initialPromptPreview").textContent.includes("words=55")',
+        timeout=5000,
+    )
+    assert any(call["max_words"] == 55 for call in preview_calls)
 
 
 def test_fetch_trigger_pct_clamped_on_save(server, page):

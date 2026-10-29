@@ -57,7 +57,7 @@ Goal: let players replace the opening and continuation prompt wrappers so the ge
 - [x] **5.7.3** Add `POST /api/settings/preview` returning the fully rendered prompt for either template kind using the production renderer and sample premise/history/direction/tier/word count. Add API tests for opening, continuation, and preserved unknown tokens.
 - [x] **5.7.4** Wire stored templates into `routes/generate.py` (opening + continuation), `routes/restart.py` (opening), and both `routes/simulate.py` branches (continuation). Add route tests asserting the custom template text reaches the provider.
 - [x] **5.7.5** Add the frontend settings section: two textareas, placeholder legends, per-template "Restore default" buttons, mirrored defaults in `SETTINGS_DEFAULTS`, `loadSettings()` / `collectSettings()` wiring, length-only client validation, and API error-detail surfacing. Add Playwright coverage for loading, saving, and resetting both templates.
-- [ ] **5.7.6** Add live previews under each textarea using debounced `POST /api/settings/preview` (refresh when `paragraph_word_count` changes) so the user sees the exact LLM-facing text, including literal unknown placeholders. Add Playwright coverage for live updates and token preservation.
+- [x] **5.7.6** Add live previews under each textarea using debounced `POST /api/settings/preview` (refresh when `paragraph_word_count` changes) so the user sees the exact LLM-facing text, including literal unknown placeholders. Add Playwright coverage for live updates and token preservation.
 - [ ] **5.7.7** Update `docs/technical-design/03-backend-design.md`, `docs/technical-design/02-frontend-design.md`, `docs/development-process/runbook.md`, and `CHANGELOG.md`; run the full backend and frontend suites.
 
 

@@ -570,6 +570,11 @@ body
     overflow-wrap: anywhere;
 }
 
+#settingsPanel .prompt-template-preview.error
+{
+    color: var(--text-error);
+}
+
 .setting-desc
 {
     font-size: 0.85em;

@@ -193,6 +193,77 @@ function hideWordCountPreview() {
     document.getElementById('wordCountPreview').style.display = 'none';
 }
 
+// Prompt template previews
+
+const PROMPT_PREVIEW_DELAY_MS = 200;
+const PROMPT_TEMPLATE_FIELDS = {
+    initial: {
+        input: 'optInitialPromptTemplate',
+        preview: 'initialPromptPreview',
+    },
+    continuation: {
+        input: 'optContinuationPromptTemplate',
+        preview: 'continuationPromptPreview',
+    },
+};
+const _promptPreviewTimers = { initial: null, continuation: null };
+const _promptPreviewSequence = { initial: 0, continuation: 0 };
+
+function getPromptPreviewWordCount() {
+    const value = parseInt(document.getElementById('wordCountInput').value, 10);
+    return Number.isFinite(value) && value > 0 ? value : 40;
+}
+
+async function updatePromptPreview(kind) {
+    const fields = PROMPT_TEMPLATE_FIELDS[kind];
+    if (!fields) return;
+    const input = document.getElementById(fields.input);
+    const preview = document.getElementById(fields.preview);
+    if (!input || !preview) return;
+
+    const sequence = ++_promptPreviewSequence[kind];
+    preview.classList.remove('error');
+    if (!preview.textContent.trim()) preview.textContent = 'Loading preview...';
+
+    try {
+        const r = await fetch('/api/settings/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                kind,
+                template: input.value,
+                max_words: getPromptPreviewWordCount(),
+            }),
+        });
+        if (!r.ok) throw new Error(await readApiError(r, 'Failed to load preview'));
+        const data = await r.json();
+        if (sequence !== _promptPreviewSequence[kind]) return;
+        preview.textContent = data.preview || '(blank preview)';
+    } catch (e) {
+        if (sequence !== _promptPreviewSequence[kind]) return;
+        preview.textContent = 'Preview unavailable: ' + e.message;
+        preview.classList.add('error');
+    }
+}
+
+function schedulePromptPreview(kind) {
+    if (_promptPreviewTimers[kind]) clearTimeout(_promptPreviewTimers[kind]);
+    _promptPreviewTimers[kind] = setTimeout(() => {
+        _promptPreviewTimers[kind] = null;
+        updatePromptPreview(kind);
+    }, PROMPT_PREVIEW_DELAY_MS);
+}
+
+function updatePromptPreviews() {
+    for (const kind of Object.keys(PROMPT_TEMPLATE_FIELDS)) {
+        if (_promptPreviewTimers[kind]) {
+            clearTimeout(_promptPreviewTimers[kind]);
+            _promptPreviewTimers[kind] = null;
+        }
+        updatePromptPreview(kind);
+    }
+}
+
 function cpmToDisplay(cpm) {
     return getActiveSpeedType() === 'wpm' ? cpm / 5 : cpm;
 }
@@ -525,8 +596,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             el.style.display = 'none';
         }
+        for (const kind of Object.keys(PROMPT_TEMPLATE_FIELDS)) {
+            schedulePromptPreview(kind);
+        }
     });
     document.getElementById('wordCountInput').addEventListener('blur', hideWordCountPreview);
+    document.getElementById('optInitialPromptTemplate').addEventListener('input', () => {
+        schedulePromptPreview('initial');
+    });
+    document.getElementById('optContinuationPromptTemplate').addEventListener('input', () => {
+        schedulePromptPreview('continuation');
+    });
 });
 
 function reset() {
@@ -1086,6 +1166,7 @@ async function loadSettings() {
             s.initial_prompt_template || DEFAULT_INITIAL_PROMPT_TEMPLATE;
         document.getElementById('optContinuationPromptTemplate').value =
             s.continuation_prompt_template || DEFAULT_CONTINUATION_PROMPT_TEMPLATE;
+        updatePromptPreviews();
         document.getElementById('optTargetSplit').value = s.target_split_size;
         document.getElementById('optTemperature').value = s.temperature;
         document.getElementById('optTopK').value = s.top_k;
