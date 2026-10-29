@@ -2,6 +2,7 @@ from backend.prompt_engine import (
     build_prompt,
     build_first_paragraph_prompt,
     parse_llm_response,
+    render_prompt_template,
     sanitize_text,
     strip_thinking,
     validate_llm_response,
@@ -12,6 +13,48 @@ from backend.prompt_engine import (
 
 def _has_tier_phrasing(result: str, tier: int) -> bool:
     return any(p in result for p in OUTCOME_DIRECTIONS[tier])
+
+
+class TestRenderPromptTemplate:
+    def test_replaces_known_placeholders(self):
+        result = render_prompt_template(
+            "{premise}|{history}|{direction}|{tier}|{max_words}",
+            {
+                "premise": "P",
+                "history": "H",
+                "direction": "D",
+                "tier": 3,
+                "max_words": 40,
+            },
+        )
+        assert result == "P|H|D|3|40"
+
+    def test_preserves_unknown_placeholders(self):
+        result = render_prompt_template(
+            "{premise} {style} {max_word} {not a placeholder}",
+            {"premise": "P"},
+        )
+        assert result == "P {style} {max_word} {not a placeholder}"
+
+    def test_blank_falls_back_to_default(self):
+        result = render_prompt_template(
+            "   ",
+            {"premise": "P"},
+            default_template="Default {premise}",
+        )
+        assert result == "Default P"
+
+    def test_none_falls_back_to_default(self):
+        result = render_prompt_template(
+            None,
+            {"premise": "P"},
+            default_template="Default {premise}",
+        )
+        assert result == "Default P"
+
+    def test_known_token_without_value_stays_literal(self):
+        result = render_prompt_template("{premise} {direction}", {"premise": "P"})
+        assert result == "P {direction}"
 
 
 class TestBuildPrompt:
@@ -61,6 +104,47 @@ class TestBuildPrompt:
         result = build_prompt("Test.", [], outcome_tier=2, outcome_directions=custom)
         assert "old string direction" in result
 
+    def test_custom_template_uses_all_values(self):
+        custom = (
+            "Premise={premise}\n"
+            "History={history}"
+            "Direction={direction}\n"
+            "Tier={tier}\n"
+            "Words={max_words}"
+        )
+        result = build_prompt(
+            "A lighthouse.",
+            ["One.", "Two."],
+            outcome_tier=3,
+            outcome_directions={3: ["custom direction"]},
+            max_words=50,
+            template=custom,
+        )
+        assert "Premise=A lighthouse." in result
+        assert "- One.\n- Two." in result
+        assert "Direction=custom direction" in result
+        assert "Tier=3" in result
+        assert "Words=50" in result
+
+    def test_custom_template_preserves_unknown_placeholders(self):
+        result = build_prompt("Test.", [], outcome_tier=2, template="{premise} {style}")
+        assert result == "Test. {style}"
+
+    def test_blank_template_falls_back_to_default(self):
+        result = build_prompt("Test.", [], outcome_tier=2, template="   ")
+        assert "You are writing an interactive story." in result
+        assert "exactly 80 words long" in result
+
+    def test_out_of_range_tier_value_uses_neutral_tier(self):
+        result = build_prompt(
+            "Test.",
+            [],
+            outcome_tier=99,
+            template="Tier={tier} Direction={direction}",
+        )
+        assert result.startswith("Tier=2 Direction=")
+        assert _has_tier_phrasing(result, 2)
+
 
 class TestParseLlmResponse:
     def test_strips_quotes(self):
@@ -109,6 +193,28 @@ class TestBuildFirstParagraphPrompt:
     def test_custom_max_words(self):
         result = build_first_paragraph_prompt("test", max_words=150)
         assert "150 words" in result
+
+    def test_custom_template(self):
+        result = build_first_paragraph_prompt(
+            "a cat detective",
+            max_words=25,
+            template="Write a {max_words}-word scene about {premise}. Tier={tier}.",
+        )
+        assert "25-word scene" in result
+        assert "a cat detective" in result
+        assert "Tier=2." in result
+
+    def test_custom_template_preserves_unknown_placeholders(self):
+        result = build_first_paragraph_prompt(
+            "test",
+            template="{premise} {style}",
+        )
+        assert result == "test {style}"
+
+    def test_blank_template_falls_back_to_default(self):
+        result = build_first_paragraph_prompt("test", template="   ")
+        assert result.startswith("Write the first paragraph of a story about: test")
+        assert "exactly 80 words long" in result
 
 
 class TestValidateLlmResponse:

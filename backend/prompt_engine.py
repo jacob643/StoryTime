@@ -71,8 +71,52 @@ OUTCOME_DIRECTIONS: dict[int, list[str]] = {
 }
 
 
+KNOWN_PROMPT_PLACEHOLDERS: tuple[str, ...] = (
+    "premise",
+    "history",
+    "direction",
+    "tier",
+    "max_words",
+)
+
+DEFAULT_INITIAL_PROMPT_TEMPLATE = (
+    "Write the first paragraph of a story about: {premise}\n\n"
+    "The paragraph should be exactly {max_words} words long. Write only the paragraph, nothing else."
+)
+
+DEFAULT_CONTINUATION_PROMPT_TEMPLATE = (
+    "You are writing an interactive story. The premise is: {premise}\n\n"
+    "{history}Continue the story with {direction}. "
+    "The paragraph should be exactly {max_words} words long, nothing else."
+)
+
+
 def _normalize_directions(directions: dict[int, Union[str, list[str]]]) -> dict[int, list[str]]:
     return {k: (v if isinstance(v, list) else [v]) for k, v in directions.items()}
+
+
+def render_prompt_template(
+    template: str | None,
+    values: dict[str, object],
+    default_template: str = "",
+) -> str:
+    """Substitute known placeholders, leaving every other token untouched.
+
+    A blank or non-string template falls back to ``default_template``.
+    """
+    text = template if isinstance(template, str) and template.strip() else default_template
+    for name in KNOWN_PROMPT_PLACEHOLDERS:
+        if name in values:
+            text = text.replace("{" + name + "}", str(values[name]))
+    return text
+
+
+def _format_history(history: list[str]) -> str:
+    if not history:
+        return ""
+    return "So far the story has unfolded as follows:\n" + "\n".join(
+        f"- {p}" for p in history
+    ) + "\n\n"
 
 
 def build_prompt(
@@ -81,27 +125,25 @@ def build_prompt(
     outcome_tier: int,
     outcome_directions: dict[int, Union[str, list[str]]] | None = None,
     max_words: int = 80,
+    template: str | None = None,
 ) -> str:
-    parts: list[str] = []
-
-    parts.append(
-        f"You are writing an interactive story. The premise is: {initial_context}"
-    )
-
-    if history:
-        parts.append("So far the story has unfolded as follows:\n" + "\n".join(
-            f"- {p}" for p in history
-        ))
-
     raw = outcome_directions if outcome_directions is not None else OUTCOME_DIRECTIONS
     directions = _normalize_directions(raw)
-    direction = random.choice(directions.get(outcome_tier, directions[2]))
-    parts.append(
-        f"Continue the story with {direction}. "
-        f"The paragraph should be exactly {max_words} words long, nothing else."
+    resolved_tier = outcome_tier if outcome_tier in directions else 2
+    direction = random.choice(directions[resolved_tier])
+
+    assembled = render_prompt_template(
+        template,
+        {
+            "premise": initial_context,
+            "history": _format_history(history),
+            "direction": direction,
+            "tier": resolved_tier,
+            "max_words": max_words,
+        },
+        default_template=DEFAULT_CONTINUATION_PROMPT_TEMPLATE,
     )
 
-    assembled = "\n\n".join(parts)
     logger.debug("build_prompt: outcome_tier=%d history_len=%d prompt_len=%d max_words=%d",
                  outcome_tier, len(history), len(assembled), max_words)
     return assembled
@@ -113,11 +155,23 @@ NEUTRAL_FALLBACK = (
 )
 
 
-def build_first_paragraph_prompt(user_input: str, max_words: int = 80) -> str:
+def build_first_paragraph_prompt(
+    user_input: str,
+    max_words: int = 80,
+    template: str | None = None,
+) -> str:
     logger.debug("build_first_paragraph_prompt: user_input=%s max_words=%d", user_input, max_words)
-    return (
-        f"Write the first paragraph of a story about: {user_input}\n\n"
-        f"The paragraph should be exactly {max_words} words long. Write only the paragraph, nothing else."
+    directions = _normalize_directions(OUTCOME_DIRECTIONS)
+    return render_prompt_template(
+        template,
+        {
+            "premise": user_input,
+            "history": "",
+            "direction": random.choice(directions[2]),
+            "tier": 2,
+            "max_words": max_words,
+        },
+        default_template=DEFAULT_INITIAL_PROMPT_TEMPLATE,
     )
 
 
