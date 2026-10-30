@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Text viewer now renders completed, active, and pending paragraphs as separate blocks with vertical spacing instead of one continuous run of text.
 - Removed the artificial leading space that was prepended to fetched paragraphs; paragraph separation is now purely visual.
 - Leading whitespace typed at the start of a paragraph is now ignored, so a habitual space after finishing the previous paragraph is accepted.
+- Reordered settings sections: LLM Settings now precedes Tier Prompts, and Story Prompt Templates sits last.
 ### Deprecated
 ### Removed
 - Removed the "Story Context" left pane; the main text viewer now keeps the full story visible and scrollable, and the freed space expands the typing area.

@@ -123,7 +123,7 @@ The endpoint must call the same `render_prompt_template()` used by the generatio
 
 ## Frontend
 
-Add a **Story Prompt Templates** settings section between Word Count and Tier Prompts.
+Add a **Story Prompt Templates** settings section at the end of the panel, after Tier Prompts (which follows LLM Settings).
 
 - `#optInitialPromptTemplate` — textarea for the opening template.
 - `#optContinuationPromptTemplate` — textarea for the continuation template.

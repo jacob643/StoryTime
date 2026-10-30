@@ -47,5 +47,6 @@ Goal: Add sound effects, animations, and per-user split tracking to make the gam
 
 ### 5.6 — Settings UX improvements
 - [x] Word count preview: show a Lorem Ipsum sample that updates live as the word count slider/input changes
+- [x] Reorder settings sections: Tier Prompts after LLM Settings, Story Prompt Templates last
 
 

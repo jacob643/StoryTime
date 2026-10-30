@@ -196,7 +196,7 @@ Fetch trigger (%) is bounded to 10–100. The UI clamps the value before saving 
 
 ### Prompt Template Editor
 
-The **Story Prompt Templates** section sits between Word Count and Scoring. It exposes the opening and continuation prompt templates as textareas, with a legend for the optional `{premise}`, `{max_words}`, `{tier}`, `{direction}`, and `{history}` placeholders.
+The **Story Prompt Templates** section sits at the end of the settings panel, after Tier Prompts (which itself follows LLM Settings). It exposes the opening and continuation prompt templates as textareas, with a legend for the optional `{premise}`, `{max_words}`, `{tier}`, `{direction}`, and `{history}` placeholders.
 
 - Each textarea has a **Restore default** button that restores the built-in template string.
 - Defaults are mirrored in `script.js` for offline fallback, but `backend/prompt_engine.py` remains the single source of truth.

@@ -45,24 +45,6 @@
                     <label>Words per paragraph <input type="number" id="wordCountInput" step="5" min="10" /><button class="default-btn" data-field="wordCountInput" data-default="40">default: 40</button></label>
                 </section>
                 <section>
-                    <h3>Story Prompt Templates</h3>
-                    <div class="setting-desc">
-                        Placeholders: <code>{premise}</code>, <code>{max_words}</code>,
-                        <code>{tier}</code>, <code>{direction}</code>, <code>{history}</code>.
-                        All are optional; unknown placeholders are sent to the LLM as-is.
-                    </div>
-                    <label for="optInitialPromptTemplate">Opening paragraph template</label>
-                    <textarea id="optInitialPromptTemplate" rows="4" maxlength="8000"></textarea>
-                    <button type="button" id="resetInitialPromptTemplate" class="default-btn">Restore default</button>
-                    <span class="prompt-template-preview-label">Preview (sample premise, history, tier)</span>
-                    <pre id="initialPromptPreview" class="prompt-template-preview" aria-live="polite"></pre>
-                    <label for="optContinuationPromptTemplate">Continuation paragraph template</label>
-                    <textarea id="optContinuationPromptTemplate" rows="6" maxlength="8000"></textarea>
-                    <button type="button" id="resetContinuationPromptTemplate" class="default-btn">Restore default</button>
-                    <span class="prompt-template-preview-label">Preview (sample premise, history, tier)</span>
-                    <pre id="continuationPromptPreview" class="prompt-template-preview" aria-live="polite"></pre>
-                </section>
-                <section>
                     <h3>Scoring</h3>
                     <button id="resetPerformanceBtn" class="default-btn">Reset player performance</button>
                     <label>scoring mode
@@ -90,6 +72,18 @@
                     <label>Target (chars) <input type="number" id="optTargetSplit" step="1" min="10" /><button class="default-btn" data-field="optTargetSplit" data-default="50">default: 50</button></label>
                 </section>
                 <section>
+                    <h3>LLM Settings</h3>
+                    <label style="display: flex; align-items: center; gap: 4px;">
+                        Ollama model
+                        <button id="refreshModels" type="button" class="small-btn" title="Refresh model list">↻</button>
+                        <span id="modelSelectorContainer" style="flex: 1; display: inline-flex;"></span>
+                        <button class="default-btn" data-field="optModel" data-default="llama3.2:latest">default: llama3.2:latest</button>
+                    </label>
+                    <label>Temperature <input type="number" id="optTemperature" step="0.05" min="0" /><button class="default-btn" data-field="optTemperature" data-default="2">default: 2</button></label>
+                    <label>top_k <input type="number" id="optTopK" step="1" min="0" /><button class="default-btn" data-field="optTopK" data-default="40">default: 40</button></label>
+                    <label>top_p <input type="number" id="optTopP" step="0.05" min="0" max="1" /><button class="default-btn" data-field="optTopP" data-default="0.9">default: 0.9</button></label>
+                </section>
+                <section>
                     <h3>Tier Prompts</h3>
                     <label>Tier
                         <select id="tierPromptSelector">
@@ -103,16 +97,22 @@
                     <div id="tierPromptList"></div>
                 </section>
                 <section>
-                    <h3>LLM Settings</h3>
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                        Ollama model
-                        <button id="refreshModels" type="button" class="small-btn" title="Refresh model list">↻</button>
-                        <span id="modelSelectorContainer" style="flex: 1; display: inline-flex;"></span>
-                        <button class="default-btn" data-field="optModel" data-default="llama3.2:latest">default: llama3.2:latest</button>
-                    </label>
-                    <label>Temperature <input type="number" id="optTemperature" step="0.05" min="0" /><button class="default-btn" data-field="optTemperature" data-default="2">default: 2</button></label>
-                    <label>top_k <input type="number" id="optTopK" step="1" min="0" /><button class="default-btn" data-field="optTopK" data-default="40">default: 40</button></label>
-                    <label>top_p <input type="number" id="optTopP" step="0.05" min="0" max="1" /><button class="default-btn" data-field="optTopP" data-default="0.9">default: 0.9</button></label>
+                    <h3>Story Prompt Templates</h3>
+                    <div class="setting-desc">
+                        Placeholders: <code>{premise}</code>, <code>{max_words}</code>,
+                        <code>{tier}</code>, <code>{direction}</code>, <code>{history}</code>.
+                        All are optional; unknown placeholders are sent to the LLM as-is.
+                    </div>
+                    <label for="optInitialPromptTemplate">Opening paragraph template</label>
+                    <textarea id="optInitialPromptTemplate" rows="4" maxlength="8000"></textarea>
+                    <button type="button" id="resetInitialPromptTemplate" class="default-btn">Restore default</button>
+                    <span class="prompt-template-preview-label">Preview (sample premise, history, tier)</span>
+                    <pre id="initialPromptPreview" class="prompt-template-preview" aria-live="polite"></pre>
+                    <label for="optContinuationPromptTemplate">Continuation paragraph template</label>
+                    <textarea id="optContinuationPromptTemplate" rows="6" maxlength="8000"></textarea>
+                    <button type="button" id="resetContinuationPromptTemplate" class="default-btn">Restore default</button>
+                    <span class="prompt-template-preview-label">Preview (sample premise, history, tier)</span>
+                    <pre id="continuationPromptPreview" class="prompt-template-preview" aria-live="polite"></pre>
                 </section>
             </div>
             <div id="wordCountPreview"></div>

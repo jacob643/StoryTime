@@ -86,6 +86,35 @@ def test_page_loads_without_errors(server, page):
     assert len(errors) == 0, f"Console errors: {errors}"
 
 
+def test_settings_section_order(server, page):
+    def handle_route(route):
+        if route.request.url.endswith("/api/health"):
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"first_visit": False, "ollama_running": True}))
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/*", handle_route)
+    page.goto(URL)
+    page.click("#settingsToggle")
+
+    headings = page.eval_on_selector_all(
+        "#settingsSections h3", "els => els.map(e => e.textContent.trim())"
+    )
+    assert headings == [
+        "Appearance",
+        "Speed Display",
+        "Word Count",
+        "Scoring",
+        "Adaptive Params",
+        "Fixed Thresholds (tier boundaries)",
+        "Split Sizes",
+        "LLM Settings",
+        "Tier Prompts",
+        "Story Prompt Templates",
+    ]
+
+
 def test_fetch_trigger_pct_clamped_on_load(server, page):
     def handle_route(route):
         if route.request.url.endswith("/api/health"):
