@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+### Security
+
+## [0.5.0] - 2026-11-16
+
+### Added
 - Story picker and one-click "Continue" banner for resuming previously written stories, with restored paragraphs, history, tier chart, and current paragraph.
 - `GET /api/stories`, `GET /api/stories/{id}`, `DELETE /api/stories/{id}`, `POST /api/stories/{id}/resume`, and `POST /api/stories/{id}/continue`; `/api/generate` and `/api/restart` now return `story_id`.
 - A **✕** button in the story picker to delete a saved story after confirmation, permanently erasing its `.txt` file.
