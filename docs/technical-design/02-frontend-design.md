@@ -43,7 +43,11 @@ There is no separate story-context pane; the text viewer itself keeps the full s
 ### 2. Story Controls
 - **Initial prompt** — text input for the opening story prompt
 - **Restart button** — clears history, sends initial prompt to LLM, resets game
+- **Recent stories button** — opens a `<dialog>` picker listing saved stories (premise, relative date, completed count, last tier). Selecting one resumes it.
+- **Resume banner** — when `localStorage['storytime-last-story']` points at an existing story, shows a one-click `Continue "<premise>"` banner on load.
 - **Status indicator** — shows "Generating...", "Ready", "Error" states
+
+Resuming calls `POST /api/stories/{id}/resume`, repopulates completed paragraphs, history, tier chart, and the current paragraph, then focuses the input. If the story has no unwritten current paragraph, the frontend calls `POST /api/stories/{id}/continue` before showing the text. Restored history shows speed and tier but omits `Time:` because per-paragraph duration is not stored.
 
 ### 3. Typing Area
 - **Text display** — shows the current paragraph with character-by-character highlighting (green correct, red incorrect, untyped neutral). Each paragraph is rendered as its own block with vertical spacing; completed paragraphs, the active paragraph, and the upcoming pending paragraph never run together. Paragraph breaks are visual only — no separator characters are inserted into the text the player types.
@@ -101,9 +105,12 @@ The server maintains:
 | Method | Endpoint | Purpose |
 |---|---|---|
 | `GET` | `/api/models` | Fetch available models from Ollama + custom config |
-| `POST` | `/api/chat` | Submit typed paragraph, get next paragraph |
-| `POST` | `/api/restart` | Reset story with initial prompt |
-| `GET` | `/api/history` | Get full story history |
+| `POST` | `/api/generate` | Submit typed paragraph; returns the next paragraph and `story_id` |
+| `POST` | `/api/restart` | Start a new story with an initial premise |
+| `GET` | `/api/stories` | List saved stories, newest first |
+| `GET` | `/api/stories/{id}` | Load a story without creating a session |
+| `POST` | `/api/stories/{id}/resume` | Restore a live session from a story file |
+| `POST` | `/api/stories/{id}/continue` | Return the current paragraph, or generate and append one |
 | `POST` | `/api/settings` | Update backend settings (model, endpoint) |
 
 ### POST /api/chat — Request

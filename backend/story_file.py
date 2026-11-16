@@ -271,7 +271,7 @@ def complete_current(
     if story.current is None:
         raise ValueError("Story has no current paragraph to complete")
 
-    when = completed_at or datetime.now(timezone.utc).replace(tzinfo=None)
+    when = completed_at or datetime.now()
     stamp = when.strftime(DATE_FORMAT)
     tier = max(0, min(4, int(outcome_tier)))
     speed = max(0.0, float(speed_cpm))

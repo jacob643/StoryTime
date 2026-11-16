@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -230,6 +231,7 @@ class TestListing:
     def test_summaries_and_sorting(self):
         first = create_story("first story", "One.")
         complete_current(first, 300, 2)
+        os.utime(first.path, (1_700_000_000, 1_700_000_000))
         second = create_story("second story", "Two.")
 
         summaries = list_stories()

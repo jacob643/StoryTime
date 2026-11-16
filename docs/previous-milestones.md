@@ -308,3 +308,15 @@ Goal: let players replace the opening and continuation prompt wrappers so the ge
 - [x] **5.7.5** Add the frontend settings section: two textareas, placeholder legends, per-template "Restore default" buttons, mirrored defaults in `SETTINGS_DEFAULTS`, `loadSettings()` / `collectSettings()` wiring, length-only client validation, and API error-detail surfacing. Add Playwright coverage for loading, saving, and resetting both templates.
 - [x] **5.7.6** Add live previews under each textarea using debounced `POST /api/settings/preview` (refresh when `paragraph_word_count` changes) so the user sees the exact LLM-facing text, including literal unknown placeholders. Add Playwright coverage for live updates and token preservation.
 - [x] **5.7.7** Update `docs/technical-design/03-backend-design.md`, `docs/technical-design/02-frontend-design.md`, `docs/development-process/runbook.md`, and `CHANGELOG.md`; run the full backend and frontend suites.
+
+---
+
+## Milestone 5.8: Load and continue written stories
+
+Goal: Let players reopen a story from a previous session and continue from the next paragraph, using the story `.txt` file as the single source of truth. Full design: [`technical-design/07-story-load-and-continue.md`](technical-design/07-story-load-and-continue.md).
+
+- [x] **5.8.1** Add `backend/story_file.py`: strict parser/validator, `create_story`, `complete_current`, `append_paragraph`, `load_story`, `list_stories`, per-story locks, and story-id/path validation.
+- [x] **5.8.2** Persist new stories immediately from `/api/restart` and the first `/api/generate`; append completion metadata and the next paragraph only after a successful LLM call, keeping retries idempotent.
+- [x] **5.8.3** Add `GET /api/stories`, `GET /api/stories/{id}`, `POST /api/stories/{id}/resume`, and `POST /api/stories/{id}/continue`; restore sessions from files and reuse the global rolling window.
+- [x] **5.8.4** Add the Recent stories dialog, relative dates, tier badges, resume banner, restored history, and `loadStory()` flow; cover the picker, banner, resume, continue, and LLM-down retry with Playwright.
+- [x] **5.8.5** Purge legacy story files, update technical docs and `CHANGELOG.md`, and run the backend and frontend suites.

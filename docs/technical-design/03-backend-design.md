@@ -93,16 +93,19 @@ backend/
    - Compute avg + σ from rolling window
    - Average all split_speeds → whole-paragraph CPM
    - `tier = compute_outcome_tier(whole_paragraph_cpm, avg=..., stddev=..., params=...)`
-4. Append ParagraphRecord (includes split_speeds) to session history
-5. Push split_speeds into rolling window, drop oldest if > 20
-6. Assemble prompt with outcome tier, call LLM
+4. Assemble the continuation prompt with the typed paragraph included in history
+5. Call the LLM
+6. On success: append ParagraphRecord (includes split_speeds) to session history, push split_speeds into the rolling window (drop oldest if > 20), write completion metadata under the typed paragraph, and append the new paragraph to the story file
 7. Return next paragraph + metadata
+
+An LLM failure returns 503 without touching the story file or session history, so retrying the same completed paragraph is idempotent.
 
 **Response:**
 ```json
 {
   "response": "The dragon circled overhead...",
   "session_id": "uuid",
+  "story_id": "a_bar_of_soap_1a2b3c4d",
   "outcome_tier": 3,
   "outcome_label": "positive"
 }
@@ -160,6 +163,38 @@ backend/
 1. Clear story history in session
 2. Send initial_prompt directly to LLM (no speed mapping)
 3. Return first paragraph for typing display
+
+### Story files (`writtenStories/`)
+
+Each story is a single UTF-8 `.txt` file and is the source of truth:
+
+```text
+Premise: a bar of soap
+
+The soap was old.
+Date: 2026-10-29 12:46:10
+Speed: 312.4 CPM | Tier: 1 (negative)
+
+The soap dreamed of a bath.
+```
+
+- The first non-empty line must be `Premise: ...`; files without it are ignored.
+- Paragraphs are single lines with no separator block. Blank lines are visual only.
+- A paragraph is complete when `Date:` / `Speed: ... | Tier: ...` metadata follows it. The final paragraph with no metadata is the current unwritten paragraph.
+- New stories are written immediately by `/api/restart` and the first `/api/generate`.
+- `/api/generate` writes the metadata + next paragraph only after the LLM succeeds; failures leave the file unchanged.
+- `backend/story_file.py` owns parsing, validation, creation, appending, per-story locks, and story-id/path validation.
+
+### Story and resume endpoints
+
+| Method | Endpoint | Behavior |
+|---|---|---|
+| `GET` | `/api/stories` | List valid stories newest first; supports `limit`, `offset`, and `q` premise filter. Invalid/legacy files are skipped. |
+| `GET` | `/api/stories/{id}` | Parse and return a story without creating a session. 404 for unknown/invalid IDs, 422 for malformed files. |
+| `POST` | `/api/stories/{id}/resume` | Build or reuse an in-memory session from the file, restoring premise and completed-paragraph history. Does not call the LLM. |
+| `POST` | `/api/stories/{id}/continue` | Return the existing current paragraph, or generate one and append it when the file ends with completed metadata. 503 on LLM failure. |
+
+Resume reuses the global rolling window from `~/.storytime/performance.json`; it does not replay per-story splits. Tier boundaries are recomputed from current settings. The first continuation after resume uses the last completed paragraph's tier for tone, without recording it.
 
 ### `GET /api/history` — Fetch full history
 
@@ -312,6 +347,8 @@ class GameSession:
     rolling_splits: list[float]    # up to 20 split CPM values
     initial_avg_cpm: float = 300.0
     scoring_params: ScoringParams
+    story_id: str | None = None
+    story: Story | None = None     # parsed file + current unwritten text
 
 @dataclass
 class ParagraphRecord:

@@ -15,6 +15,8 @@ These documents describe the proposed architecture, design decisions, and implem
 | 3 | [Backend Design](03-backend-design.md) | FastAPI application structure, route definitions, game logic, prompt engine, session management, error handling |
 | 4 | [LLM Provider System](04-llm-provider-system.md) | Provider abstraction, Ollama auto-discovery, OpenAI-compatible endpoints, provider registry, extensibility |
 | 5 | [Distribution & Packaging](05-distribution-packaging.md) | Development workflow, PyInstaller packaging, public release strategy, Tauri future consideration |
+| 6 | [Paragraph Scoring](06-paragraph-scoring.md) | Adaptive vs fixed scoring, tier boundaries, rolling window |
+| 7 | [Load a Written Story and Continue It](07-story-load-and-continue.md) | Text-file story format, resume/continue API, story picker |
 
 ## Key Decisions Summary
 
