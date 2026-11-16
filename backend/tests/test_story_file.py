@@ -153,6 +153,14 @@ class TestParsing:
         assert len(story.paragraphs) == 1
         assert story.current is None
 
+    def test_utf8_bom_is_tolerated(self):
+        path = stories_dir() / "bom_story_12345678.txt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"\xef\xbb\xbfPremise: test\n\nFirst.\n")
+        story = parse_story_file(path)
+        assert story.premise == "test"
+        assert story.current == "First."
+
     def test_blank_lines_are_ignored(self):
         path = _write(
             stories_dir() / "story_12345678.txt",

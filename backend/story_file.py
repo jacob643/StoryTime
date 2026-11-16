@@ -147,7 +147,7 @@ def parse_story_file(path: Path, story_id: str | None = None) -> Story:
     Raises ``InvalidStoryFormat`` when the file is not a well-formed v2 story.
     """
     try:
-        content = path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise InvalidStoryFormat(f"Could not read story file: {exc}") from exc
     except UnicodeDecodeError as exc:
