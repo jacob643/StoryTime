@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import re
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Dict, Optional
 
-from backend.game_logic import Split, ScoringParams, DEFAULT_AVG_CPM, ROLLING_MAX_CHARS, get_outcome_label
+from backend.game_logic import Split, ScoringParams, DEFAULT_AVG_CPM, ROLLING_MAX_CHARS
 from backend.performance_store import load_performance
 from backend.settings_manager import get_settings as _get_gs, build_scoring_params
+from backend.story_file import Story
 from backend.logger import logger
 
 
@@ -61,11 +60,14 @@ class GameSession:
     rolling_window: RollingWindow = field(default_factory=RollingWindow)
     initial_avg_cpm: float = DEFAULT_AVG_CPM
     scoring_params: ScoringParams = field(default_factory=ScoringParams)
+    story_id: str | None = None
+    story: Story | None = None
 
 
 class SessionStore:
     def __init__(self) -> None:
         self._sessions: Dict[str, GameSession] = {}
+        self._live_by_story: Dict[str, str] = {}
 
     def create(self, initial_prompt: str = "", initial_avg_cpm: float | None = None) -> GameSession:
         gs = _get_gs()
@@ -89,29 +91,47 @@ class SessionStore:
     def get(self, session_id: str) -> Optional[GameSession]:
         return self._sessions.get(session_id)
 
-    @staticmethod
-    def _slugify(text: str) -> str:
-        slug = re.sub(r'[^a-zA-Z0-9\s-]', '', text.lower())
-        slug = re.sub(r'[\s-]+', '_', slug)
-        return slug.strip('_')[:50]
+    def attach_story(self, session: GameSession, story: Story) -> GameSession:
+        session.story = story
+        session.story_id = story.story_id
+        self._live_by_story[story.story_id] = session.id
+        return session
 
-    def _persist_paragraph(self, session: GameSession, record: ParagraphRecord) -> None:
-        if not record.text.strip():
-            return
-        out_dir = Path.cwd() / "writtenStories"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        slug = self._slugify(session.initial_prompt) or "untitled"
-        file_path = out_dir / f"{slug}_{session.id[:8]}.txt"
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        with open(file_path, "a", encoding="utf-8") as f:
-            f.write(f"\n--- Paragraph {len(session.history)} ---\n")
-            f.write(f"Date: {now}\n")
-            f.write(f"Speed: {record.speed_cpm:.1f} CPM | "
-                    f"Tier: {record.outcome_tier} ({get_outcome_label(record.outcome_tier)})\n")
-            if record.splits:
-                chunk_str = ', '.join(f'{s.speed_cpm:.1f}({s.char_count})' for s in record.splits)
-                f.write(f"Splits: [{chunk_str}]\n")
-            f.write(f"\n{record.text}\n")
+    def get_live_by_story(self, story_id: str) -> Optional[GameSession]:
+        session_id = self._live_by_story.get(story_id)
+        if session_id is None:
+            return None
+        session = self._sessions.get(session_id)
+        if session is None:
+            self._live_by_story.pop(story_id, None)
+        return session
+
+    def resume(self, story: Story) -> GameSession:
+        """Create a live session from a parsed story, reusing an existing one."""
+        existing = self.get_live_by_story(story.story_id)
+        if existing is not None:
+            return existing
+
+        session = self.create(initial_prompt=story.premise)
+        self.attach_story(session, story)
+        session.history = [
+            ParagraphRecord(
+                text=paragraph.text,
+                speed_cpm=paragraph.speed_cpm if paragraph.speed_cpm is not None else 0.0,
+                time_taken_ms=0,
+                accuracy=1.0,
+                outcome_tier=paragraph.outcome_tier if paragraph.outcome_tier is not None else 2,
+            )
+            for paragraph in story.paragraphs
+        ]
+        logger.info(
+            "SessionStore.resume id=%s story=%s paragraphs=%d has_current=%s",
+            session.id,
+            story.story_id,
+            len(session.history),
+            story.current is not None,
+        )
+        return session
 
     def append_paragraph(
         self,
@@ -137,7 +157,6 @@ class SessionStore:
         session.history.append(record)
         if splits:
             session.rolling_window.add_many(splits)
-        self._persist_paragraph(session, record)
         logger.debug("SessionStore.append_paragraph session=%s entry=%d cpm=%.1f tier=%d rolling_chars=%d",
                      session_id, len(session.history), speed_cpm, outcome_tier, session.rolling_window.total_chars)
         return record

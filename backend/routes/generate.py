@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from backend.performance_store import save_performance
 from backend.providers.registry import registry
 from backend.session import session_store
+from backend import story_file
 from backend.game_logic import (
     ScoringParams,
     Split,
@@ -34,6 +35,7 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     response: str
     session_id: str
+    story_id: str | None = None
     outcome_tier: int
     outcome_label: str
     tier_boundaries: list[float]
@@ -83,11 +85,19 @@ async def generate(body: GenerateRequest):
             if not validate_llm_response(text):
                 text = NEUTRAL_FALLBACK
                 logger.warning("First paragraph invalid, using fallback")
+            story_id = None
+            try:
+                story = story_file.create_story(body.prompt, text)
+                session_store.attach_story(session, story)
+                story_id = story.story_id
+            except (OSError, ValueError):
+                logger.exception("Could not persist new story for session %s", session.id)
             params = build_scoring_params(gs)
             bounds = compute_tier_boundaries(params=params)
             return GenerateResponse(
                 response=text,
                 session_id=session.id,
+                story_id=story_id,
                 outcome_tier=2,
                 outcome_label="neutral",
                 tier_boundaries=bounds,
@@ -128,19 +138,7 @@ async def generate(body: GenerateRequest):
         logger.debug("Append paragraph text_len=%d cpm=%.1f tier=%d splits=%d",
                      len(body.prompt), paragraph_cpm, outcome_tier, len(splits))
 
-        session_store.append_paragraph(
-            session_id=body.session_id,
-            text=body.prompt,
-            speed_cpm=paragraph_cpm,
-            time_taken_ms=0,
-            accuracy=1.0,
-            outcome_tier=outcome_tier,
-            splits=splits,
-        )
-
-        save_performance(session.rolling_window.to_list())
-
-        history_texts = [r.text for r in session.history]
+        history_texts = [r.text for r in session.history] + [body.prompt]
         assembled = build_prompt(
             initial_context=session.initial_prompt,
             history=history_texts,
@@ -154,16 +152,46 @@ async def generate(body: GenerateRequest):
         next_text = sanitize_text(parse_llm_response(strip_thinking(raw)))
         logger.debug("LLM response raw=%r parsed=%r valid=%s", raw, next_text, validate_llm_response(next_text))
         if not validate_llm_response(next_text):
-            if session.history:
-                next_text = session.history[-1].text
+            if history_texts:
+                next_text = history_texts[-1]
                 logger.warning("Invalid LLM response, falling back to last paragraph")
             else:
                 next_text = NEUTRAL_FALLBACK
                 logger.warning("Invalid LLM response, falling back to neutral fallback")
 
+        session_store.append_paragraph(
+            session_id=body.session_id,
+            text=body.prompt,
+            speed_cpm=paragraph_cpm,
+            time_taken_ms=0,
+            accuracy=1.0,
+            outcome_tier=outcome_tier,
+            splits=splits,
+        )
+
+        if session.story is not None:
+            try:
+                if session.story.current is not None:
+                    story_file.complete_current(
+                        session.story,
+                        speed_cpm=paragraph_cpm,
+                        outcome_tier=outcome_tier,
+                    )
+                else:
+                    logger.warning(
+                        "Story %s had no current paragraph; appending without metadata",
+                        session.story.story_id,
+                    )
+                story_file.append_paragraph(session.story, next_text)
+            except (OSError, ValueError):
+                logger.exception("Could not persist paragraph for story %s", session.story.story_id)
+
+        save_performance(session.rolling_window.to_list())
+
         return GenerateResponse(
             response=next_text,
             session_id=body.session_id,
+            story_id=session.story_id,
             outcome_tier=outcome_tier,
             outcome_label=get_outcome_label(outcome_tier),
             tier_boundaries=bounds,

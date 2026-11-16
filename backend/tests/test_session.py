@@ -1,7 +1,14 @@
 from pathlib import Path
 
+import pytest
+
 from backend.game_logic import Split
 from backend.session import GameSession, ParagraphRecord, SessionStore
+
+
+@pytest.fixture(autouse=True)
+def no_persisted_performance(monkeypatch):
+    monkeypatch.setattr("backend.session.load_performance", lambda: [])
 
 
 class TestCreateSession:
@@ -162,11 +169,11 @@ class TestAppendParagraph:
         assert r.accuracy == 0.88
         assert r.outcome_tier == 1
 
-    def test_append_persists_to_file(self, monkeypatch, tmp_path):
+    def test_append_paragraph_does_not_touch_disk(self, monkeypatch, tmp_path):
+        """Story files are written by the route layer, not by the session store."""
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
         store = SessionStore()
         session = store.create(initial_prompt="test story")
-        file_path = tmp_path / "writtenStories" / f"test_story_{session.id[:8]}.txt"
 
         store.append_paragraph(
             session_id=session.id,
@@ -177,38 +184,47 @@ class TestAppendParagraph:
             outcome_tier=2,
             splits=[Split(200.0, 50), Split(300.0, 50)],
         )
-        assert file_path.exists()
-        content = file_path.read_text(encoding="utf-8")
-        assert "Once upon a time." in content
-        assert "250.0" in content
-        assert "Tier: 2" in content
-        assert "200.0(50), 300.0(50)" in content
 
-    def test_append_persists_multiple_paragraphs(self, monkeypatch, tmp_path):
+        assert not (tmp_path / "writtenStories").exists()
+        assert len(session.history) == 1
+
+
+class TestResumeStory:
+    def test_resume_restores_premise_and_history(self, monkeypatch, tmp_path):
+        from datetime import datetime
+
+        from backend import story_file
+
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        monkeypatch.setattr("backend.session.load_performance", lambda: [])
+        story_file.clear_cache()
+
+        story = story_file.create_story("a bar of soap", "First paragraph.")
+        story_file.complete_current(story, 312.4, 1, completed_at=datetime(2026, 10, 29, 12, 46, 10))
+        story_file.append_paragraph(story, "Second paragraph.")
+        loaded = story_file.load_story(story.story_id)
+        assert loaded is not None
+
         store = SessionStore()
-        session = store.create(initial_prompt="test story")
-        file_path = tmp_path / "writtenStories" / f"test_story_{session.id[:8]}.txt"
+        session = store.resume(loaded)
 
-        store.append_paragraph(session.id, "first para", 200.0, 3000, 0.9, 1)
-        store.append_paragraph(session.id, "second para", 400.0, 2000, 1.0, 3)
-        content = file_path.read_text(encoding="utf-8")
-        assert "first para" in content
-        assert "second para" in content
-        assert "Paragraph 1" in content
-        assert "Paragraph 2" in content
+        assert session.story_id == story.story_id
+        assert session.initial_prompt == "a bar of soap"
+        assert len(session.history) == 1
+        assert session.history[0].text == "First paragraph."
+        assert session.history[0].speed_cpm == 312.4
+        assert session.history[0].outcome_tier == 1
+        assert store.get_live_by_story(story.story_id) is session
 
-    def test_append_skips_persist_on_empty_text(self, monkeypatch, tmp_path):
+    def test_resume_reuses_live_session(self, monkeypatch, tmp_path):
+        from backend import story_file
+
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        monkeypatch.setattr("backend.session.load_performance", lambda: [])
+        story = story_file.create_story("premise", "First.")
         store = SessionStore()
-        session = store.create(initial_prompt="test story")
-        store.append_paragraph(
-            session_id=session.id,
-            text="",
-            speed_cpm=300.0,
-            time_taken_ms=0,
-            accuracy=1.0,
-            outcome_tier=2,
-        )
-        out_dir = tmp_path / "writtenStories"
-        assert not out_dir.exists()
+
+        first = store.resume(story)
+        second = store.resume(story)
+
+        assert first is second

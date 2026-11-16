@@ -6,6 +6,7 @@ from backend.session import session_store
 from backend.settings_manager import get_settings
 from backend.game_logic import ScoringParams, compute_tier_boundaries
 from backend.prompt_engine import build_first_paragraph_prompt, parse_llm_response, sanitize_text, strip_thinking, validate_llm_response, NEUTRAL_FALLBACK
+from backend import story_file
 from backend.logger import logger
 
 router = APIRouter()
@@ -18,6 +19,7 @@ class RestartRequest(BaseModel):
 class RestartResponse(BaseModel):
     response: str
     session_id: str
+    story_id: str | None = None
     outcome_tier: int
     outcome_label: str
     tier_boundaries: list[float]
@@ -52,9 +54,17 @@ async def restart(body: RestartRequest):
         if not validate_llm_response(text):
             text = NEUTRAL_FALLBACK
             logger.warning("Restart response invalid, using fallback")
+        story_id = None
+        try:
+            story = story_file.create_story(body.initial_prompt, text)
+            session_store.attach_story(session, story)
+            story_id = story.story_id
+        except (OSError, ValueError):
+            logger.exception("Could not persist new story for session %s", session.id)
         return RestartResponse(
             response=text,
             session_id=session.id,
+            story_id=story_id,
             outcome_tier=2,
             outcome_label="neutral",
             tier_boundaries=bounds,

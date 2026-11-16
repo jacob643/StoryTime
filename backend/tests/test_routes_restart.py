@@ -7,7 +7,13 @@ from backend.main import app
 
 
 @pytest.fixture
-def client():
+def client(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.cwd", lambda: tmp_path)
+    monkeypatch.setattr(
+        "backend.performance_store.PERFORMANCE_PATH",
+        tmp_path / "performance.json",
+    )
+    monkeypatch.setattr("backend.session.load_performance", lambda: [])
     app.dependency_overrides.clear()
     with TestClient(app) as c:
         yield c
