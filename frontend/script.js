@@ -1698,7 +1698,7 @@ async function initResumeBanner() {
 
     try {
         const response = await fetch(`/api/stories/${encodeURIComponent(storyId)}`);
-        if (response.status === 404) {
+        if (response.status === 404 || response.status === 422) {
             clearLastStory();
             return;
         }
