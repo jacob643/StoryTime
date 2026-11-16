@@ -920,24 +920,57 @@ body
 .story-picker-item
 {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25vw;
+    align-items: stretch;
+    gap: 0;
     width: 100%;
-    padding: 0.7vw 0.9vw;
-    text-align: left;
     background: var(--bg-container);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     border-radius: 0.4vw;
+    overflow: hidden;
+}
+
+.story-picker-open
+{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25vw;
+    min-width: 0;
+    padding: 0.7vw 0.9vw;
+    text-align: left;
+    background: transparent;
+    color: inherit;
+    border: none;
     cursor: pointer;
     font-family: inherit;
 }
 
-.story-picker-item:hover,
-.story-picker-item:focus
+.story-picker-open:hover,
+.story-picker-open:focus
 {
     background: var(--bg-btn-hover);
+    outline: none;
+}
+
+.story-picker-delete
+{
+    flex: 0 0 auto;
+    padding: 0 0.8vw;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    border-left: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 1em;
+}
+
+.story-picker-delete:hover,
+.story-picker-delete:focus
+{
+    background: var(--bg-retry-hover);
+    color: var(--text-error);
     outline: none;
 }
 

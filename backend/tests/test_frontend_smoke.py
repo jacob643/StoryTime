@@ -940,7 +940,7 @@ def test_story_picker_lists_stories_and_resumes(server, page):
     assert "1 paragraph" in item_text
     assert "ready to continue" in item_text
 
-    page.click(".story-picker-item")
+    page.click(".story-picker-open")
     page.wait_for_function(
         "document.getElementById('textDisplay').textContent.includes('Current paragraph.')",
         timeout=5000,
@@ -1108,3 +1108,128 @@ def test_recent_story_banner_continues(server, page):
     )
     assert resume_requested
     assert page.locator("#resumeBanner").is_hidden()
+
+
+def test_story_picker_delete_button_removes_story(server, page):
+    deleted_story_id = None
+    resume_requested = False
+
+    def handle_route(route):
+        nonlocal deleted_story_id, resume_requested
+        url = route.request.url
+        if _health_route(route):
+            return
+        if route.request.method == "DELETE" and "/api/stories/" in url:
+            deleted_story_id = url.rsplit("/", 1)[-1]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"ok": True}),
+            )
+            return
+        if "/api/stories/" in url and url.endswith("/resume"):
+            resume_requested = True
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_resume_payload()),
+            )
+            return
+        if "/api/stories" in url:
+            stories = [] if deleted_story_id else [{
+                "story_id": "story_one_12345678",
+                "premise": "a bar of soap",
+                "paragraph_count": 1,
+                "has_current": True,
+                "updated_at": "2026-10-29T12:46:10+00:00",
+                "last_speed_cpm": 312.4,
+                "last_outcome_tier": 1,
+            }]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"stories": stories, "total": len(stories)}),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.on("dialog", lambda dialog: dialog.accept())
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.click("#recentStoriesButton")
+    page.wait_for_selector(".story-picker-delete", timeout=5000)
+
+    page.click(".story-picker-delete")
+    page.wait_for_function(
+        "document.getElementById('storyPickerStatus').textContent.includes('No saved stories')",
+        timeout=5000,
+    )
+
+    assert deleted_story_id == "story_one_12345678"
+    assert not resume_requested
+
+
+def test_deleting_current_story_clears_story_state(server, page):
+    deleted = False
+
+    def handle_route(route):
+        nonlocal deleted
+        url = route.request.url
+        if _health_route(route):
+            return
+        if route.request.method == "DELETE" and "/api/stories/" in url:
+            deleted = True
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"ok": True}),
+            )
+            return
+        if "/api/stories/" in url and url.endswith("/resume"):
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_resume_payload()),
+            )
+            return
+        if "/api/stories" in url:
+            stories = [] if deleted else [{
+                "story_id": "story_one_12345678",
+                "premise": "a bar of soap",
+                "paragraph_count": 1,
+                "has_current": True,
+                "updated_at": "2026-10-29T12:46:10+00:00",
+                "last_speed_cpm": 312.4,
+                "last_outcome_tier": 1,
+            }]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"stories": stories, "total": len(stories)}),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.on("dialog", lambda dialog: dialog.accept())
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.click("#recentStoriesButton")
+    page.wait_for_selector(".story-picker-open", timeout=5000)
+    page.click(".story-picker-open")
+    page.wait_for_function(
+        "document.getElementById('textDisplay').textContent.includes('Current paragraph.')",
+        timeout=5000,
+    )
+    assert page.evaluate("localStorage.getItem('storytime-last-story')") == "story_one_12345678"
+
+    page.click("#recentStoriesButton")
+    page.wait_for_selector(".story-picker-delete", timeout=5000)
+    page.click(".story-picker-delete")
+    page.wait_for_function(
+        "document.getElementById('message').textContent.includes('Story deleted.')",
+        timeout=5000,
+    )
+
+    assert deleted
+    assert page.locator("#textDisplay").text_content() == ""
+    assert page.evaluate("localStorage.getItem('storytime-last-story')") is None

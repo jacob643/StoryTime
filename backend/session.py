@@ -106,6 +106,17 @@ class SessionStore:
             self._live_by_story.pop(story_id, None)
         return session
 
+    def discard_story(self, story_id: str) -> None:
+        """Detach a live session after its story file is deleted."""
+        session_id = self._live_by_story.pop(story_id, None)
+        if session_id is None:
+            return
+        session = self._sessions.get(session_id)
+        if session is not None and session.story_id == story_id:
+            session.story_id = None
+            session.story = None
+        logger.info("Detached live session %s from deleted story %s", session_id, story_id)
+
     def resume(self, story: Story) -> GameSession:
         """Create a live session from a parsed story, reusing an existing one."""
         existing = self.get_live_by_story(story.story_id)

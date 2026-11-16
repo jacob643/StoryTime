@@ -162,6 +162,20 @@ async def get_story_endpoint(story_id: str):
     )
 
 
+@router.delete("/api/stories/{story_id}")
+async def delete_story_endpoint(story_id: str):
+    try:
+        deleted = story_file.delete_story(story_id)
+    except story_file.InvalidStoryId:
+        raise HTTPException(status_code=404, detail="Story not found")
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Story not found")
+
+    session_store.discard_story(story_id)
+    logger.info("DELETE /api/stories/%s", story_id)
+    return {"ok": True}
+
+
 @router.post("/api/stories/{story_id}/resume", response_model=ResumeResponse)
 async def resume_story_endpoint(story_id: str):
     story = _get_story_or_404(story_id)

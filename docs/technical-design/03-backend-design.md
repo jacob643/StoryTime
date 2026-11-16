@@ -191,6 +191,7 @@ The soap dreamed of a bath.
 |---|---|---|
 | `GET` | `/api/stories` | List valid stories newest first; supports `limit`, `offset`, and `q` premise filter. Invalid/legacy files are skipped. |
 | `GET` | `/api/stories/{id}` | Parse and return a story without creating a session. 404 for unknown/invalid IDs, 422 for malformed files. |
+| `DELETE` | `/api/stories/{id}` | Permanently remove the story file and detach any live session. 404 for unknown/invalid IDs. |
 | `POST` | `/api/stories/{id}/resume` | Build or reuse an in-memory session from the file, restoring premise and completed-paragraph history. Does not call the LLM. |
 | `POST` | `/api/stories/{id}/continue` | Return the existing current paragraph, or generate one and append it when the file ends with completed metadata. 503 on LLM failure. |
 

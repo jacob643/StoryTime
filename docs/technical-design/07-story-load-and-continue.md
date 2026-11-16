@@ -179,6 +179,10 @@ Full story:
 }
 ```
 
+### `DELETE /api/stories/{story_id}`
+
+Permanently deletes the story `.txt` file and detaches any live session from it. Returns `{"ok": true}`; 404 for unknown/invalid IDs. The picker's **✕** button calls this after a confirmation prompt and then refreshes the list.
+
 ### `POST /api/stories/{story_id}/resume`
 
 Creates a live `GameSession` from the file. **No LLM call.**
@@ -213,6 +217,7 @@ Creates a live `GameSession` from the file. **No LLM call.**
 
 - Add a **Recent stories** button next to "Start a new story" in `#initialPromptContainer`.
 - Opens a `<dialog id="storyPicker">` listing premise, relative date ("Yesterday"), completed count, and last tier.
+- Each row has an **✕** delete button on the right. It confirms, calls `DELETE /api/stories/{id}`, clears the active game if that story was open, and refreshes the list.
 - Empty state: "No saved stories yet. Start one above."
 - If `localStorage['storytime-last-story']` points at an existing story, show a one-click banner: **Continue "a bar of soap"**.
 

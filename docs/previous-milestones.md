@@ -320,3 +320,4 @@ Goal: Let players reopen a story from a previous session and continue from the n
 - [x] **5.8.3** Add `GET /api/stories`, `GET /api/stories/{id}`, `POST /api/stories/{id}/resume`, and `POST /api/stories/{id}/continue`; restore sessions from files and reuse the global rolling window.
 - [x] **5.8.4** Add the Recent stories dialog, relative dates, tier badges, resume banner, restored history, and `loadStory()` flow; cover the picker, banner, resume, continue, and LLM-down retry with Playwright.
 - [x] **5.8.5** Purge legacy story files, update technical docs and `CHANGELOG.md`, and run the backend and frontend suites.
+- [x] **5.8.6** Add a per-story **✕** delete button to the story picker with confirmation, a `DELETE /api/stories/{id}` endpoint that erases the `.txt` file and detaches any live session, and Playwright/backend coverage.

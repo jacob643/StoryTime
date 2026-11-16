@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### Added
 - Story picker and one-click "Continue" banner for resuming previously written stories, with restored paragraphs, history, tier chart, and current paragraph.
-- `GET /api/stories`, `GET /api/stories/{id}`, `POST /api/stories/{id}/resume`, and `POST /api/stories/{id}/continue`; `/api/generate` and `/api/restart` now return `story_id`.
+- `GET /api/stories`, `GET /api/stories/{id}`, `DELETE /api/stories/{id}`, `POST /api/stories/{id}/resume`, and `POST /api/stories/{id}/continue`; `/api/generate` and `/api/restart` now return `story_id`.
+- A **✕** button in the story picker to delete a saved story after confirmation, permanently erasing its `.txt` file.
 - Story files now use a readable format: `Premise:` header, one-line paragraphs, and `Date:` / `Speed: ... | Tier: ...` metadata underneath each completed paragraph.
 ### Changed
 - Stories are written to disk immediately on creation, and each completed paragraph's metadata is appended before the next paragraph is generated. LLM failures leave the file untouched so retries are idempotent.

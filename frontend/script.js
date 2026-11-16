@@ -1732,15 +1732,19 @@ function renderStoryList(stories) {
     status.textContent = `${stories.length} saved ${stories.length === 1 ? 'story' : 'stories'}`;
 
     for (const story of stories) {
-        const item = document.createElement('button');
-        item.type = 'button';
+        const item = document.createElement('div');
         item.className = 'story-picker-item';
         if (story.story_id === currentStoryId) item.classList.add('current-story');
+
+        const openButton = document.createElement('button');
+        openButton.type = 'button';
+        openButton.className = 'story-picker-open';
+        openButton.setAttribute('aria-label', `Open story ${story.premise}`);
 
         const title = document.createElement('div');
         title.className = 'story-picker-title';
         title.textContent = story.premise;
-        item.appendChild(title);
+        openButton.appendChild(title);
 
         const meta = document.createElement('div');
         meta.className = 'story-picker-meta';
@@ -1751,20 +1755,69 @@ function renderStoryList(stories) {
         if (story.has_current) parts.push('ready to continue');
         if (story.paragraph_count === 0) parts.push('not played yet');
         meta.textContent = parts.filter(Boolean).join(' • ');
-        item.appendChild(meta);
+        openButton.appendChild(meta);
 
         if (story.last_outcome_tier != null) {
             const tier = document.createElement('span');
             tier.className = 'story-picker-tier';
             tier.textContent = getTierLabel(story.last_outcome_tier);
-            item.appendChild(tier);
+            openButton.appendChild(tier);
         }
 
-        item.addEventListener('click', () => {
+        openButton.addEventListener('click', () => {
             closeStoryPicker();
             loadStory(story.story_id);
         });
+        item.appendChild(openButton);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'story-picker-delete';
+        deleteButton.textContent = '✕';
+        deleteButton.title = 'Delete story';
+        deleteButton.setAttribute('aria-label', `Delete story ${story.premise}`);
+        deleteButton.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            await deleteStory(story);
+        });
+        item.appendChild(deleteButton);
+
         list.appendChild(item);
+    }
+}
+
+async function deleteStory(story) {
+    const confirmed = window.confirm(
+        `Delete "${story.premise}"?\n\nThis will permanently erase the story file.`
+    );
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(
+            `/api/stories/${encodeURIComponent(story.story_id)}`,
+            { method: 'DELETE' }
+        );
+        if (!response.ok) throw new Error(await readApiError(response, 'Could not delete story'));
+
+        let wasLastStory = false;
+        try {
+            wasLastStory = localStorage.getItem(LAST_STORY_KEY) === story.story_id;
+        } catch (_) {}
+        if (wasLastStory) {
+            clearLastStory();
+            hideResumeBanner();
+        }
+
+        if (story.story_id === currentStoryId) {
+            reset();
+            messageDiv.textContent = 'Story deleted.';
+            messageDiv.className = 'neutral';
+        }
+
+        await refreshStoryPicker();
+    } catch (error) {
+        const status = document.getElementById('storyPickerStatus');
+        if (status) status.textContent = `Could not delete story: ${error.message}`;
     }
 }
 

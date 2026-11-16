@@ -43,7 +43,7 @@ There is no separate story-context pane; the text viewer itself keeps the full s
 ### 2. Story Controls
 - **Initial prompt** — text input for the opening story prompt
 - **Restart button** — clears history, sends initial prompt to LLM, resets game
-- **Recent stories button** — opens a `<dialog>` picker listing saved stories (premise, relative date, completed count, last tier). Selecting one resumes it.
+- **Recent stories button** — opens a `<dialog>` picker listing saved stories (premise, relative date, completed count, last tier). Selecting one resumes it; each row has an **✕** button that confirms and permanently deletes the story file.
 - **Resume banner** — when `localStorage['storytime-last-story']` points at an existing story, shows a one-click `Continue "<premise>"` banner on load.
 - **Status indicator** — shows "Generating...", "Ready", "Error" states
 
@@ -109,6 +109,7 @@ The server maintains:
 | `POST` | `/api/restart` | Start a new story with an initial premise |
 | `GET` | `/api/stories` | List saved stories, newest first |
 | `GET` | `/api/stories/{id}` | Load a story without creating a session |
+| `DELETE` | `/api/stories/{id}` | Permanently delete a story file |
 | `POST` | `/api/stories/{id}/resume` | Restore a live session from a story file |
 | `POST` | `/api/stories/{id}/continue` | Return the current paragraph, or generate and append one |
 | `POST` | `/api/settings` | Update backend settings (model, endpoint) |

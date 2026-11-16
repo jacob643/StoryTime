@@ -294,3 +294,46 @@ class TestGenerationPersistsStory:
         after = story_file.story_path(restart["story_id"]).read_text(encoding="utf-8")
         assert after == before
         assert len(session_store.get(restart["session_id"]).history) == 0
+
+
+class TestDeleteStory:
+    def test_delete_removes_file_and_listing(self, client):
+        story = _make_story()
+        assert story.path.exists()
+
+        response = client.delete(f"/api/stories/{story.story_id}")
+        assert response.status_code == 200
+        assert response.json() == {"ok": True}
+        assert not story.path.exists()
+        assert client.get(f"/api/stories/{story.story_id}").status_code == 404
+        assert client.get("/api/stories").json() == {"stories": [], "total": 0}
+
+    def test_delete_unknown_story_404(self, client):
+        assert client.delete("/api/stories/does_not_exist").status_code == 404
+
+    def test_delete_invalid_id_404(self, client):
+        assert client.delete("/api/stories/BAD-ID").status_code == 404
+
+    def test_delete_leaves_other_stories_alone(self, client):
+        first = _make_story("first premise")
+        second = _make_story("second premise")
+
+        assert client.delete(f"/api/stories/{first.story_id}").status_code == 200
+        assert not first.path.exists()
+        assert second.path.exists()
+        remaining = client.get("/api/stories").json()
+        assert remaining["total"] == 1
+        assert remaining["stories"][0]["story_id"] == second.story_id
+
+    def test_delete_detaches_live_session(self, client):
+        story = _make_story(completed=1, current="Current paragraph.")
+        resumed = client.post(f"/api/stories/{story.story_id}/resume").json()
+        session_id = resumed["session_id"]
+
+        assert client.delete(f"/api/stories/{story.story_id}").status_code == 200
+
+        assert session_store.get_live_by_story(story.story_id) is None
+        session = session_store.get(session_id)
+        assert session is not None
+        assert session.story is None
+        assert session.story_id is None

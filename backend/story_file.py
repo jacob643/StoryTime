@@ -230,6 +230,20 @@ def load_story(story_id: str) -> Story | None:
     return parse_story_file(path, story_id=story_id)
 
 
+def delete_story(story_id: str) -> bool:
+    """Delete a story file. Returns False when it does not exist."""
+    path = story_path(story_id)
+    with _lock_for(story_id):
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            _SUMMARY_CACHE.pop(path, None)
+            return False
+    _SUMMARY_CACHE.pop(path, None)
+    logger.info("Deleted story file %s", path.name)
+    return True
+
+
 def create_story(
     premise: str,
     opening_text: str,
