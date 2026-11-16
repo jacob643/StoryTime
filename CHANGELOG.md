@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Removed the old `--- Paragraph N ---` header, `Splits:` line, and above-paragraph metadata format. Legacy `writtenStories/*.txt` files were purged.
 ### Fixed
+- Story picker rows keep their height and the list scrolls again when there are more stories than fit in the dialog.
 ### Security
 
 ## [0.4.0] - 2026-10-29

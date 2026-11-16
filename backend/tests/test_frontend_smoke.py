@@ -1233,3 +1233,52 @@ def test_deleting_current_story_clears_story_state(server, page):
     assert deleted
     assert page.locator("#textDisplay").text_content() == ""
     assert page.evaluate("localStorage.getItem('storytime-last-story')") is None
+
+
+def test_story_picker_scrolls_with_many_stories(server, page):
+    stories = [
+        {
+            "story_id": f"story_{index:02d}_12345678",
+            "premise": f"story number {index}",
+            "paragraph_count": index,
+            "has_current": True,
+            "updated_at": "2026-10-29T12:46:10+00:00",
+            "last_speed_cpm": 312.4,
+            "last_outcome_tier": 2,
+        }
+        for index in range(30)
+    ]
+
+    def handle_route(route):
+        if _health_route(route):
+            return
+        if "/api/stories" in route.request.url:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"stories": stories, "total": len(stories)}),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.click("#recentStoriesButton")
+    page.wait_for_selector(".story-picker-item", timeout=5000)
+
+    metrics = page.evaluate(
+        """() => {
+            const list = document.getElementById('storyPickerList');
+            const item = document.querySelector('.story-picker-item');
+            return {
+                overflowY: getComputedStyle(list).overflowY,
+                clientHeight: list.clientHeight,
+                scrollHeight: list.scrollHeight,
+                itemHeight: item.getBoundingClientRect().height,
+            };
+        }"""
+    )
+
+    assert metrics["overflowY"] == "auto"
+    assert metrics["scrollHeight"] > metrics["clientHeight"]
+    assert metrics["itemHeight"] >= 45

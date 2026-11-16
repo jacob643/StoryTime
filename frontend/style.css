@@ -921,6 +921,7 @@ body
 {
     display: flex;
     align-items: stretch;
+    flex-shrink: 0;
     gap: 0;
     width: 100%;
     background: var(--bg-container);
