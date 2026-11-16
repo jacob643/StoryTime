@@ -810,3 +810,301 @@ def test_split_cpm_interval_correction(server, page):
         f"Second split should not be over-corrected, got {splits[1]['speed_cpm']}"
     )
     assert len(errors) == 0, f"Console errors: {errors}"
+
+
+def _health_route(route):
+    if route.request.url.endswith("/api/health"):
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps({"first_visit": False, "ollama_running": True}),
+        )
+        return True
+    return False
+
+
+def _story_payload(story_id="story_one_12345678"):
+    return {
+        "story_id": story_id,
+        "premise": "a bar of soap",
+        "paragraphs": [
+            {
+                "text": "First paragraph.",
+                "speed_cpm": 312.4,
+                "outcome_tier": 1,
+                "completed_at": "2026-10-29T12:46:10",
+            }
+        ],
+        "current": "Current paragraph.",
+        "tier_boundaries": [300, 350, 400, 450],
+    }
+
+
+def _resume_payload(story_id="story_one_12345678", current="Current paragraph."):
+    story = _story_payload(story_id)
+    return {
+        "session_id": "session-story-one",
+        "story_id": story_id,
+        "premise": story["premise"],
+        "paragraphs": story["paragraphs"],
+        "current": current,
+        "tier_boundaries": story["tier_boundaries"],
+    }
+
+
+def test_story_picker_empty_state(server, page):
+    def handle_route(route):
+        if _health_route(route):
+            return
+        if "/api/stories" in route.request.url:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"stories": [], "total": 0}),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.click("#recentStoriesButton")
+
+    assert page.locator("#storyPicker").is_visible()
+    page.wait_for_function(
+        "document.getElementById('storyPickerStatus').textContent.includes('No saved stories')",
+        timeout=5000,
+    )
+
+
+def test_story_picker_lists_stories_and_resumes(server, page):
+    list_requested = False
+    resume_requested = False
+    generated_body = None
+
+    def handle_route(route):
+        nonlocal list_requested, resume_requested, generated_body
+        url = route.request.url
+        if _health_route(route):
+            return
+        if "/api/stories/" in url and url.endswith("/resume"):
+            resume_requested = True
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_resume_payload()),
+            )
+            return
+        if "/api/stories" in url:
+            list_requested = True
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "stories": [{
+                        "story_id": "story_one_12345678",
+                        "premise": "a bar of soap",
+                        "paragraph_count": 1,
+                        "has_current": True,
+                        "updated_at": "2026-10-29T12:46:10+00:00",
+                        "last_speed_cpm": 312.4,
+                        "last_outcome_tier": 1,
+                    }],
+                    "total": 1,
+                }),
+            )
+            return
+        if url.endswith("/api/generate"):
+            generated_body = json.loads(route.request.post_data)
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "response": "Next generated paragraph.",
+                    "session_id": "session-story-one",
+                    "story_id": "story_one_12345678",
+                    "outcome_tier": 3,
+                    "outcome_label": "positive",
+                    "tier_boundaries": [300, 350, 400, 450],
+                }),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.click("#recentStoriesButton")
+    page.wait_for_selector(".story-picker-item", timeout=5000)
+
+    item_text = page.locator(".story-picker-item").first.text_content()
+    assert "a bar of soap" in item_text
+    assert "1 paragraph" in item_text
+    assert "ready to continue" in item_text
+
+    page.click(".story-picker-item")
+    page.wait_for_function(
+        "document.getElementById('textDisplay').textContent.includes('Current paragraph.')",
+        timeout=5000,
+    )
+
+    assert list_requested
+    assert resume_requested
+    assert page.locator("#storyPicker").is_hidden()
+    assert "First paragraph." in page.locator("#completedText").text_content()
+    assert page.locator("#initialPrompt").input_value() == "a bar of soap"
+    assert page.locator("#inputBox").is_enabled()
+    assert page.locator(".tier-segment[data-tier='1']").get_attribute("class").find("active") >= 0
+    assert page.evaluate("localStorage.getItem('storytime-last-story')") == "story_one_12345678"
+
+    history_item = page.locator("#history .history-item").first.text_content()
+    assert "Speed:" in history_item
+    assert "Time:" not in history_item
+
+    page.type("#inputBox", "Current paragraph.", delay=5)
+    page.wait_for_function(
+        "document.getElementById('textDisplay').textContent.includes('Next generated paragraph.')",
+        timeout=5000,
+    )
+    assert generated_body is not None
+    assert generated_body["session_id"] == "session-story-one"
+    assert generated_body["prompt"] == "Current paragraph."
+
+
+def test_resume_without_current_requests_continue(server, page):
+    continue_requested = False
+
+    def handle_route(route):
+        nonlocal continue_requested
+        url = route.request.url
+        if _health_route(route):
+            return
+        if "/api/stories/" in url and url.endswith("/resume"):
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_resume_payload(current=None)),
+            )
+            return
+        if "/api/stories/" in url and url.endswith("/continue"):
+            continue_requested = True
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "response": "Generated after resume.",
+                    "outcome_tier": 1,
+                    "tier_boundaries": [300, 350, 400, 450],
+                }),
+            )
+            return
+        if "/api/stories/" in url:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_story_payload()),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.evaluate(
+        "() => localStorage.setItem('storytime-last-story', 'story_one_12345678')"
+    )
+    page.reload()
+    page.wait_for_selector("#resumeBanner:not([hidden])", timeout=5000)
+    page.click("#resumeBannerButton")
+
+    page.wait_for_function(
+        "document.getElementById('textDisplay').textContent.includes('Generated after resume.')",
+        timeout=5000,
+    )
+    assert continue_requested
+    assert page.locator("#inputBox").is_enabled()
+
+
+def test_resume_continue_failure_shows_retry(server, page):
+    def handle_route(route):
+        url = route.request.url
+        if _health_route(route):
+            return
+        if "/api/stories/" in url and url.endswith("/resume"):
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_resume_payload(current=None)),
+            )
+            return
+        if "/api/stories/" in url and url.endswith("/continue"):
+            route.fulfill(
+                status=503,
+                content_type="application/json",
+                body=json.dumps({"detail": "LLM provider error: Connection refused"}),
+            )
+            return
+        if "/api/stories/" in url:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_story_payload()),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/**", handle_route)
+    page.goto(URL)
+    page.evaluate(
+        "() => localStorage.setItem('storytime-last-story', 'story_one_12345678')"
+    )
+    page.reload()
+    page.wait_for_selector("#resumeBanner:not([hidden])", timeout=5000)
+    page.click("#resumeBannerButton")
+
+    page.wait_for_function(
+        "document.querySelector('#message .retry-btn') !== null",
+        timeout=5000,
+    )
+    assert "Cannot reach the AI model" in page.locator("#message").text_content()
+    assert page.locator("#message .retry-btn").is_visible()
+
+
+def test_recent_story_banner_continues(server, page):
+    resume_requested = False
+
+    def handle_route(route):
+        nonlocal resume_requested
+        url = route.request.url
+        if _health_route(route):
+            return
+        if "/api/stories/" in url and url.endswith("/resume"):
+            resume_requested = True
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_resume_payload()),
+            )
+            return
+        if "/api/stories/" in url:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(_story_payload()),
+            )
+            return
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/**", handle_route)
+    page.add_init_script(
+        "localStorage.setItem('storytime-last-story', 'story_one_12345678')"
+    )
+    page.goto(URL)
+
+    page.wait_for_selector("#resumeBanner:not([hidden])", timeout=5000)
+    assert "a bar of soap" in page.locator("#resumeBannerText").text_content()
+
+    page.click("#resumeBannerButton")
+    page.wait_for_function(
+        "document.getElementById('textDisplay').textContent.includes('Current paragraph.')",
+        timeout=5000,
+    )
+    assert resume_requested
+    assert page.locator("#resumeBanner").is_hidden()

@@ -33,8 +33,11 @@ let timeTakenSeconds = 0;
 let startTime = null;
 let speed = 0;
 let sessionId = null;
+let currentStoryId = null;
 let simulatedCpm = null;
 let simulatedDeviation = 0;
+
+const LAST_STORY_KEY = 'storytime-last-story';
 
 let splitBoundaries = [];
 let splitTimestamps = [];
@@ -525,6 +528,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     reset();
     checkStartupHealth();
+    document.getElementById('recentStoriesButton')?.addEventListener('click', openStoryPicker);
+    document.getElementById('closeStoryPicker')?.addEventListener('click', closeStoryPicker);
+    document.getElementById('resumeBannerDismiss')?.addEventListener('click', hideResumeBanner);
+    const pickerDialog = document.getElementById('storyPicker');
+    if (pickerDialog) {
+        pickerDialog.addEventListener('click', (event) => {
+            if (event.target === pickerDialog) closeStoryPicker();
+        });
+    }
+    initResumeBanner();
     (async () => {
         try {
             const r = await fetch('/api/settings');
@@ -611,6 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function reset() {
     sessionId = null;
+    currentStoryId = null;
     simulatedCpm = null;
     simulatedDeviation = 0;
     textContent = '';
@@ -638,6 +652,9 @@ function reset() {
     fetchTriggerIndex = -1;
     completedParagraphs = [];
     _contDisplayInit = false;
+    const textContainer = document.getElementById('textDisplayContainer');
+    if (textContainer) textContainer.scrollTop = 0;
+    hideResumeBanner();
     lastInputMs = null;
     accumulatedPauseMs = 0;
     pauseGapCount = 0;
@@ -669,7 +686,10 @@ function buildHistoryItem(data, prevSpeedCpm) {
     speedLine.classList.add('history-speed');
     const unit = getSpeedUnit();
     const displaySpeed = cpmToDisplay(speedCpm).toFixed(1);
-    let speedText = `Speed: ${displaySpeed} ${unit}    Time: ${timeTaken.toFixed(2)}s`;
+    let speedText = `Speed: ${displaySpeed} ${unit}`;
+    if (typeof timeTaken === 'number' && Number.isFinite(timeTaken)) {
+        speedText += `    Time: ${timeTaken.toFixed(2)}s`;
+    }
     if (prevSpeedCpm != null) {
         const deltaCpm = speedCpm - prevSpeedCpm;
         const displayDelta = cpmToDisplay(Math.abs(deltaCpm)).toFixed(1);
@@ -1632,10 +1652,254 @@ window.simulate = function(cpm, deviation) {
     sendSimulate(cpm, deviation || 0);
 };
 
+function getTierLabel(tier) {
+    const labels = ['very negative', 'negative', 'neutral', 'positive', 'very positive'];
+    return labels[tier] || 'neutral';
+}
+
+function formatStoryDate(isoString) {
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return '';
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfThen = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const days = Math.round((startOfToday - startOfThen) / 86400000);
+    if (days <= 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return date.toLocaleDateString();
+}
+
+function setLastStory(storyId) {
+    try {
+        localStorage.setItem(LAST_STORY_KEY, storyId);
+    } catch (_) {}
+}
+
+function clearLastStory() {
+    try {
+        localStorage.removeItem(LAST_STORY_KEY);
+    } catch (_) {}
+}
+
+function hideResumeBanner() {
+    const banner = document.getElementById('resumeBanner');
+    if (banner) banner.hidden = true;
+}
+
+async function initResumeBanner() {
+    let storyId = null;
+    try {
+        storyId = localStorage.getItem(LAST_STORY_KEY);
+    } catch (_) {
+        return;
+    }
+    if (!storyId) return;
+
+    try {
+        const response = await fetch(`/api/stories/${encodeURIComponent(storyId)}`);
+        if (response.status === 404) {
+            clearLastStory();
+            return;
+        }
+        if (!response.ok) return;
+        const story = await response.json();
+        const banner = document.getElementById('resumeBanner');
+        const text = document.getElementById('resumeBannerText');
+        const button = document.getElementById('resumeBannerButton');
+        if (!banner || !text || !button) return;
+        text.textContent = `Continue "${story.premise}"`;
+        button.onclick = () => {
+            hideResumeBanner();
+            loadStory(storyId);
+        };
+        banner.hidden = false;
+    } catch (_) {
+        // Leave the banner hidden when the story list is unavailable.
+    }
+}
+
+function renderStoryList(stories) {
+    const list = document.getElementById('storyPickerList');
+    const status = document.getElementById('storyPickerStatus');
+    if (!list || !status) return;
+    list.innerHTML = '';
+
+    if (!stories || stories.length === 0) {
+        status.textContent = 'No saved stories yet. Start one above.';
+        return;
+    }
+    status.textContent = `${stories.length} saved ${stories.length === 1 ? 'story' : 'stories'}`;
+
+    for (const story of stories) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'story-picker-item';
+        if (story.story_id === currentStoryId) item.classList.add('current-story');
+
+        const title = document.createElement('div');
+        title.className = 'story-picker-title';
+        title.textContent = story.premise;
+        item.appendChild(title);
+
+        const meta = document.createElement('div');
+        meta.className = 'story-picker-meta';
+        const parts = [
+            `${story.paragraph_count} ${story.paragraph_count === 1 ? 'paragraph' : 'paragraphs'}`,
+            formatStoryDate(story.updated_at),
+        ];
+        if (story.has_current) parts.push('ready to continue');
+        if (story.paragraph_count === 0) parts.push('not played yet');
+        meta.textContent = parts.filter(Boolean).join(' • ');
+        item.appendChild(meta);
+
+        if (story.last_outcome_tier != null) {
+            const tier = document.createElement('span');
+            tier.className = 'story-picker-tier';
+            tier.textContent = getTierLabel(story.last_outcome_tier);
+            item.appendChild(tier);
+        }
+
+        item.addEventListener('click', () => {
+            closeStoryPicker();
+            loadStory(story.story_id);
+        });
+        list.appendChild(item);
+    }
+}
+
+async function refreshStoryPicker() {
+    const status = document.getElementById('storyPickerStatus');
+    if (status) status.textContent = 'Loading stories...';
+    try {
+        const response = await fetch('/api/stories?limit=200');
+        if (!response.ok) throw new Error(await readApiError(response, 'Could not load stories'));
+        const data = await response.json();
+        renderStoryList(data.stories);
+    } catch (error) {
+        if (status) status.textContent = `Could not load stories: ${error.message}`;
+    }
+}
+
+function openStoryPicker() {
+    const dialog = document.getElementById('storyPicker');
+    if (!dialog) return;
+    const list = document.getElementById('storyPickerList');
+    if (list) list.innerHTML = '';
+    if (typeof dialog.showModal === 'function') {
+        if (!dialog.open) dialog.showModal();
+    } else {
+        dialog.setAttribute('open', '');
+    }
+    refreshStoryPicker();
+}
+
+function closeStoryPicker() {
+    const dialog = document.getElementById('storyPicker');
+    if (!dialog) return;
+    if (typeof dialog.close === 'function' && dialog.open) {
+        dialog.close();
+    } else {
+        dialog.removeAttribute('open');
+    }
+}
+
+function applyResumedStory(story) {
+    sessionId = story.session_id;
+    currentStoryId = story.story_id;
+
+    initialPromptInput.value = story.premise;
+    textContent = '';
+    inputBox.value = '';
+    inputBox.disabled = false;
+    retryButton.disabled = false;
+    pauseButton.disabled = false;
+    inputWasEmpty = true;
+    startTime = null;
+
+    textDisplay.innerHTML = '';
+    textDisplay.className = '';
+    _contDisplayInit = false;
+    updateTextDisplay();
+
+    const completedText = document.getElementById('completedText');
+    completedParagraphs = [];
+    historyData.length = 0;
+
+    for (const paragraph of story.paragraphs) {
+        completedParagraphs.push(paragraph.text);
+        if (completedText) {
+            const span = document.createElement('span');
+            span.className = 'completed-p';
+            span.textContent = paragraph.text;
+            completedText.appendChild(span);
+        }
+        historyData.push({
+            text: paragraph.text,
+            timeTaken: null,
+            speedCpm: paragraph.speed_cpm ?? 0,
+            outcomeTier: paragraph.outcome_tier ?? 2,
+            outcomeLabel: getTierLabel(paragraph.outcome_tier ?? 2),
+            splitSpeeds: [],
+        });
+    }
+    rebuildHistoryDisplay();
+
+    const lastTier = story.paragraphs.length > 0
+        ? (story.paragraphs[story.paragraphs.length - 1].outcome_tier ?? 2)
+        : 2;
+    updateTierChart(lastTier, story.tier_boundaries);
+
+    textContent = story.current || '';
+    initSplits(textContent);
+    updateTextDisplay();
+    autoScrollTextDisplay();
+    inputBox.focus();
+
+    messageDiv.textContent = `Continuing: ${story.premise}`;
+    messageDiv.className = 'neutral';
+}
+
+async function loadStory(storyId) {
+    reset();
+    currentStoryId = storyId;
+    messageDiv.textContent = 'Loading story...';
+    messageDiv.className = 'neutral';
+
+    try {
+        const response = await fetch(
+            `/api/stories/${encodeURIComponent(storyId)}/resume`,
+            { method: 'POST' }
+        );
+        if (!response.ok) throw new Error(await readApiError(response, 'Could not load story'));
+        const story = await response.json();
+
+        if (!story.current) {
+            messageDiv.textContent = 'Generating the next paragraph...';
+            const continueResponse = await fetch(
+                `/api/stories/${encodeURIComponent(storyId)}/continue`,
+                { method: 'POST' }
+            );
+            if (!continueResponse.ok) {
+                throw new Error(await readApiError(continueResponse, 'Could not generate the next paragraph'));
+            }
+            const continuation = await continueResponse.json();
+            story.current = continuation.response;
+            updateTierChart(continuation.outcome_tier, continuation.tier_boundaries);
+        }
+
+        applyResumedStory(story);
+        setLastStory(storyId);
+    } catch (error) {
+        showError(error.message, () => loadStory(storyId));
+    }
+}
+
 async function sendPrompt(prompt) {
     if (!prompt.trim()) return;
 
     reset();
+    clearLastStory();
 
     sessionId = null;
     const promptText = prompt;
@@ -1663,6 +1927,8 @@ async function sendPrompt(prompt) {
 
         const data = await response.json();
         sessionId = data.session_id;
+        currentStoryId = data.story_id || null;
+        if (currentStoryId) setLastStory(currentStoryId);
         textContent = data.response;
         textDisplay.innerText = textContent;
         textDisplay.className = '';

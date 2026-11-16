@@ -125,6 +125,13 @@
         <div id="initialPromptContainer">
             <input type="text" id="initialPrompt" placeholder='PREMISE e.g. a fantasy adventurer rebelling against the evil tyrant' />
             <button id="restartButton">Start a new story</button>
+            <button id="recentStoriesButton">📚 Recent stories</button>
+        </div>
+
+        <div id="resumeBanner" class="resume-banner" hidden>
+            <span id="resumeBannerText"></span>
+            <button id="resumeBannerButton">Continue</button>
+            <button id="resumeBannerDismiss" title="Dismiss">✕</button>
         </div>
 
         <div id="messageRow">
@@ -152,6 +159,15 @@
         <div id="historyEntries"></div>
     </div>
 </div>
+
+<dialog id="storyPicker">
+    <div class="story-picker-header">
+        <h2>Your stories</h2>
+        <button id="closeStoryPicker" class="story-picker-close" title="Close">✕</button>
+    </div>
+    <div id="storyPickerStatus" class="story-picker-status"></div>
+    <div id="storyPickerList"></div>
+</dialog>
 
 <script src="script.js"></script>
 
